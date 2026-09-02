@@ -1,0 +1,22 @@
+profile:
+  interests:
+  - AI Agent、LLM 架構、SaaS 技術實踐與系統設計
+  - 後端架構（Python、FastAPI、PostgreSQL、分散式系統、效能優化）
+  - 開源專案突破與實用開發者工具
+  - 獨立開發者（Indie Hacker）經驗與商業洞察
+  negative_topics:
+  - 單純名人八卦、政治口水、加密貨幣炒幣空投、公關買榜新聞
+  - 農場標題文、入門教學（如 Hello World、入門 10 分鐘）
+sources:
+- name: Hacker News (Best)
+  url: https://hnrss.org/best
+  category: curated_rss
+  enabled: false
+- name: 數位時代 BusinessNext
+  url: https://feeds.feedburner.com/bnext
+  category: curated_rss
+  enabled: true
+- name: 阮一峰
+  url: https://www.ruanyifeng.com/blog/atom.xml
+  category: curated_rss
+  enabled: true

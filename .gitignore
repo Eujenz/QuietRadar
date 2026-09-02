@@ -1,0 +1,30 @@
+# 環境變數與機密金鑰 (絕對禁止提交)
+.env
+*.env
+
+# SQLite 資料庫與暫存檔
+*.db
+*.sqlite
+*.sqlite3
+
+# Python 快取與虛擬環境
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+.env/
+
+# IDE 與編輯器設定
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 作業系統暫存檔
+.DS_Store
+Thumbs.db
+
+# 生成之日誌與除錯檔案
+*.log
