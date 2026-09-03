@@ -178,16 +178,23 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
                 <textarea id="tpl-header" rows="3" oninput="updateTemplatePreview()" class="w-full bg-dark-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 font-mono focus:border-sky-500 focus:outline-none"></textarea>
               </div>
 
+              <div>
+                <label class="block text-[11px] font-mono text-slate-300 mb-1">
+                  2. 彙整、重點論述 (Overview) <span class="text-slate-500">支援 {overview}</span>
+                </label>
+                <textarea id="tpl-overview" rows="3" oninput="updateTemplatePreview()" class="w-full bg-dark-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 font-mono focus:border-sky-500 focus:outline-none" placeholder="例如: > 💡 **今日情報洞察**：&#10;> {overview}&#10;---"></textarea>
+              </div>
+
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label class="block text-[11px] font-mono text-slate-300 mb-1">
-                    2. 來源分類標題 (Group) <span class="text-slate-500">支援 {source}, {count}</span>
+                    3. 來源分類標題 (Group) <span class="text-slate-500">支援 {source}, {count}</span>
                   </label>
                   <input id="tpl-group" oninput="updateTemplatePreview()" class="w-full bg-dark-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 font-mono focus:border-sky-500 focus:outline-none">
                 </div>
                 <div>
                   <label class="block text-[11px] font-mono text-slate-300 mb-1">
-                    3. 單則項目排版 (Item) <span class="text-slate-500">支援 {index}, {title}, {url}</span>
+                    4. 單則項目排版 (Item) <span class="text-slate-500">支援 {index}, {title}, {url}</span>
                   </label>
                   <input id="tpl-item" oninput="updateTemplatePreview()" class="w-full bg-dark-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 font-mono focus:border-sky-500 focus:outline-none">
                 </div>
@@ -195,7 +202,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
               <div>
                 <label class="block text-[11px] font-mono text-slate-300 mb-1">
-                  4. 底部結尾附註 (Footer) <span class="text-slate-500">支援 {time}, {count}</span>
+                  5. 底部結尾附註 (Footer) <span class="text-slate-500">支援 {time}, {count}</span>
                 </label>
                 <textarea id="tpl-footer" rows="2" oninput="updateTemplatePreview()" class="w-full bg-dark-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 font-mono focus:border-sky-500 focus:outline-none"></textarea>
               </div>
@@ -204,13 +211,15 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
                 儲存輸出結構框架
               </button>
 
-              <!-- 即時渲染預覽視窗 -->
-              <div class="mt-3">
-                <label class="block text-[11px] font-bold text-slate-400 mb-1 flex items-center space-x-1.5">
+              <!-- 即時 Markdown 渲染預覽視窗 -->
+              <div class="mt-4">
+                <label class="block text-[11px] font-bold text-slate-300 mb-2 flex items-center space-x-1.5">
                   <i class="fa-solid fa-eye text-emerald-400"></i>
-                  <span>框架渲染即時預覽 (Live Preview)</span>
+                  <span>框架渲染即時預覽 (Live Markdown Preview - 如同電子報實況)</span>
                 </label>
-                <div id="tpl-preview" class="bg-dark-950 border border-slate-800 rounded-lg p-3 text-xs font-mono text-slate-300 whitespace-pre-wrap leading-relaxed"></div>
+                <div class="bg-dark-950 border border-slate-800 rounded-xl p-5 overflow-y-auto max-h-[380px]">
+                  <div id="tpl-preview" class="prose prose-invert prose-sm max-w-none"></div>
+                </div>
               </div>
             </div>
           </div>
@@ -336,6 +345,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       // 渲染 Output Template
       const tpl = data.output_template || {};
       document.getElementById('tpl-header').value = tpl.header || '# ⚡ QuietRadar 降噪科技電子報\n> 出刊時間：{time} | 本期精選：{count} 則 | 去 AI 雜訊率：約 80%\n---';
+      document.getElementById('tpl-overview').value = tpl.overview !== undefined ? tpl.overview : '> 💡 **今日情報洞察**：\n> {overview}\n---';
       document.getElementById('tpl-group').value = tpl.group_header || '## 📰 【{source}】({count} 則)';
       document.getElementById('tpl-item').value = tpl.item_format || '{index}. [{title}]({url})';
       document.getElementById('tpl-footer').value = tpl.footer || '---\n*本電子報由 QuietRadar 依據讀者關注特徵自動蒸餾產出，遵守 speak-human-tw 去 AI 味與台灣在地化規範。*';
@@ -352,19 +362,28 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     }
 
     function updateTemplatePreview() {
-      const header = (document.getElementById('tpl-header').value || '').replace('{time}', '2026-09-03 09:30').replace('{count}', '2');
+      const header = (document.getElementById('tpl-header').value || '').replace('{time}', '2026-09-03 13:30').replace('{count}', '2');
+      const overview_tpl = document.getElementById('tpl-overview').value || '';
+      const overview_rendered = overview_tpl ? overview_tpl.replace('{overview}', '本期重點聚焦於開源模型生態突破與後端系統架構效能調優，多項工具迎來重大技術革新。') : '';
       const group = (document.getElementById('tpl-group').value || '').replace('{source}', '數位時代 BusinessNext').replace('{count}', '2');
       const item1 = (document.getElementById('tpl-item').value || '').replace('{index}', '1').replace('{title}', '科技巨頭最新 AI 架構發布').replace('{url}', 'https://example.com/article1').replace('{source}', '數位時代 BusinessNext');
       const item2 = (document.getElementById('tpl-item').value || '').replace('{index}', '2').replace('{title}', '開源社群突破性成果解析').replace('{url}', 'https://example.com/article2').replace('{source}', '數位時代 BusinessNext');
-      const footer = (document.getElementById('tpl-footer').value || '').replace('{time}', '2026-09-03 09:30').replace('{count}', '2');
+      const footer = (document.getElementById('tpl-footer').value || '').replace('{time}', '2026-09-03 13:30').replace('{count}', '2');
       
-      const full = `${header}\n\n${group}\n${item1}\n${item2}\n\n${footer}`.trim();
-      document.getElementById('tpl-preview').textContent = full;
+      let parts = [];
+      if (header.trim()) parts.push(header.trim());
+      if (overview_rendered.trim()) parts.push(overview_rendered.trim());
+      if (group.trim() || item1.trim()) parts.push(`${group}\n${item1}\n${item2}`.trim());
+      if (footer.trim()) parts.push(footer.trim());
+
+      const fullMarkdown = parts.join('\n\n');
+      document.getElementById('tpl-preview').innerHTML = marked.parse(fullMarkdown);
     }
 
     async function saveTemplate() {
       const output_template = {
         header: document.getElementById('tpl-header').value,
+        overview: document.getElementById('tpl-overview').value,
         group_header: document.getElementById('tpl-group').value,
         item_format: document.getElementById('tpl-item').value,
         footer: document.getElementById('tpl-footer').value

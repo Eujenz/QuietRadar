@@ -146,14 +146,17 @@ class SimpleLLMDistiller:
 {json.dumps(profile.get('negative_topics', []), ensure_ascii=False, indent=2)}
 
 【輸出格式】:
-請從候選文章中挑選最多 {top_k} 則，輸出符合以下格式的 JSON Array：
-[
-  {{
-    "title": "精煉後的繁體中文標題",
-    "original_url": "必須填寫候選文章中的真實 URL",
-    "source_name": "來源名稱"
-  }}
-]
+請從候選文章中挑選最多 {top_k} 則，並針對本期重點進行 1~2 句高含金量的大白話彙整論述，輸出符合以下格式的 JSON：
+{{
+  "overview": "針對本次精選內容的核心脈絡或整體趨勢論述（2~3 句話，講人話，直指關鍵價值）",
+  "items": [
+    {{
+      "title": "精煉後的繁體中文標題",
+      "original_url": "必須填寫候選文章中的真實 URL",
+      "source_name": "來源名稱"
+    }}
+  ]
+}}
 """
         # 準備餵給 LLM 的文章候選清單（精簡長度避免模型超時）
         articles_payload = [
@@ -239,14 +242,25 @@ class SimpleLLMDistiller:
                     
                     cleaned = raw_text
                     import re
-                    match = re.search(r'\[\s*\{.*\}\s*\]', cleaned, re.DOTALL)
-                    if match:
-                        cleaned = match.group(0)
+                    # 優先尋找完整 JSON 物件或陣列
+                    match_obj = re.search(r'\{.*\}', cleaned, re.DOTALL)
+                    match_arr = re.search(r'\[\s*\{.*\}\s*\]', cleaned, re.DOTALL)
 
                     try:
-                        distilled = json.loads(cleaned.strip())
-                        if isinstance(distilled, list):
-                            return distilled[:top_k]
+                        if match_obj:
+                            data = json.loads(match_obj.group(0))
+                            if isinstance(data, dict) and "items" in data:
+                                return {"overview": data.get("overview", ""), "items": data["items"][:top_k]}
+                    except Exception:
+                        pass
+
+                    try:
+                        target_str = match_arr.group(0) if match_arr else cleaned
+                        data = json.loads(target_str.strip())
+                        if isinstance(data, list):
+                            return {"overview": "", "items": data[:top_k]}
+                        elif isinstance(data, dict):
+                            return {"overview": data.get("overview", ""), "items": data.get("items", [])[:top_k]}
                     except Exception:
                         pass
 
@@ -321,14 +335,15 @@ class SimpleLLMDistiller:
 # ==========================================
 # 4. 電子報生成器 (speak-human-tw 風格)
 # ==========================================
-def generate_newsletter_file(items: List[Dict[str, Any]], filepath: str = "latest_newsletter.md", template: Optional[Dict[str, Any]] = None):
+def generate_newsletter_file(items: List[Dict[str, Any]], filepath: str = "latest_newsletter.md", template: Optional[Dict[str, Any]] = None, overview: str = ""):
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
     tpl = template or {}
     
     header_tpl = tpl.get("header", "# ⚡ QuietRadar 降噪科技電子報\n> 出刊時間：{time} | 本期精選：{count} 則 | 去 AI 雜訊率：約 80%\n---")
+    overview_tpl = tpl.get("overview", "> 💡 **核心情報彙整論述**：\n> {overview}\n---")
     group_tpl = tpl.get("group_header", "## 📰 【{source}】({count} 則)")
     item_tpl = tpl.get("item_format", "{index}. [{title}]({url})")
-    footer_tpl = tpl.get("footer", "---\n*本電子報由 QuietRadar 依據讀者關注特徵自動蒸餾產出，遵守 speak-human-tw 去 AI 味與台灣在地化規範。*")
+    footer_tpl = tpl.get("footer", "")
 
     grouped_by_source: Dict[str, List[Dict[str, Any]]] = {}
     for item in items:
@@ -337,6 +352,11 @@ def generate_newsletter_file(items: List[Dict[str, Any]], filepath: str = "lates
 
     header_text = header_tpl.replace("{time}", now_str).replace("{count}", str(len(items))).strip()
     lines = [header_text, ""]
+
+    if overview and overview_tpl.strip():
+        overview_text = overview_tpl.replace("{overview}", overview).strip()
+        lines.append(overview_text)
+        lines.append("")
 
     global_idx = 1
     for source_name, source_items in grouped_by_source.items():
@@ -365,7 +385,7 @@ class SimpleBarkNotifier:
         self.server_url = os.getenv("BARK_SERVER_URL", "https://api.day.app").rstrip("/")
         self.device_key = os.getenv("BARK_DEVICE_KEY", "")
 
-    def send_digest(self, items: List[Dict[str, Any]], template: Optional[Dict[str, Any]] = None) -> bool:
+    def send_digest(self, items: List[Dict[str, Any]], template: Optional[Dict[str, Any]] = None, overview: str = "") -> bool:
         if not self.device_key or self.device_key == "your_bark_key_here":
             logger.warning("⚠️ 未配置 BARK_DEVICE_KEY，跳過手機推播")
             return False
@@ -375,6 +395,7 @@ class SimpleBarkNotifier:
             return True
 
         tpl = template or {}
+        overview_tpl = tpl.get("overview", "")
         group_tpl = tpl.get("group_header", "### 📌 {source} ({count})")
         # 若 group_header 開頭為 ##，Bark 轉為更清晰的 ###
         if group_tpl.startswith("## "):
@@ -388,6 +409,11 @@ class SimpleBarkNotifier:
 
         now_str = datetime.now().strftime("%m/%d %H:%M")
         md_lines = [f"🎯 **QuietRadar 降噪情報** ({now_str})\n"]
+
+        if overview and overview_tpl.strip():
+            overview_clean = overview_tpl.replace("{overview}", overview).strip()
+            md_lines.append(overview_clean)
+            md_lines.append("")
 
         global_idx = 1
         for source_name, source_items in grouped_by_source.items():
@@ -468,10 +494,17 @@ def run_pipeline():
 
     # 4. LLM 蒸餾降噪 (傳入 custom_prompt)
     distiller = SimpleLLMDistiller()
-    distilled_items = distiller.distill(target_candidates, profile, top_k=7, custom_prompt=custom_prompt)
+    distill_res = distiller.distill(target_candidates, profile, top_k=7, custom_prompt=custom_prompt)
+    
+    overview = ""
+    distilled_items = []
+    if isinstance(distill_res, dict):
+        overview = distill_res.get("overview", "")
+        distilled_items = distill_res.get("items", [])
+    elif isinstance(distill_res, list):
+        distilled_items = distill_res
 
     # [防禦微調 2]：寫入防重安全保護
-    # 若 LLM 蒸餾失敗或回傳為空，絕對不寫入防重表，保留到下一輪排程重試
     if not distilled_items:
         logger.warning("⚠️ 本輪未產出任何精選情報（可能因 LLM 異常或全部被判定為雜訊），保留候選池不標記已讀，等待下輪重試。")
         session.close()
@@ -482,11 +515,11 @@ def run_pipeline():
     output_template = config.get("output_template", {})
 
     # 5. 生成 speak-human-tw 風格電子報存檔 (latest_newsletter.md)
-    generate_newsletter_file(distilled_items, template=output_template)
+    generate_newsletter_file(distilled_items, template=output_template, overview=overview)
 
     # 6. 發送 Bark 推播
     notifier = SimpleBarkNotifier()
-    notifier.send_digest(distilled_items, template=output_template)
+    notifier.send_digest(distilled_items, template=output_template, overview=overview)
 
     # 7. 確定蒸餾推播流程成功後，將本次參與蒸餾的文章指紋寫入資料庫
     record_processed_articles(session, target_candidates)
