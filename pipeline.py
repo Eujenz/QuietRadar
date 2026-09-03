@@ -297,17 +297,17 @@ class SimpleLLMDistiller:
             base_instructions = custom_prompt.strip()
 
         # 計算槓鈴配額（7~8成核心 : 2~3成跨界）
+        # 槓鈴挑選原則（動態比例：約 70~80% 核心 : 20~30% 跨界，質量優先）
         has_serendipity = any(c.get("is_serendipity") for c in candidates)
-        if has_serendipity and top_k >= 3:
-            cross_target = max(1, round(top_k * 0.28))
-            core_target = top_k - cross_target
-            quota_rule = f"""1. 【槓鈴策略精選配額鐵律 (7~8成核心 : 2~3成跨界)】:
-   請從下方候選文章中精選出剛好 {top_k} 則最具啟發價值的情報，並嚴格維持槓鈴比例：
-   - 🎯 核心業務情報：剛好 {core_target} 則（約 70~80%）
-   - ✨ 跨界漫遊靈感：剛好 {cross_target} 則（約 20~30%，必須從清單中標註 ✨ [跨界漫遊靈感] 的文章中挑選）
-   嚴禁全選核心文章而遺漏跨界靈感！"""
+        if has_serendipity:
+            quota_rule = f"""1. 【槓鈴策略精選原則 (約 7~8成核心 : 2~3成跨界，上限 {top_k} 則，質量優先)】:
+   請深入研讀下方候選文章，挑選出真正具備商業啟發性、新奇且可行的情報（最多 {top_k} 則，寧缺毋濫；若本期值得探討的文章多，可挑選 8~{top_k} 則；若素材平庸則精煉挑選）。
+   在精選出的情報項目中，請嚴格維持槓鈴比例：
+   - 🎯 核心業務情報：約佔 70% ~ 80%
+   - ✨ 跨界漫遊靈感：約佔 20% ~ 30%（必須從清單中標註 ✨ [跨界漫遊靈感] 的文章中挑選）
+   嚴禁全部挑選核心文章而遺漏跨界靈感！"""
         else:
-            quota_rule = f"1. 請精選出最具閱讀價值的候選文章（最多 {top_k} 則），並完全依據上方守則撰寫獨立深度論述正文。"
+            quota_rule = f"1. 請精選出最具閱讀價值的候選文章（最多 {top_k} 則，質量優先），並完全依據上方守則撰寫獨立深度論述正文。"
 
         system_prompt = f"""{base_instructions}
 
@@ -1104,6 +1104,19 @@ def run_pipeline(test_mode: bool = False, force: bool = False):
     core_articles = [a for a in unprocessed if not a.get("is_serendipity", False)]
     serendipity_articles = [a for a in unprocessed if a.get("is_serendipity", False)]
 
+    # 跨界靈感蓄水池保障 (Serendipity Longevity Reservoir)：
+    # 跨界文章（農業科技、商業周刊、經理人）發文頻率通常比高頻科技部落格慢得多。
+    # 若本輪未讀的新跨界文章不足 serendipity_quota，自動從本次爬取的既有跨界文章 (raw_articles) 補足！
+    # 確保每次出刊永遠具備足額的跨界靈感素材進行撞擊！
+    if len(serendipity_articles) < serendipity_quota:
+        seen_urls = {a["url"] for a in serendipity_articles}
+        raw_cross = [a for a in raw_articles if a.get("is_serendipity", False) and a["url"] not in seen_urls]
+        needed_cross = serendipity_quota - len(serendipity_articles)
+        supplement_cross = raw_cross[:needed_cross]
+        if supplement_cross:
+            logger.info(f"💡 [跨界蓄水池啟動] 全新跨界文章僅 {len(serendipity_articles)} 篇，自動從本期爬取之跨界情報中調用 {len(supplement_cross)} 篇補足配額！")
+            serendipity_articles.extend(supplement_cross)
+
     # 跨界文章來源去中心化輪轉，避免單一來源佔滿所有跨界配額
     if serendipity_articles:
         source_buckets: Dict[str, List[Dict[str, Any]]] = {}
@@ -1147,10 +1160,10 @@ def run_pipeline(test_mode: bool = False, force: bool = False):
     snippet_desc = f"{snippet_len} 字" if snippet_len > 0 else "完整內文 (不截斷)"
     logger.info(f"📚 LLM 研讀池就緒：共送入 {len(target_candidates)} 篇候選文章，每篇內文上限 {snippet_desc}（本輪總計向大模型投餵約 {total_chars:,} 字元實質正文）")
 
-    # 4. LLM 蒸餾降噪 (依據 target_item_count 執行 7:3 槓鈴蒸餾)
-    target_top_k = pipeline_settings.get("target_item_count", 7)
+    # 4. LLM 蒸餾降噪 (依據候選文章深度與質量動態精選，上限 max_output_items)
+    max_output_items = pipeline_settings.get("max_output_items", 15)
     distiller = SimpleLLMDistiller()
-    distill_res = distiller.distill(target_candidates, profile, top_k=target_top_k, custom_prompt=custom_prompt, snippet_length=snippet_len)
+    distill_res = distiller.distill(target_candidates, profile, top_k=max_output_items, custom_prompt=custom_prompt, snippet_length=snippet_len)
     
     overview = ""
     distilled_items = []
@@ -1169,21 +1182,35 @@ def run_pipeline(test_mode: bool = False, force: bool = False):
             if not item.get("source_name"):
                 item["source_name"] = matched.get("source_name", "精選情報")
 
-    # 槓鈴配比保底防禦：確保最終產出中包含足額跨界靈感（以 7 篇為例，保證至少 2 篇跨界）
-    expected_cross = max(1, round(target_top_k * 0.28)) if any(c.get("is_serendipity") for c in target_candidates) else 0
-    actual_cross_items = [it for it in distilled_items if it.get("is_serendipity")]
-    if len(actual_cross_items) < expected_cross:
-        needed = expected_cross - len(actual_cross_items)
-        used_urls = {it.get("original_url") for it in distilled_items}
-        candidate_cross = [c for c in target_candidates if c.get("is_serendipity") and c.get("url") not in used_urls]
-        for supp in candidate_cross[:needed]:
-            distilled_items.append({
-                "title": f"✨ [跨界靈感] {supp['title']}" if not supp['title'].startswith("✨") else supp['title'],
-                "original_url": supp["url"],
-                "source_name": supp["source_name"],
-                "is_serendipity": True
-            })
-            logger.info(f"⚖️ [槓鈴保底機制生效] 自動補足跨界漫遊靈感文章：【{supp['title'][:30]}】({supp['source_name']})")
+    # 槓鈴比例動態保底：確保跨界靈感不被漏選，同時完全解放篇數限制（質量優先）
+    has_cross_candidates = any(c.get("is_serendipity") for c in target_candidates)
+    if has_cross_candidates and distilled_items:
+        llm_core = [it for it in distilled_items if not it.get("is_serendipity")]
+        llm_cross = [it for it in distilled_items if it.get("is_serendipity")]
+
+        # 只要總挑選數大於 0，確保至少 20%~30% 的跨界靈感入選（至少 1~2 篇）
+        target_cross_min = max(1, round(len(distilled_items) * 0.25))
+        if len(llm_cross) < target_cross_min:
+            used_urls = {it.get("original_url") for it in distilled_items}
+            cand_cross = [c for c in target_candidates if c.get("is_serendipity") and c.get("url") not in used_urls]
+            needed = target_cross_min - len(llm_cross)
+            for supp in cand_cross[:needed]:
+                llm_cross.append({
+                    "title": f"✨ [跨界靈感] {supp['title']}" if not supp['title'].startswith("✨") else supp['title'],
+                    "original_url": supp["url"],
+                    "source_name": supp["source_name"],
+                    "is_serendipity": True
+                })
+                logger.info(f"⚖️ [槓鈴保底] 自動補足跨界漫遊文章：【{supp['title'][:30]}】({supp['source_name']})")
+
+        # 若總數超過使用者設定之上限，進行安全裁剪
+        if len(llm_core) + len(llm_cross) > max_output_items:
+            max_cross = max(1, int(max_output_items * 0.28))
+            max_core = max_output_items - max_cross
+            llm_cross = llm_cross[:max_cross]
+            llm_core = llm_core[:max_core]
+
+        distilled_items = llm_core + llm_cross
 
     # [防禦微調 2]：寫入防重安全保護
     if not distilled_items:

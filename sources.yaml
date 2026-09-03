@@ -3,9 +3,9 @@ pipeline_settings:
   enable_two_stage_humanizer: true
   title_filter_mode: smart
   content_snippet_length: 900
-  max_candidate_pool: 30
+  max_candidate_pool: 50
   serendipity_ratio: 0.28
-  target_item_count: 7
+  max_output_items: 15
 profile:
   interests:
   - 一人公司（Solopreneur）、獨立開發（Indie Hacker）、微型創業與創辦人時間脫鉤（Founder Time Decoupling）

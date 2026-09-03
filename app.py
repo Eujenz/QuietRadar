@@ -222,20 +222,27 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
               </div>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
               <div>
                 <label class="block text-[11px] font-mono text-slate-300 mb-1">
-                  每篇文章提供給 LLM 研讀字數 (字元)
+                  每篇內文研讀字數 (字元)
                 </label>
-                <input type="number" id="cfg-snippet-len" min="0" max="10000" step="100" class="w-full bg-dark-950 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 focus:border-amber-500 focus:outline-none" placeholder="預設 1000 (填 0 代表完整內文不截斷)">
-                <p class="text-[10px] text-slate-500 mt-1">一般 RSS 正文約 500~1500 字，設 1000 字可涵蓋 90% 核心論點。填 0 代表全送。</p>
+                <input type="number" id="cfg-snippet-len" min="0" max="10000" step="100" class="w-full bg-dark-950 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 focus:border-amber-500 focus:outline-none" placeholder="預設 900 (填 0 代表完整不截斷)">
+                <p class="text-[10px] text-slate-500 mt-1">一般 800~1500 字可涵蓋完整核心論點。填 0 代表全送。</p>
               </div>
               <div>
                 <label class="block text-[11px] font-mono text-slate-300 mb-1">
-                  單次送入研讀的候選文章上限 (篇數)
+                  送入研讀候選池上限 (篇數)
                 </label>
-                <input type="number" id="cfg-max-pool" min="1" max="50" step="1" class="w-full bg-dark-950 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 focus:border-amber-500 focus:outline-none" placeholder="預設 10 (最多 50 篇)">
-                <p class="text-[10px] text-slate-500 mt-1">單次從最新未讀文章中挑選幾篇交由大模型融會貫通。篇數越多，橫向脈絡越廣。</p>
+                <input type="number" id="cfg-max-pool" min="5" max="100" step="1" class="w-full bg-dark-950 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 focus:border-amber-500 focus:outline-none" placeholder="建議 30~50 篇">
+                <p class="text-[10px] text-slate-500 mt-1">單次送進大模型大腦的候選總數（自動配置約 28% 跨界漫遊素材）。</p>
+              </div>
+              <div>
+                <label class="block text-[11px] font-mono text-slate-300 mb-1">
+                  最終精選篇數上限 (篇數)
+                </label>
+                <input type="number" id="cfg-max-output" min="3" max="30" step="1" class="w-full bg-dark-950 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 focus:border-amber-500 focus:outline-none" placeholder="預設 15 篇 (AI 品質自適應)">
+                <p class="text-[10px] text-slate-500 mt-1">大模型依素材質量自由精選，寧缺毋濫；維持 7~8成核心 : 2~3成跨界。</p>
               </div>
             </div>
             <button onclick="savePipelineSettings()" class="w-full bg-amber-500 hover:bg-amber-600 text-dark-950 font-bold py-2 rounded-lg text-sm transition shadow-lg shadow-amber-500/20">
@@ -469,8 +476,9 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       if (document.getElementById('cfg-title-filter-mode')) {
         document.getElementById('cfg-title-filter-mode').value = ps.title_filter_mode || 'smart';
       }
-      document.getElementById('cfg-snippet-len').value = ps.content_snippet_length !== undefined ? ps.content_snippet_length : 1000;
-      document.getElementById('cfg-max-pool').value = ps.max_candidate_pool !== undefined ? ps.max_candidate_pool : 10;
+      document.getElementById('cfg-snippet-len').value = ps.content_snippet_length !== undefined ? ps.content_snippet_length : 900;
+      document.getElementById('cfg-max-pool').value = ps.max_candidate_pool !== undefined ? ps.max_candidate_pool : 50;
+      document.getElementById('cfg-max-output').value = ps.max_output_items !== undefined ? ps.max_output_items : 15;
 
       // 渲染 Output Template
       const tpl = data.output_template || {};
@@ -616,6 +624,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       const title_filter_mode = document.getElementById('cfg-title-filter-mode').value;
       const snippet_len = parseInt(document.getElementById('cfg-snippet-len').value, 10);
       const max_pool = parseInt(document.getElementById('cfg-max-pool').value, 10);
+      const max_output = parseInt(document.getElementById('cfg-max-output').value, 10);
       await fetch('/api/pipeline_settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -623,8 +632,9 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
           title_filter_enabled,
           enable_two_stage_humanizer,
           title_filter_mode,
-          content_snippet_length: isNaN(snippet_len) ? 1000 : snippet_len,
-          max_candidate_pool: isNaN(max_pool) ? 10 : max_pool
+          content_snippet_length: isNaN(snippet_len) ? 900 : snippet_len,
+          max_candidate_pool: isNaN(max_pool) ? 50 : max_pool,
+          max_output_items: isNaN(max_output) ? 15 : max_output
         })
       });
       alert('已成功儲存標題前置漏斗、語言洗滌與研讀深度設定！');
@@ -1004,7 +1014,7 @@ class QuietRadarHandler(BaseHTTPRequestHandler):
                     RUNNING_LOGS.append(f"[{datetime.now().strftime('%H:%M:%S')}] 🚀 開始執行 QuietRadar 管線 {mode_label}...")
                     cmd = [sys.executable, "pipeline.py"]
                     if is_test_mode:
-                        cmd.append("--test")
+                        cmd.extend(["--test", "--force"])
                     proc = subprocess.Popen(
                         cmd,
                         stdout=subprocess.PIPE,
