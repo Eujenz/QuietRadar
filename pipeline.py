@@ -792,7 +792,21 @@ def generate_newsletter_file(items: List[Dict[str, Any]], filepath: str = "lates
     content = format_newsletter_markdown(items, template=template, overview=overview)
     with open(filepath, "w", encoding="utf-8") as f:
         f.write(content)
-    logger.info(f"📄 已成功生成電子報檔案: {filepath}")
+    logger.info(f"📄 已成功生成最新電子報檔案: {filepath}")
+
+    # 資產封存機制 (Archive Asset)：
+    # 每一期產出的電子報都是寶貴的智力資產，自動按時間戳封存至 data/archive/
+    archive_dir = os.path.join("data", "archive")
+    try:
+        os.makedirs(archive_dir, exist_ok=True)
+        timestamp_str = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+        archive_path = os.path.join(archive_dir, f"newsletter_{timestamp_str}.md")
+        with open(archive_path, "w", encoding="utf-8") as af:
+            af.write(content)
+        logger.info(f"📦 已將本期電子報作為資產封存至: {archive_path}")
+    except Exception as e:
+        logger.warning(f"⚠️ 封存電子報至 data/archive 失敗: {e}")
+
     return content
 
 
@@ -1231,14 +1245,22 @@ def run_pipeline(test_mode: bool = False, force: bool = False):
     # 5. 生成 speak-human-tw 風格電子報存檔 (latest_newsletter.md) 並持久化蒸餾結果以利模板即時重繪
     newsletter_content = generate_newsletter_file(distilled_items, template=output_template, overview=overview)
     try:
+        distilled_data = {
+            "overview": overview,
+            "items": distilled_items,
+            "time": datetime.now().strftime("%Y-%m-%d %H:%M")
+        }
         with open("latest_distilled.json", "w", encoding="utf-8") as df:
-            json.dump({
-                "overview": overview,
-                "items": distilled_items,
-                "time": datetime.now().strftime("%Y-%m-%d %H:%M")
-            }, df, ensure_ascii=False, indent=2)
+            json.dump(distilled_data, df, ensure_ascii=False, indent=2)
+
+        # 同步封存 JSON 資料結構
+        archive_dir = os.path.join("data", "archive")
+        os.makedirs(archive_dir, exist_ok=True)
+        ts_now = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+        with open(os.path.join(archive_dir, f"distilled_{ts_now}.json"), "w", encoding="utf-8") as adf:
+            json.dump(distilled_data, adf, ensure_ascii=False, indent=2)
     except Exception as e:
-        logger.warning(f"⚠️ 寫入 latest_distilled.json 失敗: {e}")
+        logger.warning(f"⚠️ 寫入或封存 distilled json 失敗: {e}")
 
     # 6. 發送 Bark 推播（使用完全相同的 Markdown 內容）
     notifier = SimpleBarkNotifier()

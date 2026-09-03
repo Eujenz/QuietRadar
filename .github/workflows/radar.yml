@@ -60,9 +60,9 @@ jobs:
             python pipeline.py
           fi
 
-      - name: 提交並推送最新電子報至 GitHub 儲存庫
+      - name: 提交並推送最新電子報與歷史封存至 GitHub 儲存庫
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add latest_newsletter.md latest_distilled.json
-          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: auto-update latest_newsletter.md [skip ci]" && git push)
+          git add latest_newsletter.md latest_distilled.json data/archive
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: archive newsletter and update latest [skip ci]" && git push)
