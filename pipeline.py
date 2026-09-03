@@ -50,7 +50,7 @@ class ProcessedArticle(Base):
     title = Column(String(512))
     url = Column(String(1024))
     user_id = Column(String(64), default="default")
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now)
 
 Base.metadata.create_all(bind=engine)
 
@@ -65,7 +65,7 @@ def record_processed_articles(session, articles: List[Dict[str, Any]]):
                 title=a["title"][:500],
                 url=a["url"][:1000],
                 user_id="default",
-                created_at=datetime.utcnow()
+                created_at=datetime.now()
             )
             session.add(record)
     session.commit()
