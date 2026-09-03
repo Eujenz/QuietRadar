@@ -1,11 +1,12 @@
-﻿name: QuietRadar Daily Pipeline
+name: QuietRadar Daily Pipeline
 
 on:
   schedule:
     # 每天執行 2 次（台灣時間 UTC+8）：
-    # 00:00 UTC = 台灣時間 08:00 (早報)
-    # 12:00 UTC = 台灣時間 20:00 (晚報)
-    - cron: '0 0,12 * * *'
+    # 23:30 UTC = 台灣時間 07:30 (晨間出刊)
+    - cron: '30 23 * * *'
+    # 10:00 UTC = 台灣時間 18:00 (傍晚出刊)
+    - cron: '0 10 * * *'
   workflow_dispatch: # 支援在 GitHub 網頁上手動點擊「Run workflow」隨時觸發
     inputs:
       force_mode:
