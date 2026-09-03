@@ -173,16 +173,62 @@ def fetch_sources(sources_config: List[Dict[str, Any]], profile: Optional[Dict[s
                 except Exception as err:
                     logger.warning(f"⚠️ 來源 [{name}] ({target_url}) 連線失敗: {err}")
 
+            is_feedly_json = False
+            feedly_data = None
+
+            # 智慧橋接機制 (Feedly Cloud Fallback)：
+            # 若直接請求回傳 404 或失敗 (如數位時代 bnext 將本地 /rss 關閉，但 Feedly 雲端仍持續維護更新)
             if not resp_content:
+                try:
+                    feedly_url = f"https://cloud.feedly.com/v3/streams/contents?streamId=feed/{url}&count=25"
+                    with httpx.Client(headers=headers, timeout=12.0) as client:
+                        f_resp = client.get(feedly_url)
+                        if f_resp.status_code == 200:
+                            f_json = f_resp.json()
+                            if f_json.get("items"):
+                                logger.info(f"🌐 來源 [{name}] 透過 Feedly Cloud 智慧代理成功取得 {len(f_json['items'])} 篇最新文章！")
+                                is_feedly_json = True
+                                feedly_data = f_json
+                except Exception as fe:
+                    logger.debug(f"Feedly fallback error for {name}: {fe}")
+
+            if not resp_content and not feedly_data:
                 logger.warning(f"⚠️ 來源 [{name}] 抓取失敗，跳過此來源")
                 continue
 
-            feed = feedparser.parse(resp_content)
+            entries = []
+            if is_feedly_json and feedly_data:
+                for it in feedly_data.get("items", []):
+                    link = ""
+                    for alt in it.get("alternate", []):
+                        if alt.get("href"):
+                            link = alt["href"]
+                            break
+                    if not link:
+                        link = it.get("originId", "")
+                    summary = it.get("summary", {}).get("content", "") or it.get("content", {}).get("content", "")
+                    pub_ts = it.get("published", 0) / 1000.0 if it.get("published") else None
+                    entries.append({
+                        "title": it.get("title", "").strip(),
+                        "link": link.strip(),
+                        "summary": summary,
+                        "published_parsed": time.gmtime(pub_ts) if pub_ts else None
+                    })
+            else:
+                feed = feedparser.parse(resp_content)
+                for entry in feed.entries:
+                    entries.append({
+                        "title": getattr(entry, "title", "").strip(),
+                        "link": getattr(entry, "link", "").strip(),
+                        "summary": getattr(entry, "summary", "") or getattr(entry, "description", ""),
+                        "published_parsed": getattr(entry, "published_parsed", None) or getattr(entry, "updated_parsed", None)
+                    })
+
             max_age_days = settings.get("max_article_age_days", 7)
-                    
-            for entry in feed.entries[:25]:  # 擴大候選池掃描範圍
-                title = getattr(entry, "title", "").strip()
-                raw_link = getattr(entry, "link", "").strip()
+
+            for entry in entries[:25]:  # 擴大候選池掃描範圍
+                title = entry.get("title", "").strip()
+                raw_link = entry.get("link", "").strip()
                 
                 # 1. 空標題與無效條目過濾（借鏡 TrendRadar 兜底機制）
                 if not title or not raw_link or len(title) < 3:
@@ -197,7 +243,10 @@ def fetch_sources(sources_config: List[Dict[str, Any]], profile: Optional[Dict[s
 
                 # 4. 文章發布時效過期防護（借鏡 TrendRadar is_within_days）
                 if max_age_days and max_age_days > 0:
-                    pub_tuple = getattr(entry, "published_parsed", None) or getattr(entry, "updated_parsed", None)
+                    if isinstance(entry, dict):
+                        pub_tuple = entry.get("published_parsed")
+                    else:
+                        pub_tuple = getattr(entry, "published_parsed", None) or getattr(entry, "updated_parsed", None)
                     if pub_tuple:
                         try:
                             pub_time = time.mktime(pub_tuple)
@@ -238,10 +287,13 @@ def fetch_sources(sources_config: List[Dict[str, Any]], profile: Optional[Dict[s
 
                 # 通過標題檢驗後，才深入抓取並清洗正文（大幅節省網路與記憶體）
                 raw_content = ""
-                if hasattr(entry, "content") and entry.content:
-                    raw_content = entry.content[0].get("value", "")
-                if not raw_content:
-                    raw_content = getattr(entry, "summary", "") or getattr(entry, "description", "")
+                if isinstance(entry, dict):
+                    raw_content = entry.get("summary", "")
+                else:
+                    if hasattr(entry, "content") and entry.content:
+                        raw_content = entry.content[0].get("value", "")
+                    if not raw_content:
+                        raw_content = getattr(entry, "summary", "") or getattr(entry, "description", "")
                 
                 clean_text = re.sub(r'<[^>]+>', ' ', raw_content)
                 clean_text = re.sub(r'\s+', ' ', clean_text).strip()
