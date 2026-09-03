@@ -971,7 +971,9 @@ class QuietRadarHandler(BaseHTTPRequestHandler):
         elif path == "/api/pipeline_settings":
             with open("sources.yaml", "r", encoding="utf-8") as f:
                 cfg = yaml.safe_load(f)
-            cfg["pipeline_settings"] = payload
+            if "pipeline_settings" not in cfg:
+                cfg["pipeline_settings"] = {}
+            cfg["pipeline_settings"].update(payload)
             with open("sources.yaml", "w", encoding="utf-8") as f:
                 yaml.dump(cfg, f, allow_unicode=True, sort_keys=False)
             self._send_json({"status": "ok"})

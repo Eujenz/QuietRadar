@@ -4,7 +4,8 @@ pipeline_settings:
   title_filter_mode: smart
   content_snippet_length: 900
   max_candidate_pool: 30
-  active_prompt_template: solopreneur
+  serendipity_ratio: 0.28
+  target_item_count: 7
 profile:
   interests:
   - 一人公司（Solopreneur）、獨立開發（Indie Hacker）、微型創業與創辦人時間脫鉤（Founder Time Decoupling）
@@ -79,14 +80,14 @@ sources:
   serendipity: true
 - name: 掘金閱讀
   url: https://decemberpei.cyou/rssbox/juejin_hot-6809637772874219534.xml
-  category: cross_domain_ideas
+  category: curated_rss
   enabled: true
-  serendipity: true
+  serendipity: false
 - name: 品玩
   url: https://decemberpei.cyou/rssbox/pingwest.xml
-  category: cross_domain_ideas
+  category: curated_rss
   enabled: true
-  serendipity: true
+  serendipity: false
 - name: 掘金熱門
   url: https://decemberpei.cyou/rssbox/juejin_hot-articles.xml
   category: curated_rss

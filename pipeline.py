@@ -296,6 +296,19 @@ class SimpleLLMDistiller:
         else:
             base_instructions = custom_prompt.strip()
 
+        # 計算槓鈴配額（7~8成核心 : 2~3成跨界）
+        has_serendipity = any(c.get("is_serendipity") for c in candidates)
+        if has_serendipity and top_k >= 3:
+            cross_target = max(1, round(top_k * 0.28))
+            core_target = top_k - cross_target
+            quota_rule = f"""1. 【槓鈴策略精選配額鐵律 (7~8成核心 : 2~3成跨界)】:
+   請從下方候選文章中精選出剛好 {top_k} 則最具啟發價值的情報，並嚴格維持槓鈴比例：
+   - 🎯 核心業務情報：剛好 {core_target} 則（約 70~80%）
+   - ✨ 跨界漫遊靈感：剛好 {cross_target} 則（約 20~30%，必須從清單中標註 ✨ [跨界漫遊靈感] 的文章中挑選）
+   嚴禁全選核心文章而遺漏跨界靈感！"""
+        else:
+            quota_rule = f"1. 請精選出最具閱讀價值的候選文章（最多 {top_k} 則），並完全依據上方守則撰寫獨立深度論述正文。"
+
         system_prompt = f"""{base_instructions}
 
 ---
@@ -305,7 +318,7 @@ class SimpleLLMDistiller:
 
 ---
 【系統輸出格式契約 (JSON) 與論文式文內注釋鐵律】:
-1. 請精選出最具閱讀價值的候選文章（最多 {top_k} 則），並完全依據上方【今日觀點 / Overview 撰寫守則】撰寫獨立深度論述正文。
+{quota_rule}
 2. 【論文式文內注釋鐵律】：
    - 在 overview 論述正文中，凡提及、借鏡特定文章的商業案例、技術架構、實驗數據或跨界理論時，必須在該名詞或觀點句後方標註論文式可點擊角標連結：`[[編號]](文章真實URL)`。
    - 範例：借鏡騰訊混元 Hy4 preview 的成本壓制 [[1]](http://...)...
@@ -1078,14 +1091,34 @@ def run_pipeline(test_mode: bool = False, force: bool = False):
 
     # 讀取研讀深度與候選池上限設定
     pipeline_settings = config.get("pipeline_settings", {})
-    max_pool = pipeline_settings.get("max_candidate_pool", 20)
+    max_pool = pipeline_settings.get("max_candidate_pool", 30)
     snippet_len = pipeline_settings.get("content_snippet_length", 900)
     serendipity_enabled = pipeline_settings.get("serendipity_enabled", True)
-    serendipity_quota = pipeline_settings.get("serendipity_quota", 3) if serendipity_enabled else 0
+    serendipity_ratio = pipeline_settings.get("serendipity_ratio", 0.28)
+    serendipity_quota = pipeline_settings.get("serendipity_quota")
+    if serendipity_quota is None:
+        # 動態比例：若總池 30 篇，保障 28% = 8~9 篇跨界
+        serendipity_quota = max(2, int(max_pool * serendipity_ratio)) if serendipity_enabled else 0
 
     # 槓鈴策略配額組裝 (Barbell Candidate Pool Assembly)
     core_articles = [a for a in unprocessed if not a.get("is_serendipity", False)]
     serendipity_articles = [a for a in unprocessed if a.get("is_serendipity", False)]
+
+    # 跨界文章來源去中心化輪轉，避免單一來源佔滿所有跨界配額
+    if serendipity_articles:
+        source_buckets: Dict[str, List[Dict[str, Any]]] = {}
+        for a in serendipity_articles:
+            source_buckets.setdefault(a["source_name"], []).append(a)
+        diversified_serendipity = []
+        while len(diversified_serendipity) < len(serendipity_articles):
+            added = False
+            for s_name, s_list in source_buckets.items():
+                if s_list:
+                    diversified_serendipity.append(s_list.pop(0))
+                    added = True
+            if not added:
+                break
+        serendipity_articles = diversified_serendipity
 
     # 理想配額：保障 serendipity_quota 篇跨界文章，其餘分配給核心文章
     # 當某一方數量不足時，動態由另一方填補，確保研讀池始終飽和
@@ -1107,16 +1140,17 @@ def run_pipeline(test_mode: bool = False, force: bool = False):
         selected_serendipity = []
 
     target_candidates = selected_core + selected_serendipity
-    logger.info(f"⚖️ 槓鈴候選池組裝：核心業務文章 {len(selected_core)} 篇 + 跨界漫遊文章 {len(selected_serendipity)} 篇（總計 {len(target_candidates)} 篇送入大模型）")
+    logger.info(f"⚖️ 槓鈴候選池組裝：核心業務文章 {len(selected_core)} 篇 ({len(selected_core)/len(target_candidates)*100:.0f}%) + 跨界漫遊文章 {len(selected_serendipity)} 篇 ({len(selected_serendipity)/len(target_candidates)*100:.0f}%)（總計 {len(target_candidates)} 篇送入大模型）")
 
     # 計算本輪餵給大模型的實際字數統計，並清晰記錄於 LOG
     total_chars = sum(len(a.get("summary", "")[:snippet_len] if snippet_len > 0 else a.get("summary", "")) for a in target_candidates)
     snippet_desc = f"{snippet_len} 字" if snippet_len > 0 else "完整內文 (不截斷)"
     logger.info(f"📚 LLM 研讀池就緒：共送入 {len(target_candidates)} 篇候選文章，每篇內文上限 {snippet_desc}（本輪總計向大模型投餵約 {total_chars:,} 字元實質正文）")
 
-    # 4. LLM 蒸餾降噪 (傳入 custom_prompt 與 snippet_length)
+    # 4. LLM 蒸餾降噪 (依據 target_item_count 執行 7:3 槓鈴蒸餾)
+    target_top_k = pipeline_settings.get("target_item_count", 7)
     distiller = SimpleLLMDistiller()
-    distill_res = distiller.distill(target_candidates, profile, top_k=7, custom_prompt=custom_prompt, snippet_length=snippet_len)
+    distill_res = distiller.distill(target_candidates, profile, top_k=target_top_k, custom_prompt=custom_prompt, snippet_length=snippet_len)
     
     overview = ""
     distilled_items = []
@@ -1132,6 +1166,24 @@ def run_pipeline(test_mode: bool = False, force: bool = False):
         matched = next((c for c in target_candidates if c.get("url") == orig_url or (orig_url and orig_url in c.get("url", ""))), None)
         if matched:
             item["is_serendipity"] = matched.get("is_serendipity", False)
+            if not item.get("source_name"):
+                item["source_name"] = matched.get("source_name", "精選情報")
+
+    # 槓鈴配比保底防禦：確保最終產出中包含足額跨界靈感（以 7 篇為例，保證至少 2 篇跨界）
+    expected_cross = max(1, round(target_top_k * 0.28)) if any(c.get("is_serendipity") for c in target_candidates) else 0
+    actual_cross_items = [it for it in distilled_items if it.get("is_serendipity")]
+    if len(actual_cross_items) < expected_cross:
+        needed = expected_cross - len(actual_cross_items)
+        used_urls = {it.get("original_url") for it in distilled_items}
+        candidate_cross = [c for c in target_candidates if c.get("is_serendipity") and c.get("url") not in used_urls]
+        for supp in candidate_cross[:needed]:
+            distilled_items.append({
+                "title": f"✨ [跨界靈感] {supp['title']}" if not supp['title'].startswith("✨") else supp['title'],
+                "original_url": supp["url"],
+                "source_name": supp["source_name"],
+                "is_serendipity": True
+            })
+            logger.info(f"⚖️ [槓鈴保底機制生效] 自動補足跨界漫遊靈感文章：【{supp['title'][:30]}】({supp['source_name']})")
 
     # [防禦微調 2]：寫入防重安全保護
     if not distilled_items:
@@ -1139,7 +1191,7 @@ def run_pipeline(test_mode: bool = False, force: bool = False):
         session.close()
         return
 
-    logger.info(f"🎯 LLM 蒸餾完成，成功選出 {len(distilled_items)} 則精選項目")
+    logger.info(f"🎯 LLM 蒸餾完成，成功選出 {len(distilled_items)} 則精選項目 (核心: {len(distilled_items)-len([i for i in distilled_items if i.get('is_serendipity')])} 則, 跨界: {len([i for i in distilled_items if i.get('is_serendipity')])} 則)")
 
     # Stage 2: speak-human-tw 無人值守語言洗滌器 (若啟用且 overview 非空)
     enable_humanizer = pipeline_settings.get("enable_two_stage_humanizer", True)
