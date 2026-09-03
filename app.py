@@ -1038,7 +1038,7 @@ class QuietRadarHandler(BaseHTTPRequestHandler):
             try:
                 from pipeline import SimpleBarkNotifier, format_newsletter_markdown
                 notifier = SimpleBarkNotifier()
-                if not notifier.device_key or notifier.device_key == "your_bark_key_here":
+                if not notifier.device_keys:
                     self._send_json({"status": "warning", "message": "⚠️ 尚未在 .env 中設定有效的 BARK_DEVICE_KEY！"})
                 else:
                     with open("sources.yaml", "r", encoding="utf-8") as f:

@@ -939,11 +939,17 @@ def split_markdown_for_bark(content: str, max_chunk_bytes: int = 2400) -> List[D
 class SimpleBarkNotifier:
     def __init__(self):
         self.server_url = os.getenv("BARK_SERVER_URL", "https://api.day.app").rstrip("/")
-        self.device_key = os.getenv("BARK_DEVICE_KEY", "")
+        raw_keys = os.getenv("BARK_DEVICE_KEY", "")
+        # 支援多組 Key：以逗號 (,)、分號 (;)、換行 (\n) 或空格分隔
+        self.device_keys = [
+            k.strip() for k in re.split(r'[,;\s]+', raw_keys)
+            if k.strip() and k.strip() != "your_bark_key_here"
+        ]
+        self.device_key = self.device_keys[0] if self.device_keys else ""
 
     def send_digest(self, items: List[Dict[str, Any]], template: Optional[Dict[str, Any]] = None, overview: str = "", full_markdown: Optional[str] = None) -> bool:
-        if not self.device_key or self.device_key == "your_bark_key_here":
-            logger.warning("⚠️ 未配置 BARK_DEVICE_KEY，跳過手機推播")
+        if not self.device_keys:
+            logger.warning("⚠️ 未配置有效的 BARK_DEVICE_KEY，跳過手機推播")
             return False
 
         if not items:
@@ -958,7 +964,6 @@ class SimpleBarkNotifier:
         overall_success = True
 
         # 1. 取得由 GUI 輸出結構框架 (output_template) 定義的各段推播標題模板
-        # 嚴格鐵律：預設全為空白，留空白就是什麼都不要，絕不自作主張自動補字或硬編碼！
         tpl = template or {}
         header_raw = tpl.get("header", "# ⚡ QuietRadar | 每日素材\n")
         header_first_line = re.sub(r'^[#>\s]+', '', header_raw.strip().split("\n")[0]).strip()
@@ -981,59 +986,64 @@ class SimpleBarkNotifier:
             return res.strip()
 
         # 2. 若為多段推播，採用倒序推送（例如 4 -> 3 -> 2 -> 1）
-        # 因為 iOS / Bark 通知中心後到的訊息會堆疊在最上方
-        # 倒序推送後，使用者解鎖手機由上往下閱讀正好是 1 -> 2 -> 3 -> 4 的自然閱讀順序！
         push_queue = list(reversed(chunks)) if len(chunks) > 1 else chunks
 
-        for idx, chunk_info in enumerate(push_queue):
-            page = chunk_info["page"]
-            total = chunk_info["total"]
-            c_type = chunk_info["type"]
-            c_md = chunk_info["markdown"]
+        # 3. 支援推送至多台 Bark 裝置（依序個別完整倒序推送，避免訊息交錯亂序）
+        total_devices = len(self.device_keys)
+        logger.info(f"📱 準備向 {total_devices} 台 Bark 裝置發送推播...")
 
-            if total == 1:
-                title = render_bark_title(bark_title_fmt, 1, 1)
-            elif chunk_info["is_first"]:
-                title = render_bark_title(bark_title_fmt, page, total)
-            elif c_type == "sources":
-                title = render_bark_title(bark_sources_fmt, page, total)
-            else:
-                title = render_bark_title(bark_continue_fmt, page, total)
+        for d_idx, d_key in enumerate(self.device_keys):
+            masked_key = d_key[:4] + "..." + d_key[-4:] if len(d_key) > 8 else "***"
+            logger.info(f"📲 [裝置 {d_idx + 1}/{total_devices}] 開始推播至 ({masked_key})...")
 
-            payload = {
-                "markdown": c_md,
-                "group": "QuietRadar",
-                "icon": "https://cdn-icons-png.flaticon.com/512/3208/3208726.png",
-                "sound": "calypso",
-                "isArchive": "1",
-                "device_key": self.device_key
-            }
+            for idx, chunk_info in enumerate(push_queue):
+                page = chunk_info["page"]
+                total = chunk_info["total"]
+                c_type = chunk_info["type"]
+                c_md = chunk_info["markdown"]
 
-            # 嚴格遵循使用者意志：留空白就是什麼都不要，不要幫我補！
-            if title:
-                payload["title"] = title
-                if chunk_info["is_first"]:
-                    payload["body"] = f"出刊時間：{now_str} | 本期精選 {len(items)} 則情報"
+                if total == 1:
+                    title = render_bark_title(bark_title_fmt, 1, 1)
+                elif chunk_info["is_first"]:
+                    title = render_bark_title(bark_title_fmt, page, total)
                 elif c_type == "sources":
-                    payload["body"] = f"共 {len(items)} 則精選引用來源"
+                    title = render_bark_title(bark_sources_fmt, page, total)
                 else:
-                    payload["body"] = f"第 {page}/{total} 頁"
+                    title = render_bark_title(bark_continue_fmt, page, total)
 
-            try:
-                with httpx.Client(timeout=15.0) as client:
-                    resp = client.post(f"{self.server_url}/push", json=payload)
-                    if resp.status_code == 200:
-                        lbl = f"標題: {title}" if title else f"第 {page}/{total} 頁 (無標題，純正文)"
-                        logger.info(f"📱 Bark 推播發送成功！[{lbl}]")
+                payload = {
+                    "markdown": c_md,
+                    "group": "QuietRadar",
+                    "icon": "https://cdn-icons-png.flaticon.com/512/3208/3208726.png",
+                    "sound": "calypso",
+                    "isArchive": "1",
+                    "device_key": d_key
+                }
+
+                if title:
+                    payload["title"] = title
+                    if chunk_info["is_first"]:
+                        payload["body"] = f"出刊時間：{now_str} | 本期精選 {len(items)} 則情報"
+                    elif c_type == "sources":
+                        payload["body"] = f"共 {len(items)} 則精選引用來源"
                     else:
-                        logger.error(f"❌ Bark 推播失敗: {resp.status_code} - {resp.text}")
-                        overall_success = False
-            except Exception as e:
-                logger.error(f"❌ Bark 連線異常: {e}")
-                overall_success = False
+                        payload["body"] = f"第 {page}/{total} 頁"
 
-            if len(push_queue) > 1 and idx < len(push_queue) - 1:
-                time.sleep(0.8)  # 多批次推送微幅間隔，確保手機通知時間戳嚴格井然
+                try:
+                    with httpx.Client(timeout=15.0) as client:
+                        resp = client.post(f"{self.server_url}/push", json=payload)
+                        if resp.status_code == 200:
+                            lbl = f"標題: {title}" if title else f"第 {page}/{total} 頁 (無標題，純正文)"
+                            logger.info(f"📱 [{masked_key}] 推播成功！[{lbl}]")
+                        else:
+                            logger.error(f"❌ [{masked_key}] 推播失敗: {resp.status_code} - {resp.text}")
+                            overall_success = False
+                except Exception as e:
+                    logger.error(f"❌ [{masked_key}] 連線異常: {e}")
+                    overall_success = False
+
+                if len(push_queue) > 1 and idx < len(push_queue) - 1:
+                    time.sleep(0.8)  # 多批次推送微幅間隔，確保手機通知時間戳嚴格井然
 
         return overall_success
 
