@@ -15,6 +15,14 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine, Column, Integer, String, DateTime
 from sqlalchemy.orm import declarative_base, sessionmaker
 
+# 確保 Windows 控制台輸出支援 UTF-8 (Emoji 與繁體中文)
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 # 載入 .env 環境變數
 load_dotenv()
 
@@ -38,26 +46,26 @@ class ProcessedArticle(Base):
     __tablename__ = "processed_articles"
 
     id = Column(Integer, primary_key=True, index=True)
-    sha256 = Column(String(64), unique=True, index=True, nullable=False)
-    title = Column(String(255))
-    url = Column(String(512))
-    source = Column(String(64))
-    processed_at = Column(DateTime, default=datetime.utcnow)
+    sha256_hash = Column(String(64), unique=True, index=True, nullable=False)
+    title = Column(String(512))
+    url = Column(String(1024))
+    user_id = Column(String(64), default="default")
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 Base.metadata.create_all(bind=engine)
 
 def is_article_processed(session, sha256_hash: str) -> bool:
-    return session.query(ProcessedArticle).filter(ProcessedArticle.sha256 == sha256_hash).first() is not None
+    return session.query(ProcessedArticle).filter(ProcessedArticle.sha256_hash == sha256_hash).first() is not None
 
 def record_processed_articles(session, articles: List[Dict[str, Any]]):
     for a in articles:
         if not is_article_processed(session, a["sha256"]):
             record = ProcessedArticle(
-                sha256=a["sha256"],
-                title=a["title"][:250],
-                url=a["url"][:500],
-                source=a["source_name"][:60],
-                processed_at=datetime.utcnow()
+                sha256_hash=a["sha256"],
+                title=a["title"][:500],
+                url=a["url"][:1000],
+                user_id="default",
+                created_at=datetime.utcnow()
             )
             session.add(record)
     session.commit()
