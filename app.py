@@ -1,5 +1,6 @@
 import os
 import sys
+import re
 import json
 import yaml
 import subprocess
@@ -73,9 +74,9 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
           <i class="fa-solid fa-vial"></i>
           <span>測試 OUTPUT (忽略防重)</span>
         </button>
-        <button onclick="triggerTestBark()" class="inline-flex items-center space-x-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium px-3 py-2 rounded-lg transition border border-slate-700 text-sm">
-          <i class="fa-solid fa-mobile-screen-button"></i>
-          <span>測試 Bark 推播</span>
+        <button onclick="triggerTestBark()" class="inline-flex items-center space-x-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium px-3 py-2 rounded-lg transition border border-slate-700 text-sm" title="將最新電子報 (latest_newsletter.md) 實際推送至您的 Bark 手機">
+          <i class="fa-solid fa-mobile-screen-button text-emerald-400"></i>
+          <span>推播最新電子報至 Bark</span>
         </button>
       </div>
     </div>
@@ -147,20 +148,37 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       <!-- 分頁 3: 提示詞微調與固定輸出框架 -->
       <div id="tab-prompt" class="hidden space-y-4">
         <div class="bg-dark-900 border border-slate-800 rounded-xl p-5 space-y-4">
-          <div>
+          <div class="space-y-2">
             <div class="flex items-center justify-between mb-1">
               <label class="block text-sm font-semibold text-emerald-400 flex items-center space-x-2">
-                <i class="fa-solid fa-pen-to-square"></i>
-                <span>交給 LLM 分析前的提示詞（可快速微調）</span>
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <span>情報雷達視角與自訂提示詞 (Prompt Templates)</span>
               </label>
-              <span class="text-[11px] text-slate-400">儲存於 sources.yaml</span>
+              <span class="text-[11px] font-mono text-slate-400">
+                目前啟用：<span id="active-template-badge" class="text-emerald-400 font-bold">載入中...</span>
+              </span>
             </div>
-            <p class="text-xs text-slate-400 mb-2">您可以在此微調角色定位、寫作語氣、篩選標準與 speak-human-tw 去 AI 味規則：</p>
+            
+            <!-- 快速抽換模板選擇欄 -->
+            <div class="flex flex-wrap items-center justify-between gap-2 p-2.5 bg-dark-950 border border-slate-800 rounded-lg">
+              <div class="flex items-center space-x-2">
+                <span class="text-xs text-slate-400 font-medium">切換視角模板：</span>
+                <select id="prompt-template-select" onchange="onTemplateChange()" class="bg-dark-900 border border-slate-700 text-xs text-slate-200 rounded px-2.5 py-1.5 font-mono focus:outline-none focus:border-emerald-500"></select>
+                <button onclick="applyActiveTemplate()" class="text-xs bg-emerald-500 hover:bg-emerald-600 text-dark-950 font-bold px-3 py-1.5 rounded transition shadow-sm">設為啟用</button>
+              </div>
+              <div class="flex items-center space-x-2">
+                <button onclick="saveAsNewTemplate()" class="text-xs bg-dark-900 hover:bg-slate-800 text-slate-300 border border-slate-700 px-3 py-1.5 rounded transition">
+                  <i class="fa-solid fa-plus mr-1"></i>另存為新模板
+                </button>
+              </div>
+            </div>
+
+            <p class="text-xs text-slate-400 mb-1">編輯當前模板的分析視角、評估協定或專案審查準則：</p>
             <textarea id="custom-prompt" rows="9" class="w-full bg-dark-950 border border-slate-800 rounded-lg p-3 text-xs text-slate-200 font-mono focus:border-emerald-500 focus:outline-none"></textarea>
           </div>
 
-          <button onclick="savePrompt()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-dark-950 font-bold py-2 rounded-lg text-sm transition">
-            儲存自訂提示詞
+          <button onclick="saveCurrentTemplate()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-dark-950 font-bold py-2 rounded-lg text-sm transition">
+            儲存當前模板內容
           </button>
 
           <!-- 標題前置漏斗與內文研讀深度設定 -->
@@ -168,20 +186,29 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
             <div class="flex items-center justify-between">
               <label class="block text-sm font-semibold text-amber-400 flex items-center space-x-2">
                 <i class="fa-solid fa-filter text-amber-400"></i>
-                <span>標題前置漏斗過濾與研讀深度設定</span>
+                <span>標題前置漏斗過濾、兩階段洗滌與研讀深度設定</span>
               </label>
-              <span class="text-[11px] text-amber-400/80 font-mono">Title Funnel Filter</span>
+              <span class="text-[11px] text-amber-400/80 font-mono">Title Funnel & Humanizer</span>
             </div>
-            <p class="text-xs text-slate-400">爬取時先審查標題：命中排斥詞立即跳過不讀正文，優先放行符合「一人公司與雲端收費站」主題之文章：</p>
+            <p class="text-xs text-slate-400">控制標題前置過濾條件與 Stage 2 speak-human-tw 語言洗滌模組：</p>
             
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
               <div class="space-y-1">
                 <label class="block text-[11px] font-mono text-slate-300">
                   標題前置漏斗開關
                 </label>
                 <div class="flex items-center space-x-2 bg-dark-950 border border-slate-800 rounded-lg p-2">
                   <input type="checkbox" id="cfg-title-filter-enabled" class="accent-amber-500 w-4 h-4 cursor-pointer">
-                  <label for="cfg-title-filter-enabled" class="text-xs text-slate-300 cursor-pointer">啟用標題漏斗（不符主題直接跳過）</label>
+                  <label for="cfg-title-filter-enabled" class="text-xs text-slate-300 cursor-pointer">啟用標題漏斗</label>
+                </div>
+              </div>
+              <div class="space-y-1">
+                <label class="block text-[11px] font-mono text-slate-300">
+                  兩階段語言洗滌 (Stage 2)
+                </label>
+                <div class="flex items-center space-x-2 bg-dark-950 border border-slate-800 rounded-lg p-2">
+                  <input type="checkbox" id="cfg-two-stage-humanizer" class="accent-emerald-500 w-4 h-4 cursor-pointer">
+                  <label for="cfg-two-stage-humanizer" class="text-xs text-emerald-400 cursor-pointer">啟用 speak-human-tw</label>
                 </div>
               </div>
               <div class="space-y-1">
@@ -189,8 +216,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
                   漏斗過濾模式
                 </label>
                 <select id="cfg-title-filter-mode" class="w-full bg-dark-950 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 focus:border-amber-500 focus:outline-none">
-                  <option value="smart">Smart 智慧相關度排序（殺黑名單，優先挑高分）</option>
-                  <option value="strict">Strict 嚴格模式（標題必須明確命中關注關鍵字）</option>
+                  <option value="smart">Smart 智慧相關度（殺黑名單，優先高分）</option>
+                  <option value="strict">Strict 嚴格模式（明確命中關鍵字）</option>
                 </select>
               </div>
             </div>
@@ -262,6 +289,31 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
                   5. 底部結尾附註 (Footer) <span class="text-slate-500">支援 {time}, {count}</span>
                 </label>
                 <textarea id="tpl-footer" rows="2" oninput="updateTemplatePreview()" class="w-full bg-dark-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 font-mono focus:border-sky-500 focus:outline-none"></textarea>
+              </div>
+
+              <!-- 6. Bark 手機推播標題格式控制 -->
+              <div class="border-t border-slate-800/80 pt-3 space-y-2.5">
+                <div class="flex items-center justify-between">
+                  <label class="block text-xs font-semibold text-emerald-400 flex items-center space-x-1.5">
+                    <i class="fa-solid fa-mobile-screen"></i>
+                    <span>6. Bark 手機推播卡片標題自訂格式（完全由框架控制，非程式硬編碼）</span>
+                  </label>
+                  <span class="text-[10px] text-slate-400 font-mono">支援 {title}, {page}, {total}, {count}, {time}</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label class="block text-[11px] font-mono text-slate-300 mb-1">首頁/首段卡片標題</label>
+                    <input id="tpl-bark-title" class="w-full bg-dark-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 font-mono focus:border-sky-500 focus:outline-none" placeholder="預設空白（無標題，可填 {title} 等）">
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-mono text-slate-300 mb-1">分頁續接卡片標題</label>
+                    <input id="tpl-bark-continue" class="w-full bg-dark-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 font-mono focus:border-sky-500 focus:outline-none" placeholder="預設空白（無標題，可填 ({page}/{total}) 等）">
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-mono text-slate-300 mb-1">引用來源卡片標題</label>
+                    <input id="tpl-bark-sources" class="w-full bg-dark-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 font-mono focus:border-sky-500 focus:outline-none" placeholder="預設空白（無標題，可填 ({page}/{total}) 等）">
+                  </div>
+                </div>
               </div>
 
               <button onclick="saveTemplate()" class="w-full bg-sky-500 hover:bg-sky-600 text-dark-950 font-bold py-2 rounded-lg text-sm transition shadow-lg shadow-sky-500/20">
@@ -355,6 +407,13 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         <label class="block text-xs text-slate-400 mb-1">RSS / Feed URL</label>
         <input id="new-src-url" placeholder="https://example.com/rss" class="w-full bg-dark-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500">
       </div>
+      <div>
+        <label class="block text-xs text-slate-400 mb-1">信源分類與定位 (Category)</label>
+        <select id="new-src-cat" class="w-full bg-dark-950 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-emerald-500">
+          <option value="curated_rss">🎯 核心業務信源 (curated_rss - 經受讀者關注主題嚴格審查)</option>
+          <option value="cross_domain_ideas">✨ 跨界漫遊靈感 (cross_domain_ideas - 槓鈴特赦漏斗，異花授粉)</option>
+        </select>
+      </div>
       <div class="flex justify-end space-x-2 pt-2">
         <button onclick="closeAddSourceModal()" class="px-4 py-2 text-xs text-slate-400 hover:text-white">取消</button>
         <button onclick="confirmAddSource()" class="px-4 py-2 text-xs bg-emerald-500 hover:bg-emerald-600 text-dark-950 font-bold rounded-lg">確認新增</button>
@@ -396,13 +455,16 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       document.getElementById('profile-interests').value = (data.profile.interests || []).join('\n');
       document.getElementById('profile-negative').value = (data.profile.negative_topics || []).join('\n');
 
-      // 渲染 Prompt
-      document.getElementById('custom-prompt').value = data.custom_prompt || '';
+      // 渲染 Prompt & 模板清單
+      await loadPrompts();
 
       // 渲染研讀深度與候選池設定
       const ps = data.pipeline_settings || {};
       if (document.getElementById('cfg-title-filter-enabled')) {
         document.getElementById('cfg-title-filter-enabled').checked = ps.title_filter_enabled !== false;
+      }
+      if (document.getElementById('cfg-two-stage-humanizer')) {
+        document.getElementById('cfg-two-stage-humanizer').checked = ps.enable_two_stage_humanizer !== false;
       }
       if (document.getElementById('cfg-title-filter-mode')) {
         document.getElementById('cfg-title-filter-mode').value = ps.title_filter_mode || 'smart';
@@ -417,6 +479,9 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       document.getElementById('tpl-group').value = tpl.group_header || '## 📰 【{source}】({count} 則)';
       document.getElementById('tpl-item').value = tpl.item_format || '{index}. [{title}]({url})';
       document.getElementById('tpl-footer').value = tpl.footer || '---\n*本電子報由 QuietRadar 依據讀者關注特徵自動蒸餾產出，遵守 speak-human-tw 去 AI 味與台灣在地化規範。*';
+      document.getElementById('tpl-bark-title').value = tpl.bark_title || '';
+      document.getElementById('tpl-bark-continue').value = tpl.bark_continuation_title || '';
+      document.getElementById('tpl-bark-sources').value = tpl.bark_sources_title || '';
       updateTemplatePreview();
 
       // 渲染 Settings
@@ -427,6 +492,82 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
       loadNewsletter();
       fetchLogs();
+    }
+
+    let promptTemplatesCache = {};
+    let activeTemplateName = 'solopreneur';
+
+    async function loadPrompts() {
+      try {
+        const res = await fetch('/api/prompts');
+        const data = await res.json();
+        activeTemplateName = data.active || 'solopreneur';
+        promptTemplatesCache = {};
+        const sel = document.getElementById('prompt-template-select');
+        sel.innerHTML = '';
+        
+        (data.templates || []).forEach(t => {
+          promptTemplatesCache[t.name] = t.content;
+          const opt = document.createElement('option');
+          opt.value = t.name;
+          opt.textContent = t.name + (t.name === activeTemplateName ? ' (啟用中)' : '');
+          sel.appendChild(opt);
+        });
+
+        sel.value = activeTemplateName;
+        document.getElementById('active-template-badge').textContent = activeTemplateName;
+        document.getElementById('custom-prompt').value = promptTemplatesCache[activeTemplateName] || '';
+      } catch (e) {
+        console.error('Failed to load prompts:', e);
+      }
+    }
+
+    function onTemplateChange() {
+      const sel = document.getElementById('prompt-template-select');
+      const selectedName = sel.value;
+      if (promptTemplatesCache[selectedName]) {
+        document.getElementById('custom-prompt').value = promptTemplatesCache[selectedName];
+      }
+    }
+
+    async function applyActiveTemplate() {
+      const sel = document.getElementById('prompt-template-select');
+      const selectedName = sel.value;
+      await fetch('/api/prompts/select', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ template_name: selectedName })
+      });
+      activeTemplateName = selectedName;
+      await loadPrompts();
+      alert(`已成功將【${selectedName}】設為當前執行啟用模板！`);
+    }
+
+    async function saveCurrentTemplate() {
+      const sel = document.getElementById('prompt-template-select');
+      const currentName = sel.value || 'solopreneur';
+      const content = document.getElementById('custom-prompt').value;
+      await fetch('/api/prompts/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ template_name: currentName, content: content })
+      });
+      promptTemplatesCache[currentName] = content;
+      alert(`模板【${currentName}】內容已成功儲存！`);
+    }
+
+    async function saveAsNewTemplate() {
+      const newName = prompt('請輸入新模板的英文代號名稱（例如：marketing、tech_lead、investor）：');
+      if (!newName || !newName.trim()) return;
+      const cleanName = newName.trim().replace(/[^a-zA-Z0-9_\-]/g, '_');
+      const content = document.getElementById('custom-prompt').value;
+      await fetch('/api/prompts/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ template_name: cleanName, content: content, set_active: true })
+      });
+      await loadPrompts();
+      alert(`新模板【${cleanName}】已建立並設為啟用！`);
     }
 
     function updateTemplatePreview() {
@@ -441,7 +582,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       let parts = [];
       if (header.trim()) parts.push(header.trim());
       if (overview_rendered.trim()) parts.push(overview_rendered.trim());
-      if (group.trim() || item1.trim()) parts.push(`${group}\n${item1}\n${item2}`.trim());
+      if (group.trim() || item1.trim()) parts.push(`${group}\n\n${item1}\n\n${item2}`.trim());
       if (footer.trim()) parts.push(footer.trim());
 
       const fullMarkdown = parts.join('\n\n');
@@ -449,33 +590,29 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     }
 
     async function saveTemplate() {
+      const headerVal = document.getElementById('tpl-header').value;
       const output_template = {
-        header: document.getElementById('tpl-header').value,
+        header: headerVal,
         overview: document.getElementById('tpl-overview').value,
         group_header: document.getElementById('tpl-group').value,
         item_format: document.getElementById('tpl-item').value,
-        footer: document.getElementById('tpl-footer').value
+        footer: document.getElementById('tpl-footer').value,
+        bark_title: document.getElementById('tpl-bark-title').value.trim(),
+        bark_continuation_title: document.getElementById('tpl-bark-continue').value.trim(),
+        bark_sources_title: document.getElementById('tpl-bark-sources').value.trim()
       };
       await fetch('/api/template', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(output_template)
       });
-      alert('輸出結構框架模板已成功儲存至 sources.yaml！');
-    }
-
-    async function savePrompt() {
-      const custom_prompt = document.getElementById('custom-prompt').value;
-      await fetch('/api/prompt', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ custom_prompt })
-      });
-      alert('自訂提示詞已成功更新儲存至 sources.yaml！');
+      await loadNewsletter();
+      alert('輸出結構框架模板已成功儲存至 sources.yaml，並已即時以新版型重新渲染最新電子報！');
     }
 
     async function savePipelineSettings() {
       const title_filter_enabled = document.getElementById('cfg-title-filter-enabled').checked;
+      const enable_two_stage_humanizer = document.getElementById('cfg-two-stage-humanizer').checked;
       const title_filter_mode = document.getElementById('cfg-title-filter-mode').value;
       const snippet_len = parseInt(document.getElementById('cfg-snippet-len').value, 10);
       const max_pool = parseInt(document.getElementById('cfg-max-pool').value, 10);
@@ -484,12 +621,13 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title_filter_enabled,
+          enable_two_stage_humanizer,
           title_filter_mode,
           content_snippet_length: isNaN(snippet_len) ? 1000 : snippet_len,
           max_candidate_pool: isNaN(max_pool) ? 10 : max_pool
         })
       });
-      alert('已成功儲存標題前置漏斗與研讀深度設定！');
+      alert('已成功儲存標題前置漏斗、語言洗滌與研讀深度設定！');
     }
 
     function renderSources(sources) {
@@ -497,24 +635,39 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       container.innerHTML = '';
       sources.forEach((src, idx) => {
         const item = document.createElement('div');
-        item.className = 'bg-dark-900 border border-slate-800 rounded-xl p-4 flex items-center justify-between hover:border-slate-700 transition';
+        item.className = 'bg-dark-900 border border-slate-800 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-slate-700 transition';
+        const isCross = src.category === 'cross_domain_ideas';
         item.innerHTML = `
-          <div class="flex items-center space-x-3 overflow-hidden">
-            <button onclick="toggleSource(${idx})" class="text-lg ${src.enabled ? 'text-emerald-400' : 'text-slate-600'}">
+          <div class="flex items-center space-x-3 overflow-hidden flex-1">
+            <button onclick="toggleSource(${idx})" class="text-lg ${src.enabled ? 'text-emerald-400' : 'text-slate-600'} flex-shrink-0" title="${src.enabled ? '點擊停用' : '點擊啟用'}">
               <i class="fa-solid ${src.enabled ? 'fa-toggle-on' : 'fa-toggle-off'} text-2xl"></i>
             </button>
             <div class="truncate">
-              <h4 class="font-bold text-sm text-slate-200 truncate ${!src.enabled ? 'line-through text-slate-500' : ''}">${src.name}</h4>
+              <div class="flex items-center space-x-2">
+                <h4 class="font-bold text-sm text-slate-200 truncate ${!src.enabled ? 'line-through text-slate-500' : ''}">${src.name}</h4>
+                ${isCross ? '<span class="text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20 px-1.5 py-0.2 rounded font-mono">✨ 跨界漫遊 (特赦漏斗)</span>' : '<span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.2 rounded font-mono">🎯 核心業務 (主題審查)</span>'}
+              </div>
               <p class="text-xs text-slate-500 truncate font-mono">${src.url}</p>
             </div>
           </div>
-          <div class="flex items-center space-x-2">
-            <span class="text-[10px] px-2 py-0.5 rounded-full ${src.category === 'curated_rss' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'}">${src.category}</span>
-            <button onclick="deleteSource(${idx})" class="text-slate-500 hover:text-rose-400 p-1.5"><i class="fa-solid fa-trash-can"></i></button>
+          <div class="flex items-center space-x-2 flex-shrink-0">
+            <!-- 手動切換 curated_rss 與 cross_domain_ideas -->
+            <select onchange="changeSourceCategory(${idx}, this.value)" class="bg-dark-950 border border-slate-700 text-xs text-slate-200 rounded px-2.5 py-1.5 font-mono focus:outline-none focus:border-emerald-500 cursor-pointer" title="手動切換信源分類與槓鈴特赦屬性">
+              <option value="curated_rss" ${!isCross ? 'selected' : ''}>🎯 curated_rss (核心)</option>
+              <option value="cross_domain_ideas" ${isCross ? 'selected' : ''}>✨ cross_domain_ideas (跨界)</option>
+            </select>
+            <button onclick="deleteSource(${idx})" class="text-slate-500 hover:text-rose-400 p-1.5" title="刪除此來源"><i class="fa-solid fa-trash-can"></i></button>
           </div>
         `;
         container.appendChild(item);
       });
+    }
+
+    async function changeSourceCategory(idx, newCategory) {
+      const src = currentConfig.sources[idx];
+      src.category = newCategory;
+      src.serendipity = (newCategory === 'cross_domain_ideas');
+      await saveSources();
     }
 
     async function toggleSource(idx) {
@@ -541,6 +694,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     function openAddSourceModal() {
       document.getElementById('new-src-name').value = '';
       document.getElementById('new-src-url').value = '';
+      document.getElementById('new-src-cat').value = 'curated_rss';
       document.getElementById('add-modal').classList.remove('hidden');
     }
 
@@ -551,8 +705,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     async function confirmAddSource() {
       const name = document.getElementById('new-src-name').value.trim();
       const url = document.getElementById('new-src-url').value.trim();
+      const category = document.getElementById('new-src-cat').value;
       if (!name || !url) return alert('請填寫完整資訊');
-      currentConfig.sources.push({ name, url, category: 'curated_rss', enabled: true });
+      const serendipity = (category === 'cross_domain_ideas');
+      currentConfig.sources.push({ name, url, category, enabled: true, serendipity });
       closeAddSourceModal();
       await saveSources();
     }
@@ -695,6 +851,31 @@ class QuietRadarHandler(BaseHTTPRequestHandler):
                     content = f.read()
             self._send_json({"content": content})
 
+        elif path == "/api/prompts":
+            prompts_dir = "prompts"
+            os.makedirs(prompts_dir, exist_ok=True)
+            with open("sources.yaml", "r", encoding="utf-8") as f:
+                cfg = yaml.safe_load(f)
+            active_tpl = cfg.get("pipeline_settings", {}).get("active_prompt_template", "solopreneur")
+            
+            templates = []
+            for fn in sorted(os.listdir(prompts_dir)):
+                if fn.endswith(".md"):
+                    tpl_name = fn[:-3]
+                    fpath = os.path.join(prompts_dir, fn)
+                    try:
+                        with open(fpath, "r", encoding="utf-8") as tf:
+                            content = tf.read()
+                        templates.append({"name": tpl_name, "content": content})
+                    except Exception:
+                        pass
+            
+            if not templates:
+                cur_prompt = cfg.get("custom_prompt", "")
+                templates.append({"name": "solopreneur", "content": cur_prompt})
+                
+            self._send_json({"active": active_tpl, "templates": templates})
+
         else:
             self.send_response(404)
             self.end_headers()
@@ -730,12 +911,61 @@ class QuietRadarHandler(BaseHTTPRequestHandler):
                 yaml.dump(cfg, f, allow_unicode=True, sort_keys=False)
             self._send_json({"status": "ok"})
 
+        elif path == "/api/prompts/select":
+            tpl_name = payload.get("template_name", "solopreneur")
+            with open("sources.yaml", "r", encoding="utf-8") as f:
+                cfg = yaml.safe_load(f)
+            if "pipeline_settings" not in cfg:
+                cfg["pipeline_settings"] = {}
+            cfg["pipeline_settings"]["active_prompt_template"] = tpl_name
+            with open("sources.yaml", "w", encoding="utf-8") as f:
+                yaml.dump(cfg, f, allow_unicode=True, sort_keys=False)
+            self._send_json({"status": "ok", "active": tpl_name})
+
+        elif path == "/api/prompts/save":
+            tpl_name = payload.get("template_name", "custom").strip()
+            content = payload.get("content", "")
+            set_active = payload.get("set_active", False)
+            
+            prompts_dir = "prompts"
+            os.makedirs(prompts_dir, exist_ok=True)
+            fpath = os.path.join(prompts_dir, f"{tpl_name}.md")
+            with open(fpath, "w", encoding="utf-8") as f:
+                f.write(content)
+                
+            with open("sources.yaml", "r", encoding="utf-8") as f:
+                cfg = yaml.safe_load(f)
+            if set_active:
+                if "pipeline_settings" not in cfg:
+                    cfg["pipeline_settings"] = {}
+                cfg["pipeline_settings"]["active_prompt_template"] = tpl_name
+            cfg["custom_prompt"] = content
+            with open("sources.yaml", "w", encoding="utf-8") as f:
+                yaml.dump(cfg, f, allow_unicode=True, sort_keys=False)
+            self._send_json({"status": "ok", "template_name": tpl_name})
+
         elif path == "/api/template":
             with open("sources.yaml", "r", encoding="utf-8") as f:
                 cfg = yaml.safe_load(f)
             cfg["output_template"] = payload
             with open("sources.yaml", "w", encoding="utf-8") as f:
                 yaml.dump(cfg, f, allow_unicode=True, sort_keys=False)
+
+            # 關鍵修復：儲存新模板後，立即讀取 latest_distilled.json 重新渲染 latest_newsletter.md
+            if os.path.exists("latest_distilled.json"):
+                try:
+                    with open("latest_distilled.json", "r", encoding="utf-8") as df:
+                        d_data = json.load(df)
+                    from pipeline import generate_newsletter_file
+                    generate_newsletter_file(
+                        d_data.get("items", []),
+                        filepath="latest_newsletter.md",
+                        template=payload,
+                        overview=d_data.get("overview", "")
+                    )
+                except Exception as e:
+                    print(f"Error re-rendering newsletter with new template: {e}")
+
             self._send_json({"status": "ok"})
 
         elif path == "/api/pipeline_settings":
@@ -794,21 +1024,40 @@ class QuietRadarHandler(BaseHTTPRequestHandler):
 
         elif path == "/api/test_bark":
             try:
-                from pipeline import SimpleBarkNotifier
+                from pipeline import SimpleBarkNotifier, format_newsletter_markdown
                 notifier = SimpleBarkNotifier()
                 if not notifier.device_key or notifier.device_key == "your_bark_key_here":
                     self._send_json({"status": "warning", "message": "⚠️ 尚未在 .env 中設定有效的 BARK_DEVICE_KEY！"})
                 else:
-                    test_items = [{
-                        "title": "⚡ QuietRadar 連線測試：推播格式正常",
-                        "original_url": "https://github.com/Eujenz/QuietRadar",
-                        "source_name": "QuietRadar 系統測試"
-                    }]
-                    success = notifier.send_digest(test_items, overview="這是一則來自 QuietRadar 控制台的即時推播測試訊息。")
-                    if success:
-                        self._send_json({"status": "ok", "message": "📱 Bark 測試推播已發送！請檢查手機。"})
+                    with open("sources.yaml", "r", encoding="utf-8") as f:
+                        cfg = yaml.safe_load(f)
+                    cur_tpl = cfg.get("output_template", {})
+
+                    if os.path.exists("latest_distilled.json"):
+                        with open("latest_distilled.json", "r", encoding="utf-8") as df:
+                            d_data = json.load(df)
+                        items = d_data.get("items", [])
+                        overview = d_data.get("overview", "")
+                        # 依據當前最新 sources.yaml 中的 output_template 即時重新格式化！
+                        fresh_content = format_newsletter_markdown(items, template=cur_tpl, overview=overview)
+                        with open("latest_newsletter.md", "w", encoding="utf-8") as f:
+                            f.write(fresh_content)
+                        success = notifier.send_digest(items, template=cur_tpl, overview=overview, full_markdown=fresh_content)
+                    elif os.path.exists("latest_newsletter.md"):
+                        with open("latest_newsletter.md", "r", encoding="utf-8") as f:
+                            content = f.read()
+                        count_match = re.search(r'本期精選：(\d+)\s*則', content)
+                        item_count = int(count_match.group(1)) if count_match else 1
+                        dummy_items = [{"title": "newsletter", "original_url": "", "source_name": ""}] * item_count
+                        success = notifier.send_digest(dummy_items, template=cur_tpl, full_markdown=content)
                     else:
-                        self._send_json({"status": "warning", "message": "❌ Bark 發送失敗，請檢查伺服器或 Key 設定。"})
+                        self._send_json({"status": "warning", "message": "⚠️ 尚未生成 latest_newsletter.md 電子報檔案，請先執行一次雷達或點擊「測試 OUTPUT」！"})
+                        return
+
+                    if success:
+                        self._send_json({"status": "ok", "message": "📱 已套用最新自訂版型並成功推播至您的 Bark 手機！"})
+                    else:
+                        self._send_json({"status": "warning", "message": "❌ Bark 推播失敗，請檢查伺服器或 Key 設定。"})
             except Exception as e:
                 self._send_json({"status": "error", "message": f"測試異常: {str(e)}"}, status=500)
 
