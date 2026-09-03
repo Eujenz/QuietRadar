@@ -1,15 +1,9 @@
 {
-  "overview": "## 算力成了電力，工作流成了自來水\n\n這一週最值得放在心上的訊號，其實不是哪家模型又跑出新高分，而是 OpenAI 悄悄在為自己打造一款名為 Jalapeño 的自研推理晶片。這動作的潛台詞很直接：算力這件事正在大廠內部被進一步壓成大宗商品。SK 海力士先前判斷記憶體短缺會一路燒到 2030 年 [[11]](http://www.geekpark.net/news/369555) [[6]](http://www.geekpark.net/news/369559)，AI 基礎設施正從過去那種稀缺品，慢慢轉變成像公共管線一樣的存在。同時間，騰訊把混元 Hy4 preview 的快取命中價直接砍到 0.3 元人民幣／百萬 token，等於把新創公司過去最自豪的成本紅利也一併閥值化 [[13]](http://www.geekpark.net/news/369550)。對一人公司來說，這談不上壞消息，反而是一道很明確的定價錨位移訊號：當「能不能跑 AI」已經變得跟「能不能上網」差不多等級，真正的瓶頸便從「模型存取」上移到了「上下文調度與業務工作流」上。\n\n極客公園的編輯團隊把千問改造成一個會自己蹲點 GitHub、抓 HuggingFace、寫新聞稿的 AI 實習生，背後是一套結合公司權重、事件權重與信源權重的評分閾值，再串上自動撰稿的工作流 [[9]](http://www.geekpark.net/news/369517)。這套構造的看點在於它把散落在九家廠商倉庫裡的私有上下文，翻譯成了可以重複使用的決策輸出。WorkBuddy 與阿里萬相點睛的案例骨子裡是同一件事：阿里媽媽不再用「裝修、家具、地板」這種表面標籤去幫床找受眾，而是穿透到「這群人為了遊戲體驗願意改造房間」這種深層意圖，最後把林氏家居的布藝床推進一個 80% 新客、加購成本不到原本三分之一的藍海 [[3]](http://www.geekpark.net/news/369777) [[1]](http://www.geekpark.net/news/369767)。模型本身已經不是答案，比較像是引擎——一人公司真正能拿去收費的，是圍繞這顆引擎所打造的上下文作業系統，以及那層把表面需求翻譯成真實意圖的中介。\n\n另一條值得注意的暗線，藏在 Anthropic 釋出的 Model Hardware Standard 裡。這套標準試圖讓不同廠商的機械臂、錄音裝置、眼鏡工牌，都能在一套共通語言下被 Agent 調度 [[10]](http://www.geekpark.net/news/369556)。Agent 之間的競爭重心，也因此從「誰的模型比較聰明」下移到「誰擁有跨硬體、跨軟體的調度介面」。一人公司不必自己去造硬體，但可以挑一個垂直場景，把這些半成品設備串成一套可被訂閱的私有工作流——例如把夜裡翻身次數、廚房油煙感測器、倉儲機械臂的異常截圖，餵給一個會隨事件動態調整參數的小型決策代理，這也是 Fullive.ai Somni 把「監測」升級成「工作流實驗」背後同一條邏輯 [[2]](http://www.geekpark.net/news/369768)。\n\n## 從六個案例看一人公司該怎麼卡位\n\n阿里萬相點睛這個案例最值得拆開來看 [[3]](http://www.geekpark.net/news/369777)。它做對了一件關鍵的事：放棄「裝修＝床」這種常識標籤，改用「意圖遷徙＋場景重構」去定位非典型受眾，最後把 ROAS 拉出一條全新的曲線。映射到一人公司身上，代表我們得放棄做「通用 AI 摘要器」、「通用翻譯器」這種隨附套裝一定會抹殺掉的淺層工具，改去做「跨平台資料轉譯的垂直中間層」。舉例來說，可以替中小電商打造一套「商品意圖翻譯引擎」：吃下商家既有的 SKU 與訂單，輸出「這款床其實在打電競房場景」這類非顯而易見的投放建議，再把結果自動餵回各個廣告平台的 API，最後按建議帶來的增量 GMV 抽佣。這條路的優勢在於 Micro-TAM、跨平台中立性，以及對套裝免疫——因為巨頭的廣告後台永遠只為自己主站的邏輯優化，不會為單一品類的非典型人群重新設計模型。\n\n千問作為「編輯部 AI 實習生」的建構過程 [[9]](http://www.geekpark.net/news/369517)，從中可以拆出三個值得學習的層次：可調權重的評分系統、跨來源擷取（GitHub、HuggingFace、媒體）、以及自動任務編排（寫稿、推送至飛書）。它的本質不是「更聰明的 ChatGPT」，而是一個「會自己排隊的工讀生」。對一人公司來說，重點不是再多寫一個 ChatGPT Wrapper，而是把這種「多源頭監聽＋閾值觸發＋跨系統輸出」的管線封裝成 SaaS 模組，賣給每天被海量雜訊淹沒的律師事務所、獵頭公司、跨境電商買手。OpenAI 內部三代 Agent「文明」的覆滅經驗也提醒我們 [[7]](http://www.geekpark.net/news/369610) [[8]](http://www.geekpark.net/news/369609)，Agent 的自主性越強，就越需要嚴格的權限邊界與任務邊界。這恰好是一人公司能夠勝任的工作：為客戶的私有業務流畫清楚哪些交給 Agent、哪些保留人類最終確認權的職責邊界。\n\n再往跨界借一點靈感。a16z 合夥人 Andy McCall 提出的「燈塔 vs. 圈地」框架 [[37]](https://www.woshipm.com/ai/6459294.html)，搭配勃肯鞋的「三不做」哲學 [[39]](https://www.businessweekly.com.tw/Archive/Article/Index?StrId=7014640)，剛好可以疊在一起看。a16z 的核心觀點是：企業採購時買的不是未來，而是「證明」或「數學」——高風險新品類需要燈塔客戶做社會證明，能直接替代現有流程的產品則靠效率與成本推動成交。勃肯鞋 250 年只做三件事：經典外型不退流行、堅持可維修、不為短期營收犧牲品牌純度，最後在 Hoka 與 Adidas 增速放緩的環境下，依然交出 15% 的營收成長。把兩者疊在一起，一人公司若要做「決策層中介軟體」，得先用 2 到 3 家產業燈塔客戶（哪怕免費或低價）換取社會證明，再轉向「圈地模式」複製銷售。勃肯的經驗則提醒我們，定價權的源頭不在 SKU 數量，而是「不做什麼」的紀律——放棄通用場景、拒絕平台補貼的誘惑、把資源壓在可維護、可升級、可被客戶私有部署的窄度上，才能穿越巨頭隨附套裝的週期。\n\n農業領域的兩個案例同樣值得參考。花農把花卉廢棄物轉成胡蘆巴生長配方 [[38]](https://agritech-foresight.atri.org.tw/article/contents/6301)，以及 LiDAR 精準疏伐的應用 [[44]](https://agritech-foresight.atri.org.tw/article/contents/6300)，表面上是農業故事，背後的底層邏輯其實是「把別人眼中的廢料或噪訊，翻譯成別人不會處理的價值」——這跟阿里媽媽把電競玩家翻譯成家俱受眾是同一招。一人公司可以切入企業 ESG 報告或碳盤查這個垂直瓶頸：吃下客戶的物流、採購、辦公能耗等「數據廢料」，用領域模型翻譯成合規可申報的指標，因為巨頭 ERP 永遠不會為一家年收 5 億人民幣的工廠重新設計碳排放欄位。工研院的小番茄採摘機器人 [[41]](https://agritech-foresight.atri.org.tw/article/contents/6305) 則提醒一件事：硬體進步正在讓垂直場域自動化方案的「最低可行規模」持續下探，一人公司不一定要自己造整台機器人，但可以賣「機器人異常截圖→人工快篩決策」這種決策層中介軟體，按截留的異常工單收費。\n\n網路金融領域的「活動營運地圖」 [[40]](https://www.woshipm.com/operate/6458475.html) 也提供了可借鏡的紀律。它把活動設計抽象成「使用者在哪、要做什麼行為、活動機制如何匹配」，而不是盲目發紅包。一人公司做 B2B SaaS 時，可以直接套用這套節點地圖：把客戶的使用者旅程切成「認知→首次體驗→首次交易→留存」四個節點，再為每個節點配對一種干預活動，例如新簽帳號的「模擬體驗」、首次付費前的「退款保證」、留存期的「異常告警月度報告」。這種把活動設計抽象成節點對應關係的紀律，正是以 Web/API 交付的 SaaS 從「工具思維」走向「增長產品」的臨門一腳。\n\n最後要特別警惕的是孫宇晨的「框架戰」教訓 [[46]](https://www.woshipm.com/share/6459155.html)：當你在巨頭定義好的框架裡爭論，註定會輸。映射到一人公司，就是不要在「ChatGPT 套殼」、「AI 寫作助手」這種已經被巨頭收編的框架裡做任何深度投入。我們得主動定義自己的框架——例如把產品定位從「更快生成文案」重新定義為「讓 50 歲餐飲老闆把每天的進銷存翻譯成可被會計師直接接管的合規工作流」這種沒有對手會用同一語言描述的垂直瓶頸。\n\n## 三週內跑出可收費的 AI 原型\n\n第一週先挑一個具備「高頻、高損失、無法繞過」三特性的垂直瓶頸（候選清單包括：跨境電商的非典型受眾挖掘、本地服務業的異常工單截留、律師事務所的跨案由文件關聯）。用 LangChain 或瀏覽器自動化管線把「多源擷取＋閾值評分＋自動輸出」的骨架搭起來，驗證每天能不能穩定產出 3 到 5 條可執行建議。第二週接入 1 到 2 家產業燈塔客戶做免費或低價試點，套用 a16z 的社會證明邏輯，要求客戶授權脫敏資料回流，用以證明建議帶來的可量化增量（節省工時、新增 GMV、或降低客訴）。第三週把計費模式鎖死在「按截留的異常工單」或「按建議帶來的增量抽佣」，拒絕任何按座位、按使用次數的大宗商品化收費，避免被巨頭的價格戰掃到。\n\n在這個算力正在被壓成電力、模型正在被壓成自來水的新階段 [[11]](http://www.geekpark.net/news/369555) [[42]](https://www.businessweekly.com.tw/Archive/Article/Index?StrId=7014641)，一人公司最大的資產早就不是程式碼，而是「客戶的私有工作流資料」加上「我們為它畫下的職責邊界」。巨頭可以開源模型、可以補貼算力、可以免費隨附摘要器，但他們永遠不會用我們的紀律去理解一家年收 5 億的工廠的碳盤查邏輯，也不會為一間 30 人的律所的非典型案由關聯重新訓練一套模型。守住這種「窄、深、不可被隨附」的垂直瓶頸，才是 ARR 真正能穩穩累積下來的唯一路徑。",
+  "overview": "【當 Agent 開始組裝世界：廉價模型背後的決策紅利】\n\n如果把 2024 到 2025 的 LLM 狂潮比作一場喧鬧的鋼琴獨奏會，那麼 2026 下半年起，整個產業的伴奏邏輯已經悄悄變調。我們正在見證一場殘酷卻迷人的「大宗商品化」：模型的推理能力被捲成標配，連 Gemini 3.8 Flash 都能在企業級 Agent 場景中大量鋪貨 [[4]](http://www.geekpark.net/news/369745)，騰訊混元 Hy4 preview 乾脆把快取命中價砍到 0.3 元人民幣/百萬 tokens，等於直接把 Token 變成自來水 [[13]](http://www.geekpark.net/news/369550)。生產要素一旦廉價到這種程度，真正的護城河就不再是「模型多聰明」，而是「誰能決定 Agent 幹什麼、怎麼幹、何時該停手」。\n\n極客公園這期專題其實埋了一條很精彩的暗線：AI 的競爭主軸已從「答題」徹底滑向「辦事」。WorkBuddy 試圖成為 Agent 的「上下文作業系統」[[1]](http://www.geekpark.net/news/369767)，把通達信、廣發證券、Plaud、Rokid 串成一張任務協作網；阿里媽媽的萬相點睛用 AI 把一張布藝床賣給了電競玩家，新客成交占比高達 83% [[3]](http://www.geekpark.net/news/369777)；千問則直接變成編輯部的實習生，靠一套評分閾值自動抓 GitHub 訊息並產出 3100 字稿件 [[9]](http://www.geekpark.net/news/369517)。這些案例各自切入不同場景，但都指向同一件事：AI 已經不再只是內容生成器，而是決策流的中介層。\n\n不過暗湧之下，巨頭的陰影也在急速擴大。OpenAI 不僅自研 Jalapeño 推理晶片，把每瓦吞吐量壓到輝達的 1.9 倍 [[11]](http://www.geekpark.net/news/369555)，還順手把 Cursor 的模型介面給斷了 [[12]](http://www.geekpark.net/news/369551)；SK 海力士更直言記憶體荒要一路熬到 2030 年 [[6]](http://www.geekpark.net/news/369559)。對一人公司來說，這既是紅利也是警鐘：底層算力與通用對話窗口終究會被吞噬，真正能長出抗巨頭體質的，是那些深嵌在某條具體業務毛細血管裡、巨頭既看不起也啃不動的「決策中繼站」。\n\n【把跨界素材壓進命題的四個下注盲點】\n\n接著我想把幾則看起來八竿子打不著的跨界素材壓進這個命題，提煉出幾個反直覺的下注盲點。\n\n**Idea 1：把孫宇晨式框架戰翻譯成 SaaS——AI 辯論陪練沙盒。**\n\n人人都是產品經理那篇拆解孫宇晨 vs 景甜、孫宇晨 vs 胡錫進的文章 [[43]](https://www.woshipm.com/share/6459155.html)，本質上是一堂昂貴的公關課：高手過招，贏的從來不是聲量，而是認知框架的主導權。一人公司可以做一個極輕量的「框架戰模擬器」：使用者把一篇聲明、一份公告、一段回擊貼進去，AI 不只做語意潤稿，而是自動識別對手所在的敘事層（道德、法律、技術、情緒），並輸出三個高維反擊框架。這玩意對 SaaS、ToB 售前、創辦人公關都是剛需，且完全不需要碰硬體或客製導入，純 Web/API 就能交付，巨頭免費包也無法精準覆蓋「替你爭奪框架定義權」這種垂直意圖。\n\n**Idea 2：把燈塔 vs 圈地變成決策儀表板——AI 銷售做法選擇器。**\n\na16z 合夥人 Andy McCall 談到 Meraki 與 Samsara 的崛起路徑 [[37]](https://www.woshipm.com/ai/6459294.html) 時點出一個關鍵分歧：早期到底要搶中端市場的「圈地」，還是押注燈塔客戶拿社會證明？這個判斷對 AI 新創生死攸關，但 99% 的創辦人都在憑感覺做決定。一人公司可以搞一個「市場切入做法選擇器」：輸入產品成熟度、預算來源、可量化性、銷售週期，AI 結合歷史案例庫輸出「燈塔 / 圈地 / 混合」的具體建議，並提示「現在該不該花時間找摩根大通，還是去俄亥俄州找願意付錢的中型客戶」。這是典型的跨平台生態中立決策層——Salesforce、Hubspot 不會替你做這種元判斷，創投 FA 更不會免費告訴你。\n\n**Idea 3：把花卉廢棄物配方的精神搬進 SaaS 的降本敘事。**\n\n印度 VIT 把 800 萬噸花卉廢棄物發酵成胡蘆巴增產 40% 的生物配方 [[38]](https://agritech-foresight.atri.org.tw/article/contents/6301)，這件事的底層規律是「低價值副產品的場景重組」。同理，企業每年在客服錄音、會議紀要、退貨工單裡累積了大量「數位花卉廢棄物」——錄了沒人聽、存了沒人查。一人公司可以做一個「對話副產品提煉器」：把企業既有的通話、IM、會議、CRM 訊息餵進去，自動萃取出可複用的 FAQ、銷售腳本、合規線索與流失預警。這就是阿里媽媽 [[3]](http://www.geekpark.net/news/369777)「為生活方式消費」邏輯的 ToB 版本——別人看標籤，你看標籤背後的整條消費鏈。\n\n**Idea 4：把林冠 LiDAR 的動態閾值思維，灌進 Agent 的成本護欄。**\n\n日本團隊用空載 LiDAR 與 Weibull 模型區分林冠與下層植生 [[42]](https://agritech-foresight.atri.org.tw/article/contents/6300)，靠的是動態閾值而非固定閾值。映射到 Agent 經濟，這正是當前最痛的點：Token 成本像林冠一樣擁擠且難以預測。對一人公司來說，可以做一個「Agent 成本動態護欄」：根據任務緊急度、使用者分層、SLA 等級，自動調用不同價位的模型（混元 Hy4 preview [[13]](http://www.geekpark.net/news/369550)、Fable 5.1 [[48]](https://www.woshipm.com/ai/6459048.html) 的快取價已被打到地板），並在成本曲線逼近閾值時自動降級或切換路徑。這玩意不性感，但對任何跑 Agent 管線的中小公司都是續命藥，且極難被通用 LLM 套裝隨附抹殺。\n\n【蹲守決策縫隙，比搶主舞台更實際】\n\n這四個 Idea 表面分散，骨子裡卻共享同一條邏輯：它們都不去搶巨頭的「模型主舞台」，而是蹲守在「決策縫隙」裡，把巨頭免費提供的能力（推理、長上下文、Agent 框架）重新剪裁，嫁接到一個具體、無聊、但每天都在發生的業務毛細動作上——公關回擊、銷售判斷、對話提煉、成本護欄。這種結構對一人公司格外友善：一旦跑通，邊際成本趨近於零，創辦人完全可以脫鉤到每週幾小時的維運節奏，而每一條管線又會反哺出私有業務資料的累積，構成下一輪套裝免疫力的護城河。畢竟，當 OpenAI 的 Agent 開始「建立文明」又「接管基礎設施」的時候 [[7]](http://www.geekpark.net/news/369610)，小玩家唯一實際的活法，就是躲在那些連文明都不屑看一眼的角落，安靜地替人類守住最後一點決策的尊嚴。",
   "items": [
     {
-      "title": "AI 下一場競爭：誰能成為 Agent 的「上下文作業系統」",
+      "title": "AI 下一場競爭：誰能成為 Agent 的「上下文操作系統」",
       "original_url": "http://www.geekpark.net/news/369767",
-      "source_name": "極客公園",
-      "is_serendipity": false
-    },
-    {
-      "title": "成立不到一年連融三輪，這個睡眠 AI 產品「火」了",
-      "original_url": "http://www.geekpark.net/news/369768",
       "source_name": "極客公園",
       "is_serendipity": false
     },
@@ -20,7 +14,13 @@
       "is_serendipity": false
     },
     {
-      "title": "OpenAI 晶片實測跑分揭曉，「為模型造晶片」時代來了",
+      "title": "編輯部來了 AI 實習生｜千問入職 20 天，我給它寫了一份實習小結",
+      "original_url": "http://www.geekpark.net/news/369517",
+      "source_name": "極客公園",
+      "is_serendipity": false
+    },
+    {
+      "title": "OpenAI 芯片實測跑分揭曉，「為模型造芯片」時代來了",
       "original_url": "http://www.geekpark.net/news/369555",
       "source_name": "極客公園",
       "is_serendipity": false
@@ -32,65 +32,65 @@
       "is_serendipity": false
     },
     {
-      "title": "造物 100 #04｜AI 為愛做「鴨」、PLAUD 又推新作、位元組 TRAE 造了個數位工牌",
-      "original_url": "http://www.geekpark.net/news/369556",
+      "title": "OpenAI 終止與 Cursor 合作；華納與索尼起訴 Anthropic",
+      "original_url": "http://www.geekpark.net/news/369551",
       "source_name": "極客公園",
       "is_serendipity": false
     },
     {
-      "title": "編輯部來了 AI 實習生｜千問入職 20 天，我給它寫了一份實習小結",
-      "original_url": "http://www.geekpark.net/news/369517",
+      "title": "馬斯克：火箭再炸一次，SpaceX 就沒了；Gemini 3.8 Flash 上線",
+      "original_url": "http://www.geekpark.net/news/369745",
       "source_name": "極客公園",
       "is_serendipity": false
     },
     {
-      "title": "OpenAI 內部，AI 建立了三代「文明」",
-      "original_url": "http://www.geekpark.net/news/369610",
-      "source_name": "極客公園",
-      "is_serendipity": false
-    },
-    {
-      "title": "SK 海力士 CEO：記憶體短缺或將持續至 2030 年",
+      "title": "SK 海力士：記憶體短缺或將持續至 2030 年",
       "original_url": "http://www.geekpark.net/news/369559",
       "source_name": "極客公園",
       "is_serendipity": false
     },
     {
-      "title": "對話 a16z 合人：AI 創始人最大的錯誤，是把 99% 的時間花在想策略上",
+      "title": "成立不到一年連融三輪，這個睡眠 AI 產品「火」了",
+      "original_url": "http://www.geekpark.net/news/369768",
+      "source_name": "極客公園",
+      "is_serendipity": false
+    },
+    {
+      "title": "流量紅利退潮，快手想用 AI 和老友們破局",
+      "original_url": "http://www.geekpark.net/news/369631",
+      "source_name": "極客公園",
+      "is_serendipity": false
+    },
+    {
+      "title": "造物 100 #04｜AI 為愛做「鴨」、PLAUD 又推新作、字節 TRAE 造了個數字工牌",
+      "original_url": "http://www.geekpark.net/news/369556",
+      "source_name": "極客公園",
+      "is_serendipity": false
+    },
+    {
+      "title": "✨ [跨界漫遊靈感] 對話 a16z 合夥人：AI 創始人最大的錯誤，是把 99% 的時間花在想策略上",
       "original_url": "https://www.woshipm.com/ai/6459294.html",
       "source_name": "人人都是產品經理",
       "is_serendipity": true
     },
     {
-      "title": "有些錢今天賺爆、卻賠上明天，勃肯鞋「3 不做」跑贏 Hoka、Adidas",
-      "original_url": "https://www.businessweekly.com.tw/Archive/Article/Index?StrId=7014640",
-      "source_name": "商業周刊",
+      "title": "✨ [跨界漫遊靈感] 身家 85 億孫宇晨還打不贏的，不是公關輿論是「認知框架」",
+      "original_url": "https://www.woshipm.com/share/6459155.html",
+      "source_name": "人人都是產品經理",
       "is_serendipity": true
     },
     {
-      "title": "花卉廢棄物永續營養生物配方提升胡蘆巴生長表現",
-      "original_url": "https://agritech-foresight.atri.org.tw/article/contents/6301",
-      "source_name": "農業科技前瞻",
-      "is_serendipity": true
-    },
-    {
-      "title": "LiDAR 支援精準疏伐：看不見的林冠擁擠",
+      "title": "✨ [跨界漫遊靈感] 看不見的林冠擁擠：LiDAR 支援精準疏伐",
       "original_url": "https://agritech-foresight.atri.org.tw/article/contents/6300",
       "source_name": "農業科技前瞻",
       "is_serendipity": true
     },
     {
-      "title": "工研院小番茄採摘與場域保全機器人 智慧農漁周亮相",
-      "original_url": "https://agritech-foresight.atri.org.tw/article/contents/6305",
+      "title": "✨ [跨界靈感] 花卉廢棄物永續營養生物配方提升胡蘆巴生長表現",
+      "original_url": "https://agritech-foresight.atri.org.tw/article/contents/6301",
       "source_name": "農業科技前瞻",
-      "is_serendipity": true
-    },
-    {
-      "title": "身家 85 億孫宇晨還打不贏的，不是公關輿論是「認知框架」",
-      "original_url": "https://www.woshipm.com/share/6459155.html",
-      "source_name": "人人都是產品經理",
       "is_serendipity": true
     }
   ],
-  "time": "2026-09-04 00:29"
+  "time": "2026-09-04 00:31"
 }
