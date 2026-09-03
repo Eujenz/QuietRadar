@@ -65,9 +65,13 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         </div>
       </div>
       <div class="flex items-center space-x-3">
-        <button id="btn-run" onclick="triggerPipeline()" class="inline-flex items-center space-x-2 bg-emerald-500 hover:bg-emerald-600 text-dark-950 font-bold px-4 py-2 rounded-lg transition shadow-lg shadow-emerald-500/20 text-sm">
+        <button id="btn-run" onclick="triggerPipeline(false)" class="inline-flex items-center space-x-2 bg-emerald-500 hover:bg-emerald-600 text-dark-950 font-bold px-4 py-2 rounded-lg transition shadow-lg shadow-emerald-500/20 text-sm">
           <i class="fa-solid fa-bolt"></i>
           <span>立即執行雷達</span>
+        </button>
+        <button id="btn-test-run" onclick="triggerPipeline(true)" class="inline-flex items-center space-x-2 bg-amber-500 hover:bg-amber-600 text-dark-950 font-bold px-3.5 py-2 rounded-lg transition shadow-lg shadow-amber-500/20 text-sm" title="無新文章時自動使用現有文章測試 LLM 蒸餾與 OUTPUT 生成，且不寫入防重">
+          <i class="fa-solid fa-vial"></i>
+          <span>測試 OUTPUT (忽略防重)</span>
         </button>
         <button onclick="triggerTestBark()" class="inline-flex items-center space-x-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium px-3 py-2 rounded-lg transition border border-slate-700 text-sm">
           <i class="fa-solid fa-mobile-screen-button"></i>
@@ -579,19 +583,31 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       alert('金鑰與設定已成功更新！');
     }
 
-    async function triggerPipeline() {
-      const btn = document.getElementById('btn-run');
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>執行中...</span>';
-      await fetch('/api/run', { method: 'POST' });
+    async function triggerPipeline(isTest = false) {
+      const btnRun = document.getElementById('btn-run');
+      const btnTest = document.getElementById('btn-test-run');
+      const activeBtn = isTest ? btnTest : btnRun;
+      
+      btnRun.disabled = true;
+      btnTest.disabled = true;
+      activeBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>執行中...</span>';
+      
+      await fetch('/api/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: isTest ? 'test' : 'normal' })
+      });
+
       const interval = setInterval(async () => {
         const res = await fetch('/api/status');
         const status = await res.json();
         fetchLogs();
         if (!status.is_running) {
           clearInterval(interval);
-          btn.disabled = false;
-          btn.innerHTML = '<i class="fa-solid fa-bolt"></i> <span>立即執行雷達</span>';
+          btnRun.disabled = false;
+          btnTest.disabled = false;
+          btnRun.innerHTML = '<i class="fa-solid fa-bolt"></i> <span>立即執行雷達</span>';
+          btnTest.innerHTML = '<i class="fa-solid fa-vial"></i> <span>測試 OUTPUT (忽略防重)</span>';
           loadNewsletter();
         }
       }, 2000);
@@ -747,13 +763,18 @@ class QuietRadarHandler(BaseHTTPRequestHandler):
 
         elif path == "/api/run":
             global IS_RUNNING, RUNNING_LOGS
+            is_test_mode = (payload.get("mode") == "test")
             if not IS_RUNNING:
                 IS_RUNNING = True
                 def _worker():
                     global IS_RUNNING, RUNNING_LOGS
-                    RUNNING_LOGS.append(f"[{datetime.now().strftime('%H:%M:%S')}] 🚀 開始執行 QuietRadar 管道...")
+                    mode_label = "【🧪 測試模式 (忽略防重，無新資料自動回退)】" if is_test_mode else "【⚡ 標準模式】"
+                    RUNNING_LOGS.append(f"[{datetime.now().strftime('%H:%M:%S')}] 🚀 開始執行 QuietRadar 管線 {mode_label}...")
+                    cmd = [sys.executable, "pipeline.py"]
+                    if is_test_mode:
+                        cmd.append("--test")
                     proc = subprocess.Popen(
-                        [sys.executable, "pipeline.py"],
+                        cmd,
                         stdout=subprocess.PIPE,
                         stderr=subprocess.STDOUT,
                         text=True,
@@ -773,10 +794,23 @@ class QuietRadarHandler(BaseHTTPRequestHandler):
 
         elif path == "/api/test_bark":
             try:
-                proc = subprocess.run([sys.executable, "test_pure_links_bark.py"], capture_output=True, text=True, encoding="utf-8")
-                self._send_json({"status": "ok", "message": "Bark 推播指令已發送！請檢查手機。"})
+                from pipeline import SimpleBarkNotifier
+                notifier = SimpleBarkNotifier()
+                if not notifier.device_key or notifier.device_key == "your_bark_key_here":
+                    self._send_json({"status": "warning", "message": "⚠️ 尚未在 .env 中設定有效的 BARK_DEVICE_KEY！"})
+                else:
+                    test_items = [{
+                        "title": "⚡ QuietRadar 連線測試：推播格式正常",
+                        "original_url": "https://github.com/Eujenz/QuietRadar",
+                        "source_name": "QuietRadar 系統測試"
+                    }]
+                    success = notifier.send_digest(test_items, overview="這是一則來自 QuietRadar 控制台的即時推播測試訊息。")
+                    if success:
+                        self._send_json({"status": "ok", "message": "📱 Bark 測試推播已發送！請檢查手機。"})
+                    else:
+                        self._send_json({"status": "warning", "message": "❌ Bark 發送失敗，請檢查伺服器或 Key 設定。"})
             except Exception as e:
-                self._send_json({"status": "error", "message": str(e)}, status=500)
+                self._send_json({"status": "error", "message": f"測試異常: {str(e)}"}, status=500)
 
         else:
             self.send_response(404)

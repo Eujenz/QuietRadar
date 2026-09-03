@@ -5,6 +5,7 @@ import time
 import hashlib
 import logging
 import re
+import argparse
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 
@@ -514,8 +515,8 @@ class SimpleBarkNotifier:
 # ==========================================
 # 6. 主排程管線 (Pipeline Main)
 # ==========================================
-def run_pipeline():
-    logger.info("🚀 QuietRadar 批次情報雷達啟動...")
+def run_pipeline(test_mode: bool = False, force: bool = False):
+    logger.info(f"🚀 QuietRadar 批次情報雷達啟動... {'[🧪 測試模式]' if test_mode else ''}{'[⚡ 強制模式]' if force else ''}")
     
     # 1. 讀取配置
     config_path = "sources.yaml"
@@ -536,13 +537,51 @@ def run_pipeline():
 
     # 3. 資料庫比對防重
     session = SessionLocal()
-    unprocessed = [a for a in raw_articles if not is_article_processed(session, a["sha256"])]
-    logger.info(f"🔍 防重過濾完成：已讀 {len(raw_articles) - len(unprocessed)} 篇，新文章 {len(unprocessed)} 篇")
+    if force:
+        logger.info("⚡ 【強制模式】忽略資料庫防重紀錄，所有爬取文章均視為候選！")
+        unprocessed = list(raw_articles)
+    else:
+        unprocessed = [a for a in raw_articles if not is_article_processed(session, a["sha256"])]
+        logger.info(f"🔍 防重過濾完成：已讀 {len(raw_articles) - len(unprocessed)} 篇，新文章 {len(unprocessed)} 篇")
 
     if not unprocessed:
-        logger.info("✨ 沒有新文章需要處理，本次任務結束。")
-        session.close()
-        return
+        if test_mode:
+            logger.warning("🧪 【測試模式觸發】未發現全新文章，為驗證 OUTPUT 產出流程，自動啟用候選回退機制！")
+            if raw_articles:
+                logger.info(f"🔄 [回退來源 1] 取用本次爬取的既有文章（共 {len(raw_articles)} 篇）作為 OUTPUT 測試樣本...")
+                unprocessed = list(raw_articles)
+            else:
+                db_recent = session.query(ProcessedArticle).order_by(ProcessedArticle.id.desc()).limit(10).all()
+                if db_recent:
+                    logger.info(f"📦 [回退來源 2] 本次未抓到任何文章，從資料庫讀取最近 {len(db_recent)} 篇歷史文章作為測試樣本...")
+                    unprocessed = [
+                        {
+                            "source_name": "歷史紀錄",
+                            "title": p.title,
+                            "url": p.url,
+                            "summary": f"{p.title} (此為測試回退之歷史存檔摘要，用於驗證 OUTPUT 流程)",
+                            "sha256": p.sha256_hash,
+                            "relevance_score": 1
+                        }
+                        for p in db_recent
+                    ]
+                else:
+                    logger.info("📦 [回退來源 3] 資料庫無紀錄，啟用內建 Mock 測試樣本進行 OUTPUT 測試...")
+                    unprocessed = [
+                        {
+                            "source_name": "範例來源",
+                            "title": "測試樣本：AI Agent 工作流在一人公司的落地實踐與商業閉環",
+                            "url": "https://example.com/test-article-1",
+                            "summary": "這是一篇用於 OUTPUT 測試的範例文章。探討一人公司如何運用自動化管線與 AI 決策層降低營運工時，避開現場硬體維護負債...",
+                            "sha256": "mock_hash_001",
+                            "relevance_score": 5
+                        }
+                    ]
+        else:
+            logger.info("✨ 沒有新文章需要處理，本次任務結束。")
+            logger.info("💡 提示：若要進行 OUTPUT 測試，請加上 '--test' (如: python pipeline.py --test) 或在 Web 控制台點擊「測試 OUTPUT」！")
+            session.close()
+            return
 
     # 讀取研讀深度與候選池上限設定
     pipeline_settings = config.get("pipeline_settings", {})
@@ -591,9 +630,16 @@ def run_pipeline():
     notifier.send_digest(distilled_items, template=output_template, overview=overview)
 
     # 7. 確定蒸餾推播流程成功後，將本次參與蒸餾的文章指紋寫入資料庫
-    record_processed_articles(session, target_candidates)
+    if test_mode:
+        logger.info("🧪 【測試模式】本次測試不將指紋寫入防重資料庫，確保您可隨時重複測試 OUTPUT！")
+    else:
+        record_processed_articles(session, target_candidates)
     session.close()
     logger.info("🏁 任務圓滿完成！已成功發送推播並生成 latest_newsletter.md 電子報。")
 
 if __name__ == "__main__":
-    run_pipeline()
+    parser = argparse.ArgumentParser(description="QuietRadar 批次情報雷達")
+    parser.add_argument("--test", "-t", action="store_true", help="測試模式：無新文章時自動使用現有文章進行 OUTPUT 測試，且不記錄防重")
+    parser.add_argument("--force", "-f", action="store_true", help="強制模式：忽略已讀記錄，強制重新蒸餾並產出")
+    args = parser.parse_args()
+    run_pipeline(test_mode=args.test, force=args.force)
