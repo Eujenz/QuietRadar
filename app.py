@@ -93,6 +93,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
           <i class="fa-solid fa-filter"></i>
           <span>關注主題與降噪</span>
         </button>
+        <button onclick="switchTab('prompt')" id="tab-prompt-btn" class="pb-3 text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center space-x-2">
+          <i class="fa-solid fa-wand-magic-sparkles"></i>
+          <span>分析提示詞與框架</span>
+        </button>
         <button onclick="switchTab('settings')" id="tab-settings-btn" class="pb-3 text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center space-x-2">
           <i class="fa-solid fa-key"></i>
           <span>金鑰與模型設定</span>
@@ -133,6 +137,83 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
           <button onclick="saveProfile()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-dark-950 font-bold py-2.5 rounded-lg text-sm transition">
             儲存關注與降噪偏好
           </button>
+        </div>
+      </div>
+
+      <!-- 分頁 3: 提示詞微調與固定輸出框架 -->
+      <div id="tab-prompt" class="hidden space-y-4">
+        <div class="bg-dark-900 border border-slate-800 rounded-xl p-5 space-y-4">
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="block text-sm font-semibold text-emerald-400 flex items-center space-x-2">
+                <i class="fa-solid fa-pen-to-square"></i>
+                <span>交給 LLM 分析前的提示詞（可快速微調）</span>
+              </label>
+              <span class="text-[11px] text-slate-400">儲存於 sources.yaml</span>
+            </div>
+            <p class="text-xs text-slate-400 mb-2">您可以在此微調角色定位、寫作語氣、篩選標準與 speak-human-tw 去 AI 味規則：</p>
+            <textarea id="custom-prompt" rows="9" class="w-full bg-dark-950 border border-slate-800 rounded-lg p-3 text-xs text-slate-200 font-mono focus:border-emerald-500 focus:outline-none"></textarea>
+          </div>
+
+          <button onclick="savePrompt()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-dark-950 font-bold py-2 rounded-lg text-sm transition">
+            儲存自訂提示詞
+          </button>
+
+          <!-- 輸出結構框架 (開放自訂與儲存) -->
+          <div class="border-t border-slate-800 pt-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <label class="block text-sm font-semibold text-sky-400 flex items-center space-x-2">
+                <i class="fa-solid fa-layer-group"></i>
+                <span>輸出結構框架模板（可自訂與儲存）</span>
+              </label>
+              <span class="text-[11px] text-slate-400">系統注入渲染規則</span>
+            </div>
+            <p class="text-xs text-slate-400">可自由調整電子報與 Bark 推播的開頭、來源標題與單則排版：</p>
+            
+            <div class="space-y-3">
+              <div>
+                <label class="block text-[11px] font-mono text-slate-300 mb-1">
+                  1. 頂部標題與 Meta (Header) <span class="text-slate-500">支援 {time}, {count}</span>
+                </label>
+                <textarea id="tpl-header" rows="3" oninput="updateTemplatePreview()" class="w-full bg-dark-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 font-mono focus:border-sky-500 focus:outline-none"></textarea>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[11px] font-mono text-slate-300 mb-1">
+                    2. 來源分類標題 (Group) <span class="text-slate-500">支援 {source}, {count}</span>
+                  </label>
+                  <input id="tpl-group" oninput="updateTemplatePreview()" class="w-full bg-dark-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 font-mono focus:border-sky-500 focus:outline-none">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-mono text-slate-300 mb-1">
+                    3. 單則項目排版 (Item) <span class="text-slate-500">支援 {index}, {title}, {url}</span>
+                  </label>
+                  <input id="tpl-item" oninput="updateTemplatePreview()" class="w-full bg-dark-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 font-mono focus:border-sky-500 focus:outline-none">
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-mono text-slate-300 mb-1">
+                  4. 底部結尾附註 (Footer) <span class="text-slate-500">支援 {time}, {count}</span>
+                </label>
+                <textarea id="tpl-footer" rows="2" oninput="updateTemplatePreview()" class="w-full bg-dark-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 font-mono focus:border-sky-500 focus:outline-none"></textarea>
+              </div>
+
+              <button onclick="saveTemplate()" class="w-full bg-sky-500 hover:bg-sky-600 text-dark-950 font-bold py-2 rounded-lg text-sm transition shadow-lg shadow-sky-500/20">
+                儲存輸出結構框架
+              </button>
+
+              <!-- 即時渲染預覽視窗 -->
+              <div class="mt-3">
+                <label class="block text-[11px] font-bold text-slate-400 mb-1 flex items-center space-x-1.5">
+                  <i class="fa-solid fa-eye text-emerald-400"></i>
+                  <span>框架渲染即時預覽 (Live Preview)</span>
+                </label>
+                <div id="tpl-preview" class="bg-dark-950 border border-slate-800 rounded-lg p-3 text-xs font-mono text-slate-300 whitespace-pre-wrap leading-relaxed"></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -219,14 +300,22 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     let currentConfig = null;
 
     function switchTab(tab) {
-      ['sources', 'profile', 'settings'].forEach(t => {
-        document.getElementById(`tab-${t}`).classList.add('hidden');
-        document.getElementById(`tab-${t}-btn`).classList.remove('border-emerald-500', 'text-emerald-400');
-        document.getElementById(`tab-${t}-btn`).classList.add('border-transparent', 'text-slate-400');
+      ['sources', 'profile', 'prompt', 'settings'].forEach(t => {
+        const el = document.getElementById(`tab-${t}`);
+        const btn = document.getElementById(`tab-${t}-btn`);
+        if (el) el.classList.add('hidden');
+        if (btn) {
+          btn.classList.remove('border-emerald-500', 'text-emerald-400');
+          btn.classList.add('border-transparent', 'text-slate-400');
+        }
       });
-      document.getElementById(`tab-${tab}`).classList.remove('hidden');
-      document.getElementById(`tab-${tab}-btn`).classList.add('border-emerald-500', 'text-emerald-400');
-      document.getElementById(`tab-${tab}-btn`).classList.remove('border-transparent', 'text-slate-400');
+      const targetEl = document.getElementById(`tab-${tab}`);
+      const targetBtn = document.getElementById(`tab-${tab}-btn`);
+      if (targetEl) targetEl.classList.remove('hidden');
+      if (targetBtn) {
+        targetBtn.classList.add('border-emerald-500', 'text-emerald-400');
+        targetBtn.classList.remove('border-transparent', 'text-slate-400');
+      }
     }
 
     async function loadData() {
@@ -241,6 +330,17 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       document.getElementById('profile-interests').value = (data.profile.interests || []).join('\n');
       document.getElementById('profile-negative').value = (data.profile.negative_topics || []).join('\n');
 
+      // 渲染 Prompt
+      document.getElementById('custom-prompt').value = data.custom_prompt || '';
+
+      // 渲染 Output Template
+      const tpl = data.output_template || {};
+      document.getElementById('tpl-header').value = tpl.header || '# ⚡ QuietRadar 降噪科技電子報\n> 出刊時間：{time} | 本期精選：{count} 則 | 去 AI 雜訊率：約 80%\n---';
+      document.getElementById('tpl-group').value = tpl.group_header || '## 📰 【{source}】({count} 則)';
+      document.getElementById('tpl-item').value = tpl.item_format || '{index}. [{title}]({url})';
+      document.getElementById('tpl-footer').value = tpl.footer || '---\n*本電子報由 QuietRadar 依據讀者關注特徵自動蒸餾產出，遵守 speak-human-tw 去 AI 味與台灣在地化規範。*';
+      updateTemplatePreview();
+
       // 渲染 Settings
       document.getElementById('cfg-llm-key').value = data.env.LLM_API_KEY || '';
       document.getElementById('cfg-llm-model').value = data.env.LLM_MODEL || '';
@@ -249,6 +349,42 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
       loadNewsletter();
       fetchLogs();
+    }
+
+    function updateTemplatePreview() {
+      const header = (document.getElementById('tpl-header').value || '').replace('{time}', '2026-09-03 09:30').replace('{count}', '2');
+      const group = (document.getElementById('tpl-group').value || '').replace('{source}', '數位時代 BusinessNext').replace('{count}', '2');
+      const item1 = (document.getElementById('tpl-item').value || '').replace('{index}', '1').replace('{title}', '科技巨頭最新 AI 架構發布').replace('{url}', 'https://example.com/article1').replace('{source}', '數位時代 BusinessNext');
+      const item2 = (document.getElementById('tpl-item').value || '').replace('{index}', '2').replace('{title}', '開源社群突破性成果解析').replace('{url}', 'https://example.com/article2').replace('{source}', '數位時代 BusinessNext');
+      const footer = (document.getElementById('tpl-footer').value || '').replace('{time}', '2026-09-03 09:30').replace('{count}', '2');
+      
+      const full = `${header}\n\n${group}\n${item1}\n${item2}\n\n${footer}`.trim();
+      document.getElementById('tpl-preview').textContent = full;
+    }
+
+    async function saveTemplate() {
+      const output_template = {
+        header: document.getElementById('tpl-header').value,
+        group_header: document.getElementById('tpl-group').value,
+        item_format: document.getElementById('tpl-item').value,
+        footer: document.getElementById('tpl-footer').value
+      };
+      await fetch('/api/template', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(output_template)
+      });
+      alert('輸出結構框架模板已成功儲存至 sources.yaml！');
+    }
+
+    async function savePrompt() {
+      const custom_prompt = document.getElementById('custom-prompt').value;
+      await fetch('/api/prompt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ custom_prompt })
+      });
+      alert('自訂提示詞已成功更新儲存至 sources.yaml！');
     }
 
     function renderSources(sources) {
@@ -421,6 +557,8 @@ class QuietRadarHandler(BaseHTTPRequestHandler):
             self._send_json({
                 "sources": cfg.get("sources", []),
                 "profile": cfg.get("profile", {}),
+                "custom_prompt": cfg.get("custom_prompt", ""),
+                "output_template": cfg.get("output_template", {}),
                 "env": env_data
             })
 
@@ -462,6 +600,22 @@ class QuietRadarHandler(BaseHTTPRequestHandler):
             with open("sources.yaml", "r", encoding="utf-8") as f:
                 cfg = yaml.safe_load(f)
             cfg["profile"] = payload
+            with open("sources.yaml", "w", encoding="utf-8") as f:
+                yaml.dump(cfg, f, allow_unicode=True, sort_keys=False)
+            self._send_json({"status": "ok"})
+
+        elif path == "/api/prompt":
+            with open("sources.yaml", "r", encoding="utf-8") as f:
+                cfg = yaml.safe_load(f)
+            cfg["custom_prompt"] = payload.get("custom_prompt", "")
+            with open("sources.yaml", "w", encoding="utf-8") as f:
+                yaml.dump(cfg, f, allow_unicode=True, sort_keys=False)
+            self._send_json({"status": "ok"})
+
+        elif path == "/api/template":
+            with open("sources.yaml", "r", encoding="utf-8") as f:
+                cfg = yaml.safe_load(f)
+            cfg["output_template"] = payload
             with open("sources.yaml", "w", encoding="utf-8") as f:
                 yaml.dump(cfg, f, allow_unicode=True, sort_keys=False)
             self._send_json({"status": "ok"})

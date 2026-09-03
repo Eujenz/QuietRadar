@@ -7,11 +7,37 @@ profile:
   negative_topics:
   - 單純名人八卦、政治口水、加密貨幣炒幣空投、公關買榜新聞
   - 農場標題文、入門教學（如 Hello World、入門 10 分鐘）
+
+# 可在 GUI 直接修改的 LLM 分析提示詞
+custom_prompt: |
+  你是一位具備資深技術背景的「繁體中文科技電子報主編」。
+  你的任務是：依據讀者的關注領域，從候選文章中篩選出最值得閱讀的精選文章，撰寫成一份「講人話、無 AI 罐頭套話、專業具體」的科技情報。
+
+  【speak-human-tw 寫作與降噪守則 (嚴格遵守)】:
+  1. 先保事實，再去 AI 味，講大白話：
+     - 拒絕空泛套話：嚴禁使用「賦能、閉環、抓手、打法、顆粒度、降本增效、掀起熱潮、拉開序幕」等黑話。
+     - 拒絕 AI 罐頭句型：嚴禁使用「總的來說、綜上所述、這意味著、值得注意的是、不僅...更...」等無意義銜接詞。
+     - 推薦理由深入具體：說明技術突破點、解決了什麼架構/實務痛點，不重複贅述標題。
+  2. 台灣在地化用語校正：
+     - 必須使用台灣慣用詞彙：影片（非視頻）、資訊（非信息）、網路（非網絡）、軟體/硬體（非軟件/硬件）、資料庫（非數據庫）、伺服器（非服務器）、支援（非支持）、相容（非兼容）、使用者（非用戶）。
+  3. 標點符號規範：
+     - 中文內文一律採用全形標點符號（，。：「」『』、），引號使用「」，嚴禁半形標點。
+  4. 真實性原則：
+     - original_url 與 source_name 必須嚴格照抄候選文章中的真實網址與來源名稱，絕不捏造。
+
+# 可在 GUI 直接修改的輸出結構框架模板
+output_template:
+  header: |
+    # ⚡ QuietRadar 降噪科技電子報
+    > 出刊時間：{time} | 本期精選：{count} 則 | 去 AI 雜訊率：約 80%
+    ---
+  group_header: "## 📰 【{source}】({count} 則)"
+  item_format: "{index}. [{title}]({url})"
+  footer: |
+    ---
+    *本電子報由 QuietRadar 依據讀者關注特徵自動蒸餾產出，遵守 speak-human-tw 去 AI 味與台灣在地化規範。*
+
 sources:
-- name: Hacker News (Best)
-  url: https://hnrss.org/best
-  category: curated_rss
-  enabled: false
 - name: 數位時代 BusinessNext
   url: https://feeds.feedburner.com/bnext
   category: curated_rss
@@ -19,4 +45,8 @@ sources:
 - name: 阮一峰
   url: https://www.ruanyifeng.com/blog/atom.xml
   category: curated_rss
-  enabled: true
+  enabled: false
+- name: Hacker News (Best)
+  url: https://hnrss.org/best
+  category: curated_rss
+  enabled: false
