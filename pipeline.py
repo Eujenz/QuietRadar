@@ -213,13 +213,27 @@ class SimpleLLMDistiller:
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
-            "Accept": "text/event-stream"
+            "Accept": "text/event-stream",
+            "HTTP-Referer": "https://github.com/Eujenz/QuietRadar",
+            "X-Title": "QuietRadar"
         }
 
-        # 支援備援模型鏈 (Primary -> Fallback)
+        # 支援高容錯免費模型備援鏈 (Primary -> Multi-tier Free Fallback)
         models_to_try = [self.model]
-        if self.model != "meta/llama-3.2-11b-vision-instruct":
-            models_to_try.append("meta/llama-3.2-11b-vision-instruct")
+        if "openrouter" in self.base_url.lower():
+            # OpenRouter 免費模型陣列：MiniMax M3 -> MiniMax M2.7 -> Google Gemma 31B
+            openrouter_free_backups = [
+                "minimax/minimax-m3:free",
+                "minimax/minimax-m2.7:free",
+                "google/gemma-4-31b-it:free",
+                "nvidia/nemotron-3.5-lightning:free"
+            ]
+            for b in openrouter_free_backups:
+                if b not in models_to_try:
+                    models_to_try.append(b)
+        else:
+            if "meta/llama-3.2-11b-vision-instruct" not in models_to_try:
+                models_to_try.append("meta/llama-3.2-11b-vision-instruct")
 
         # 設定 180 秒寬裕逾時，避免冷啟動斷線
         client_timeout = httpx.Timeout(180.0, connect=30.0, read=180.0, write=30.0)
