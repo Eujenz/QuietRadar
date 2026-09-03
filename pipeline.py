@@ -85,7 +85,18 @@ def fetch_sources(sources_config: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                 for entry in feed.entries[:20]:  # 每個來源取前 20 則候選
                     title = getattr(entry, "title", "").strip()
                     link = getattr(entry, "link", "").strip()
-                    summary = getattr(entry, "summary", "").strip()
+                    
+                    # 優先抓取全文內容 (content) 或詳細摘要 (summary / description)
+                    raw_content = ""
+                    if hasattr(entry, "content") and entry.content:
+                        raw_content = entry.content[0].get("value", "")
+                    if not raw_content:
+                        raw_content = getattr(entry, "summary", "") or getattr(entry, "description", "")
+                    
+                    # 清理 HTML 標籤與多餘空白
+                    import re
+                    clean_text = re.sub(r'<[^>]+>', ' ', raw_content)
+                    clean_text = re.sub(r'\s+', ' ', clean_text).strip()
                     
                     if not title or not link:
                         continue
@@ -96,7 +107,7 @@ def fetch_sources(sources_config: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                         "source_name": name,
                         "title": title,
                         "url": link,
-                        "summary": summary[:300],  # 截取前段文字避免 Token 爆炸
+                        "summary": clean_text[:800],  # 保留足夠實質內容讓 LLM 提煉真實結論
                         "sha256": h
                     })
         except Exception as e:
@@ -113,25 +124,54 @@ class SimpleLLMDistiller:
         self.base_url = os.getenv("LLM_BASE_URL", "https://integrate.api.nvidia.com/v1").rstrip("/")
         self.model = os.getenv("LLM_MODEL", "meta/llama-3.1-70b-instruct")
 
-    def distill(self, candidates: List[Dict[str, Any]], profile: Dict[str, Any], top_k: int = 7, custom_prompt: Optional[str] = None) -> List[Dict[str, Any]]:
-        if not candidates:
-            return []
-        
-        if not self.api_key or self.api_key == "nvapi-your-key-here":
-            logger.error("❌ 未配置有效的 LLM_API_KEY，無法進行蒸餾")
-            return []
-        
-        # 優先使用 sources.yaml 中的自訂提示詞，否則使用預設值
+    def distill(self, candidates: List[Dict[str, Any]], profile:         # 優先使用 sources.yaml 中的自訂提示詞，否則使用預設值
         base_instructions = custom_prompt.strip() if custom_prompt else """你是一位具備資深技術背景的「繁體中文科技電子報主編」。
 你的任務是：依據讀者的關注領域，從候選文章中篩選出最值得閱讀的精選文章，撰寫成一份「講人話、無 AI 罐頭套話、專業具體」的科技情報。
 
 【speak-human-tw 寫作與降噪守則 (嚴格遵守)】:
-1. 先保事實，再去 AI 味，講大白話：
-   - 拒絕空泛套話：嚴禁使用「賦能、閉環、抓手、打法、顆粒度、降本增效、掀起熱潮、拉開序幕」等黑話。
-   - 拒絕 AI 罐頭句型：嚴禁使用「總的來說、綜上所述、這意味著、值得注意的是、不僅...更...」等無意義銜接詞。
-   - 推薦理由深入具體：說明技術突破點、解決了什麼架構/實務痛點，不重複贅述標題。
+1. 彙整論述 (Overview) 撰寫鐵律 (極度嚴格，違者重寫):
+   - 嚴禁標題串燒與列表複述：絕對不可寫「本期包括了 A、B、C 等內容」或把文章標題重新念一遍。
+   - 徹底消除 AI 廢話垃圾詞：嚴禁出現「提供了豐富的資訊」、「進行了深入的分析」、「幫助讀者了解」、「探討了發展趨勢與前景」等零資訊量贅字。
+   - 必須提煉出 1~2 句「具體工程結論或實質洞察」：直接點出文章內文提到的技術突破點是什麼、解決了什麼具體架構/效能痛點（例如：「本期核心焦點在於透過 AI 快取機制降低 40% 的重複推理延遲，並深入探討軟體工程師如何由單純寫代碼轉向架構驗證與系統調控。」）。
 2. 台灣在地化用語校正：
-   - 必須使用台灣慣用詞彙：影片（非視頻）、資訊（非信息）、網路（非網絡）、軟體/硬體（非軟件/硬件）、資料庫（非數據庫）、伺服器（非服務器）、支援（非支持）、相容（非兼容）、使用者（非用戶）。
+   - 必須使用台灣慣用詞彙：軟體工程師（非程序員）、快取（非緩存/緩存）、資料庫（非數據庫）、伺服器（非服務器）、影片（非視頻）、資訊（非信息）、網路（非網絡）、軟體/硬體（非軟件/硬件）、支援（非支持）、相容（非兼容）、使用者（非用戶）。
+3. 標點符號規範：
+   - 中文內文一律採用全形標點符號（，。：「」『』、），引號使用「」，嚴禁半形標點，嚴禁破折號。
+4. 真實性原則：
+   - original_url 與 source_name 必須嚴格照抄候選文章中的真實網址與來源名稱，絕不捏造。"""
+
+        system_prompt = f"""{base_instructions}
+
+【讀者關注主題】:
+{json.dumps(profile.get('interests', []), ensure_ascii=False, indent=2)}
+
+【讀者排斥的主題 (直接淘汰)】:
+{json.dumps(profile.get('negative_topics', []), ensure_ascii=False, indent=2)}
+
+【輸出格式】:
+請從候選文章中挑選最多 {top_k} 則，並針對本期重點進行 1~2 句高含金量的大白話彙整論述，輸出符合以下格式的 JSON：
+{{
+  "overview": "針對本次精選內容的核心脈絡或整體趨勢論述（2~3 句話，講人話，直指關鍵價值）",
+  "items": [
+    {{
+      "title": "精煉後的繁體中文標題",
+      "original_url": "必須填寫候選文章中的真實 URL",
+      "source_name": "來源名稱"
+    }}
+  ]
+}}
+"""
+        # 準備餵給 LLM 的文章候選清單（傳遞充足內文讓模型提煉真實實質結論）
+        articles_payload = [
+            {
+                "index": i + 1,
+                "source": a["source_name"],
+                "title": a["title"],
+                "url": a["url"],
+                "content_snippet": a["summary"][:600]
+            }
+            for i, a in enumerate(candidates)
+        ]��務器）、支援（非支持）、相容（非兼容）、使用者（非用戶）。
 3. 標點符號規範：
    - 中文內文一律採用全形標點符號（，。：「」『』、），引號使用「」，嚴禁半形標點。
 4. 真實性原則：
@@ -165,7 +205,7 @@ class SimpleLLMDistiller:
                 "source": a["source_name"],
                 "title": a["title"],
                 "url": a["url"],
-                "content_snippet": a["summary"][:120]
+                "content_snippet": a["summary"][:600]
             }
             for i, a in enumerate(candidates)
         ]
