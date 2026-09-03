@@ -159,24 +159,45 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
             儲存自訂提示詞
           </button>
 
-          <!-- 內文研讀深度與候選池設定 -->
+          <!-- 標題前置漏斗與內文研讀深度設定 -->
           <div class="border-t border-slate-800 pt-4 space-y-3">
             <div class="flex items-center justify-between">
               <label class="block text-sm font-semibold text-amber-400 flex items-center space-x-2">
-                <i class="fa-solid fa-sliders"></i>
-                <span>爬取內文研讀深度與候選池設定</span>
+                <i class="fa-solid fa-filter text-amber-400"></i>
+                <span>標題前置漏斗過濾與研讀深度設定</span>
               </label>
-              <span class="text-[11px] text-amber-400/80 font-mono">LLM 研讀正文字數控制</span>
+              <span class="text-[11px] text-amber-400/80 font-mono">Title Funnel Filter</span>
             </div>
-            <p class="text-xs text-slate-400">控制爬取完文章後，LLM 研讀每篇正文的字數深度與送入融會貫通的候選篇數：</p>
+            <p class="text-xs text-slate-400">爬取時先審查標題：命中排斥詞立即跳過不讀正文，優先放行符合「一人公司與雲端收費站」主題之文章：</p>
             
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+              <div class="space-y-1">
+                <label class="block text-[11px] font-mono text-slate-300">
+                  標題前置漏斗開關
+                </label>
+                <div class="flex items-center space-x-2 bg-dark-950 border border-slate-800 rounded-lg p-2">
+                  <input type="checkbox" id="cfg-title-filter-enabled" class="accent-amber-500 w-4 h-4 cursor-pointer">
+                  <label for="cfg-title-filter-enabled" class="text-xs text-slate-300 cursor-pointer">啟用標題漏斗（不符主題直接跳過）</label>
+                </div>
+              </div>
+              <div class="space-y-1">
+                <label class="block text-[11px] font-mono text-slate-300">
+                  漏斗過濾模式
+                </label>
+                <select id="cfg-title-filter-mode" class="w-full bg-dark-950 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 focus:border-amber-500 focus:outline-none">
+                  <option value="smart">Smart 智慧相關度排序（殺黑名單，優先挑高分）</option>
+                  <option value="strict">Strict 嚴格模式（標題必須明確命中關注關鍵字）</option>
+                </select>
+              </div>
+            </div>
+
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
               <div>
                 <label class="block text-[11px] font-mono text-slate-300 mb-1">
                   每篇文章提供給 LLM 研讀字數 (字元)
                 </label>
-                <input type="number" id="cfg-snippet-len" min="0" max="10000" step="100" class="w-full bg-dark-950 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 focus:border-amber-500 focus:outline-none" placeholder="預設 800 (填 0 代表完整內文不截斷)">
-                <p class="text-[10px] text-slate-500 mt-1">一般 RSS 正文約 500~1500 字，設 800~1500 字可涵蓋 90% 核心論點。填 0 代表全送。</p>
+                <input type="number" id="cfg-snippet-len" min="0" max="10000" step="100" class="w-full bg-dark-950 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 focus:border-amber-500 focus:outline-none" placeholder="預設 1000 (填 0 代表完整內文不截斷)">
+                <p class="text-[10px] text-slate-500 mt-1">一般 RSS 正文約 500~1500 字，設 1000 字可涵蓋 90% 核心論點。填 0 代表全送。</p>
               </div>
               <div>
                 <label class="block text-[11px] font-mono text-slate-300 mb-1">
@@ -187,7 +208,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
               </div>
             </div>
             <button onclick="savePipelineSettings()" class="w-full bg-amber-500 hover:bg-amber-600 text-dark-950 font-bold py-2 rounded-lg text-sm transition shadow-lg shadow-amber-500/20">
-              儲存研讀深度與候選池設定
+              儲存標題漏斗與研讀深度設定
             </button>
           </div>
 
@@ -376,7 +397,13 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
       // 渲染研讀深度與候選池設定
       const ps = data.pipeline_settings || {};
-      document.getElementById('cfg-snippet-len').value = ps.content_snippet_length !== undefined ? ps.content_snippet_length : 800;
+      if (document.getElementById('cfg-title-filter-enabled')) {
+        document.getElementById('cfg-title-filter-enabled').checked = ps.title_filter_enabled !== false;
+      }
+      if (document.getElementById('cfg-title-filter-mode')) {
+        document.getElementById('cfg-title-filter-mode').value = ps.title_filter_mode || 'smart';
+      }
+      document.getElementById('cfg-snippet-len').value = ps.content_snippet_length !== undefined ? ps.content_snippet_length : 1000;
       document.getElementById('cfg-max-pool').value = ps.max_candidate_pool !== undefined ? ps.max_candidate_pool : 10;
 
       // 渲染 Output Template
@@ -444,17 +471,21 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     }
 
     async function savePipelineSettings() {
+      const title_filter_enabled = document.getElementById('cfg-title-filter-enabled').checked;
+      const title_filter_mode = document.getElementById('cfg-title-filter-mode').value;
       const snippet_len = parseInt(document.getElementById('cfg-snippet-len').value, 10);
       const max_pool = parseInt(document.getElementById('cfg-max-pool').value, 10);
       await fetch('/api/pipeline_settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          content_snippet_length: isNaN(snippet_len) ? 800 : snippet_len,
+          title_filter_enabled,
+          title_filter_mode,
+          content_snippet_length: isNaN(snippet_len) ? 1000 : snippet_len,
           max_candidate_pool: isNaN(max_pool) ? 10 : max_pool
         })
       });
-      alert('已成功儲存爬取研讀深度與候選池上限設定！');
+      alert('已成功儲存標題前置漏斗與研讀深度設定！');
     }
 
     function renderSources(sources) {

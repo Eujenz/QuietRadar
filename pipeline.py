@@ -70,12 +70,31 @@ def record_processed_articles(session, articles: List[Dict[str, Any]]):
             session.add(record)
     session.commit()
 
-# ==========================================
-# 2. RSS 抓取模組
-# ==========================================
-def fetch_sources(sources_config: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def extract_keywords_from_list(items: List[str]) -> List[str]:
+    kws = set()
+    for item in items:
+        parts = re.split(r'[（）()、，,／/\s+、。\-—:：]+', item)
+        for p in parts:
+            p = p.strip()
+            if len(p) >= 2:
+                kws.add(p.lower())
+    return list(kws)
+
+def fetch_sources(sources_config: List[Dict[str, Any]], profile: Optional[Dict[str, Any]] = None, pipeline_settings: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
     raw_articles = []
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) QuietRadar/1.0"}
+    
+    settings = pipeline_settings or {}
+    filter_enabled = settings.get("title_filter_enabled", True)
+    filter_mode = settings.get("title_filter_mode", "smart")
+
+    prof = profile or {}
+    negative_kws = extract_keywords_from_list(prof.get("negative_topics", [])) if filter_enabled else []
+    interest_kws = extract_keywords_from_list(prof.get("interests", [])) if filter_enabled else []
+
+    total_scanned = 0
+    dropped_negative = 0
+    dropped_strict = 0
     
     for src in sources_config:
         if not src.get("enabled", True):
@@ -92,36 +111,64 @@ def fetch_sources(sources_config: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                     continue
                 
                 feed = feedparser.parse(resp.text)
-                for entry in feed.entries[:20]:  # 每個來源取前 20 則候選
+                for entry in feed.entries[:25]:  # 擴大候選池掃描範圍
                     title = getattr(entry, "title", "").strip()
                     link = getattr(entry, "link", "").strip()
                     
-                    # 優先抓取全文內容 (content) 或詳細摘要 (summary / description)
+                    if not title or not link:
+                        continue
+                    
+                    total_scanned += 1
+                    title_lower = title.lower()
+
+                    # 【標題前置漏斗第一關】：負面黑名單硬性攔截（不讀取正文）
+                    if filter_enabled and negative_kws:
+                        hit_neg = [kw for kw in negative_kws if kw in title_lower]
+                        if hit_neg:
+                            logger.info(f"🚫 [標題漏斗攔截] 命中排斥詞「{hit_neg[0]}」：【{title[:35]}】-> 跳過不讀取正文")
+                            dropped_negative += 1
+                            continue
+
+                    # 【標題前置漏斗第二關】：關注主題相關性審查
+                    relevance_score = 0
+                    if filter_enabled and interest_kws:
+                        matched_int = [kw for kw in interest_kws if kw in title_lower]
+                        relevance_score = len(matched_int)
+
+                        if filter_mode == "strict" and relevance_score == 0:
+                            logger.info(f"⏭️ [標題漏斗過濾] 嚴格模式未命中關注關鍵詞：【{title[:35]}】-> 跳過不讀取正文")
+                            dropped_strict += 1
+                            continue
+
+                    # 通過標題檢驗後，才深入抓取並清洗正文（大幅節省網路與記憶體）
                     raw_content = ""
                     if hasattr(entry, "content") and entry.content:
                         raw_content = entry.content[0].get("value", "")
                     if not raw_content:
                         raw_content = getattr(entry, "summary", "") or getattr(entry, "description", "")
                     
-                    # 清理 HTML 標籤與多餘空白
                     clean_text = re.sub(r'<[^>]+>', ' ', raw_content)
                     clean_text = re.sub(r'\s+', ' ', clean_text).strip()
                     
-                    if not title or not link:
-                        continue
-                    
-                    # 產生唯一指紋 (URL + Title)
                     h = hashlib.sha256(f"{link}|{title}".encode("utf-8")).hexdigest()
                     raw_articles.append({
                         "source_name": name,
                         "title": title,
                         "url": link,
-                        "summary": clean_text[:4000],  # 保留充足內文，交由 pipeline_settings 精準調控研讀深度
-                        "sha256": h
+                        "summary": clean_text[:4000],
+                        "sha256": h,
+                        "relevance_score": relevance_score
                     })
         except Exception as e:
             logger.warning(f"⚠️ 來源 [{name}] 抓取失敗: {e}，不影響其他來源")
             
+    if filter_enabled and total_scanned > 0:
+        logger.info(f"🌪️ 標題前置漏斗成效：共掃描 {total_scanned} 則標題，命中排斥詞攔截 {dropped_negative} 篇，嚴格過濾跳過 {dropped_strict} 篇，放行 {len(raw_articles)} 篇進入正文研讀池")
+
+    # 若為 smart 模式，優先將命中關注主題分數高的文章排在前面
+    if filter_mode == "smart":
+        raw_articles.sort(key=lambda x: x.get("relevance_score", 0), reverse=True)
+
     return raw_articles
 
 # ==========================================
@@ -481,10 +528,11 @@ def run_pipeline():
     sources = config.get("sources", [])
     profile = config.get("profile", {})
     custom_prompt = config.get("custom_prompt", None)
+    pipeline_settings = config.get("pipeline_settings", {})
 
-    # 2. 抓取文章
-    raw_articles = fetch_sources(sources)
-    logger.info(f"📥 抓取完成，共取得 {len(raw_articles)} 篇候選文章")
+    # 2. 抓取文章（傳入 profile 與 pipeline_settings 執行標題前置漏斗過濾）
+    raw_articles = fetch_sources(sources, profile=profile, pipeline_settings=pipeline_settings)
+    logger.info(f"📥 抓取與漏斗篩選完成，共取得 {len(raw_articles)} 篇候選文章")
 
     # 3. 資料庫比對防重
     session = SessionLocal()
