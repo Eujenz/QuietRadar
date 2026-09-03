@@ -1,0 +1,67 @@
+﻿name: QuietRadar Daily Pipeline
+
+on:
+  schedule:
+    # 每天執行 2 次（台灣時間 UTC+8）：
+    # 00:00 UTC = 台灣時間 08:00 (早報)
+    # 12:00 UTC = 台灣時間 20:00 (晚報)
+    - cron: '0 0,12 * * *'
+  workflow_dispatch: # 支援在 GitHub 網頁上手動點擊「Run workflow」隨時觸發
+    inputs:
+      force_mode:
+        description: '是否強制重新研讀所有文章（忽略資料庫防重）'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  run-radar:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 檢出專案代碼
+        uses: actions/checkout@v4
+
+      - name: 設定 Python 環境 (3.11)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 安裝相依套件
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 恢復 SQLite 防重資料庫快取
+        uses: actions/cache@v4
+        with:
+          path: quietradar.db
+          key: radar-db-${{ github.run_id }}
+          restore-keys: |
+            radar-db-
+
+      - name: 執行情報雷達管線
+        env:
+          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL || 'https://openrouter.ai/api/v1' }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL || 'minimax/minimax-m3:free' }}
+          BARK_SERVER_URL: ${{ secrets.BARK_SERVER_URL || 'https://api.day.app' }}
+          BARK_DEVICE_KEY: ${{ secrets.BARK_DEVICE_KEY }}
+          DATABASE_URL: 'sqlite:///./quietradar.db'
+        run: |
+          if [ "${{ inputs.force_mode }}" = "true" ]; then
+            python pipeline.py --force
+          else
+            python pipeline.py
+          fi
+
+      - name: 提交並推送最新電子報至 GitHub 儲存庫
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add latest_newsletter.md latest_distilled.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: auto-update latest_newsletter.md [skip ci]" && git push)
