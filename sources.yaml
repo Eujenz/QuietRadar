@@ -93,3 +93,9 @@ sources:
   category: curated_rss
   enabled: true
   serendipity: false
+- name: 數位時代
+  url: https://www.bnext.com.tw/rss
+  category: cross_domain_ideas
+  enabled: true
+  serendipity: true
+
