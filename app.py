@@ -159,6 +159,38 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
             儲存自訂提示詞
           </button>
 
+          <!-- 內文研讀深度與候選池設定 -->
+          <div class="border-t border-slate-800 pt-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <label class="block text-sm font-semibold text-amber-400 flex items-center space-x-2">
+                <i class="fa-solid fa-sliders"></i>
+                <span>爬取內文研讀深度與候選池設定</span>
+              </label>
+              <span class="text-[11px] text-amber-400/80 font-mono">LLM 研讀正文字數控制</span>
+            </div>
+            <p class="text-xs text-slate-400">控制爬取完文章後，LLM 研讀每篇正文的字數深度與送入融會貫通的候選篇數：</p>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+              <div>
+                <label class="block text-[11px] font-mono text-slate-300 mb-1">
+                  每篇文章提供給 LLM 研讀字數 (字元)
+                </label>
+                <input type="number" id="cfg-snippet-len" min="0" max="10000" step="100" class="w-full bg-dark-950 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 focus:border-amber-500 focus:outline-none" placeholder="預設 800 (填 0 代表完整內文不截斷)">
+                <p class="text-[10px] text-slate-500 mt-1">一般 RSS 正文約 500~1500 字，設 800~1500 字可涵蓋 90% 核心論點。填 0 代表全送。</p>
+              </div>
+              <div>
+                <label class="block text-[11px] font-mono text-slate-300 mb-1">
+                  單次送入研讀的候選文章上限 (篇數)
+                </label>
+                <input type="number" id="cfg-max-pool" min="1" max="50" step="1" class="w-full bg-dark-950 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 focus:border-amber-500 focus:outline-none" placeholder="預設 10 (最多 50 篇)">
+                <p class="text-[10px] text-slate-500 mt-1">單次從最新未讀文章中挑選幾篇交由大模型融會貫通。篇數越多，橫向脈絡越廣。</p>
+              </div>
+            </div>
+            <button onclick="savePipelineSettings()" class="w-full bg-amber-500 hover:bg-amber-600 text-dark-950 font-bold py-2 rounded-lg text-sm transition shadow-lg shadow-amber-500/20">
+              儲存研讀深度與候選池設定
+            </button>
+          </div>
+
           <!-- 輸出結構框架 (開放自訂與儲存) -->
           <div class="border-t border-slate-800 pt-4 space-y-3">
             <div class="flex items-center justify-between">
@@ -342,6 +374,11 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       // 渲染 Prompt
       document.getElementById('custom-prompt').value = data.custom_prompt || '';
 
+      // 渲染研讀深度與候選池設定
+      const ps = data.pipeline_settings || {};
+      document.getElementById('cfg-snippet-len').value = ps.content_snippet_length !== undefined ? ps.content_snippet_length : 800;
+      document.getElementById('cfg-max-pool').value = ps.max_candidate_pool !== undefined ? ps.max_candidate_pool : 10;
+
       // 渲染 Output Template
       const tpl = data.output_template || {};
       document.getElementById('tpl-header').value = tpl.header || '# ⚡ QuietRadar 降噪科技電子報\n> 出刊時間：{time} | 本期精選：{count} 則 | 去 AI 雜訊率：約 80%\n---';
@@ -404,6 +441,20 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         body: JSON.stringify({ custom_prompt })
       });
       alert('自訂提示詞已成功更新儲存至 sources.yaml！');
+    }
+
+    async function savePipelineSettings() {
+      const snippet_len = parseInt(document.getElementById('cfg-snippet-len').value, 10);
+      const max_pool = parseInt(document.getElementById('cfg-max-pool').value, 10);
+      await fetch('/api/pipeline_settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content_snippet_length: isNaN(snippet_len) ? 800 : snippet_len,
+          max_candidate_pool: isNaN(max_pool) ? 10 : max_pool
+        })
+      });
+      alert('已成功儲存爬取研讀深度與候選池上限設定！');
     }
 
     function renderSources(sources) {
@@ -578,6 +629,7 @@ class QuietRadarHandler(BaseHTTPRequestHandler):
                 "profile": cfg.get("profile", {}),
                 "custom_prompt": cfg.get("custom_prompt", ""),
                 "output_template": cfg.get("output_template", {}),
+                "pipeline_settings": cfg.get("pipeline_settings", {"content_snippet_length": 800, "max_candidate_pool": 10}),
                 "env": env_data
             })
 
@@ -635,6 +687,14 @@ class QuietRadarHandler(BaseHTTPRequestHandler):
             with open("sources.yaml", "r", encoding="utf-8") as f:
                 cfg = yaml.safe_load(f)
             cfg["output_template"] = payload
+            with open("sources.yaml", "w", encoding="utf-8") as f:
+                yaml.dump(cfg, f, allow_unicode=True, sort_keys=False)
+            self._send_json({"status": "ok"})
+
+        elif path == "/api/pipeline_settings":
+            with open("sources.yaml", "r", encoding="utf-8") as f:
+                cfg = yaml.safe_load(f)
+            cfg["pipeline_settings"] = payload
             with open("sources.yaml", "w", encoding="utf-8") as f:
                 yaml.dump(cfg, f, allow_unicode=True, sort_keys=False)
             self._send_json({"status": "ok"})

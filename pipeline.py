@@ -116,7 +116,7 @@ def fetch_sources(sources_config: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                         "source_name": name,
                         "title": title,
                         "url": link,
-                        "summary": clean_text[:800],  # 保留 800 字實質內容讓 LLM 提煉真實結論
+                        "summary": clean_text[:4000],  # 保留充足內文，交由 pipeline_settings 精準調控研讀深度
                         "sha256": h
                     })
         except Exception as e:
@@ -133,7 +133,7 @@ class SimpleLLMDistiller:
         self.base_url = os.getenv("LLM_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/")
         self.model = os.getenv("LLM_MODEL", "minimax/minimax-m3:free")
 
-    def distill(self, candidates: List[Dict[str, Any]], profile: Dict[str, Any], top_k: int = 7, custom_prompt: Optional[str] = None) -> Dict[str, Any]:
+    def distill(self, candidates: List[Dict[str, Any]], profile: Dict[str, Any], top_k: int = 7, custom_prompt: Optional[str] = None, snippet_length: int = 800) -> Dict[str, Any]:
         if not candidates:
             return {"overview": "", "items": []}
             
@@ -182,14 +182,14 @@ class SimpleLLMDistiller:
   ]
 }}
 """
-        # 準備餵給 LLM 的文章候選清單（提供足夠內文讓模型提煉真實實質結論）
+        # 準備餵給 LLM 的文章候選清單（依據 snippet_length 提供充足內文讓模型深度研讀）
         articles_payload = [
             {
                 "index": i + 1,
                 "source": a["source_name"],
                 "title": a["title"],
                 "url": a["url"],
-                "content_snippet": a["summary"][:600]
+                "content_snippet": a["summary"][:snippet_length] if (snippet_length and snippet_length > 0) else a["summary"]
             }
             for i, a in enumerate(candidates)
         ]
@@ -496,17 +496,26 @@ def run_pipeline():
         session.close()
         return
 
-    # [防禦微調 1]：Token 防爆保護，最多取最新的 10 篇送進 LLM 候選池
-    MAX_CANDIDATE_POOL = 10
-    if len(unprocessed) > MAX_CANDIDATE_POOL:
-        logger.info(f"🛡️ 觸發候選池上限保護：由 {len(unprocessed)} 篇截取最新 {MAX_CANDIDATE_POOL} 篇進行蒸餾")
-        target_candidates = unprocessed[:MAX_CANDIDATE_POOL]
+    # 讀取研讀深度與候選池上限設定
+    pipeline_settings = config.get("pipeline_settings", {})
+    max_pool = pipeline_settings.get("max_candidate_pool", 10)
+    snippet_len = pipeline_settings.get("content_snippet_length", 800)
+
+    # 候選池上限保護
+    if len(unprocessed) > max_pool:
+        logger.info(f"🛡️ 觸發候選池上限設定：由 {len(unprocessed)} 篇截取最新 {max_pool} 篇進行深度研讀")
+        target_candidates = unprocessed[:max_pool]
     else:
         target_candidates = unprocessed
 
-    # 4. LLM 蒸餾降噪 (傳入 custom_prompt)
+    # 計算本輪餵給大模型的實際字數統計，並清晰記錄於 LOG
+    total_chars = sum(len(a.get("summary", "")[:snippet_len] if snippet_len > 0 else a.get("summary", "")) for a in target_candidates)
+    snippet_desc = f"{snippet_len} 字" if snippet_len > 0 else "完整內文 (不截斷)"
+    logger.info(f"📚 LLM 研讀池就緒：共送入 {len(target_candidates)} 篇候選文章，每篇內文上限 {snippet_desc}（本輪總計向大模型投餵約 {total_chars:,} 字元實質正文）")
+
+    # 4. LLM 蒸餾降噪 (傳入 custom_prompt 與 snippet_length)
     distiller = SimpleLLMDistiller()
-    distill_res = distiller.distill(target_candidates, profile, top_k=7, custom_prompt=custom_prompt)
+    distill_res = distiller.distill(target_candidates, profile, top_k=7, custom_prompt=custom_prompt, snippet_length=snippet_len)
     
     overview = ""
     distilled_items = []
