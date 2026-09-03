@@ -304,7 +304,7 @@ class SimpleLLMDistiller:
    請深入研讀下方候選文章，挑選出真正具備商業啟發性、新奇且可行的情報（最多 {top_k} 則，寧缺毋濫；若本期值得探討的文章多，可挑選 8~{top_k} 則；若素材平庸則精煉挑選）。
    在精選出的情報項目中，請嚴格維持槓鈴比例：
    - 🎯 核心業務情報：約佔 70% ~ 80%
-   - ✨ 跨界漫遊靈感：約佔 20% ~ 30%（必須從清單中標註 ✨ [跨界漫遊靈感] 的文章中挑選）
+   - ✨ 跨界漫遊靈感：約佔 20% ~ 30%（必須從清單標題帶有 ✨ 的文章中挑選）
    嚴禁全部挑選核心文章而遺漏跨界靈感！"""
         else:
             quota_rule = f"1. 請精選出最具閱讀價值的候選文章（最多 {top_k} 則，質量優先），並完全依據上方守則撰寫獨立深度論述正文。"
@@ -330,7 +330,7 @@ class SimpleLLMDistiller:
   "overview": "完全遵照上方模板規則撰寫的【今日觀點】獨立深度正文（單指正文 800~2,000 字，內文帶有 [[編號]](url) 論文式引用連結，不含文末引用清單）",
   "items": [
     {{
-      "title": "精煉後的繁體中文標題",
+      "title": "精煉後的繁體中文標題（若為跨界文章請保留開頭的 ✨）",
       "original_url": "必須填寫候選文章中的真實 URL",
       "source_name": "來源名稱"
     }}
@@ -341,7 +341,7 @@ class SimpleLLMDistiller:
             {
                 "index": i + 1,
                 "source": a["source_name"],
-                "title": f"✨ [跨界漫遊靈感] {a['title']}" if a.get("is_serendipity") else a["title"],
+                "title": f"✨ {a['title']}" if a.get("is_serendipity") else a["title"],
                 "url": a["url"],
                 "is_serendipity": a.get("is_serendipity", False),
                 "content_snippet": a["summary"][:snippet_length] if (snippet_length and snippet_length > 0) else a["summary"]
@@ -768,8 +768,13 @@ def format_newsletter_markdown(items: List[Dict[str, Any]], template: Optional[D
         for item in source_items:
             title = sanitize_taiwan_terms(item.get("title", "").strip())
             url = item.get("original_url", "").strip()
-            if item.get("is_serendipity") and "跨界" not in title:
-                title = f"✨ [跨界靈感] {title}"
+            # 徹底移除 [跨界靈感]、[跨界漫遊] 等贅字，純粹保留 EMOJI ✨
+            title = re.sub(r'\[跨界[^\]]*\]\s*', '', title).strip()
+            if item.get("is_serendipity"):
+                if not title.startswith("✨"):
+                    title = f"✨ {title}"
+            else:
+                title = re.sub(r'^✨\s*', '', title).strip()
             item_text = item_tpl.replace("{index}", str(global_idx)).replace("{title}", title).replace("{url}", url).replace("{source}", source_name).strip()
             # 移除無效 html <br> 標籤，純粹使用 Markdown 標準換行語法
             item_text = re.sub(r'<\s*br\s*/?\s*>', '', item_text).strip()
@@ -1209,8 +1214,9 @@ def run_pipeline(test_mode: bool = False, force: bool = False):
             cand_cross = [c for c in target_candidates if c.get("is_serendipity") and c.get("url") not in used_urls]
             needed = target_cross_min - len(llm_cross)
             for supp in cand_cross[:needed]:
+                clean_t = re.sub(r'\[跨界[^\]]*\]\s*', '', supp['title']).strip()
                 llm_cross.append({
-                    "title": f"✨ [跨界靈感] {supp['title']}" if not supp['title'].startswith("✨") else supp['title'],
+                    "title": f"✨ {clean_t}" if not clean_t.startswith("✨") else clean_t,
                     "original_url": supp["url"],
                     "source_name": supp["source_name"],
                     "is_serendipity": True

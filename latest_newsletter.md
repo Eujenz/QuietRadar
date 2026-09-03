@@ -1,4 +1,4 @@
-> 出刊時間：2026-09-03 16:46 | 本期精選：15 則 
+> 出刊時間：2026-09-04 00:51 | 本期精選：15 則 
 
 ---
 
@@ -54,20 +54,20 @@
 
 人人都是產品經理 (2 則)
 
-10. [✨ [跨界靈感] 淘寶正式上線「AI 空間站」:以後買 Token,可以像充話費一樣簡單](https://www.woshipm.com/ai/6459215.html)  
+10. [✨ 淘寶正式上線「AI 空間站」:以後買 Token,可以像充話費一樣簡單](https://www.woshipm.com/ai/6459215.html)  
 
-11. [[跨界漫遊] 對話 a16z 合人:AI 創始人最大的錯誤,是把 99% 的時間花在想策略上](https://www.woshipm.com/ai/6459294.html)  
+11. [✨ 對話 a16z 合人:AI 創始人最大的錯誤,是把 99% 的時間花在想策略上](https://www.woshipm.com/ai/6459294.html)  
 
 商業周刊 (1 則)
 
-12. [[跨界漫遊] 有些錢今天賺爆、卻賠上明天:勃肯鞋「3 不做」跑贏 Hoka、Adidas](https://www.businessweekly.com.tw/Archive/Article/Index?StrId=7014640)  
+12. [✨ 有些錢今天賺爆、卻賠上明天:勃肯鞋「3 不做」跑贏 Hoka、Adidas](https://www.businessweekly.com.tw/Archive/Article/Index?StrId=7014640)  
 
 農業科技前瞻 (3 則)
 
-13. [[跨界漫遊] 看不見的林冠擁擠:LiDAR 支援精準疏伐](https://agritech-foresight.atri.org.tw/article/contents/6300)  
+13. [✨ 看不見的林冠擁擠:LiDAR 支援精準疏伐](https://agritech-foresight.atri.org.tw/article/contents/6300)  
 
-14. [[跨界漫遊] 新發現水稻基因可提早 1.5 小時開花,有助避開高溫危害](https://agritech-foresight.atri.org.tw/article/contents/6298)  
+14. [✨ 新發現水稻基因可提早 1.5 小時開花,有助避開高溫危害](https://agritech-foresight.atri.org.tw/article/contents/6298)  
 
-15. [[跨界漫遊] 番茄也會受光傷害?動態照明可減輕溫室番茄連續光照傷害](https://agritech-foresight.atri.org.tw/article/contents/6299)  
+15. [✨ 番茄也會受光傷害?動態照明可減輕溫室番茄連續光照傷害](https://agritech-foresight.atri.org.tw/article/contents/6299)  
 
 ---
