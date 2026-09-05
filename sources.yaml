@@ -98,4 +98,15 @@ sources:
   category: cross_domain_ideas
   enabled: true
   serendipity: true
+- name: Hacker News (Show HN)
+  url: https://hnrss.org/show?points=5
+  category: curated_rss
+  enabled: true
+  serendipity: false
+- name: arXiv (跨界前沿論文)
+  url: http://export.arxiv.org/api/query?search_query=cat:cs.AI+OR+cat:econ.TH+OR+cat:q-bio.NC&sortBy=submittedDate&sortOrder=descending&max_results=15
+  category: cross_domain_ideas
+  enabled: true
+  serendipity: true
+
 
