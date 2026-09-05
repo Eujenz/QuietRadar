@@ -2,11 +2,12 @@ name: QuietRadar Daily Pipeline
 
 on:
   schedule:
-    # 每天執行 2 次（台灣時間 UTC+8）：
-    # 23:30 UTC = 台灣時間 07:30 (晨間出刊)
-    - cron: '30 23 * * *'
-    # 10:00 UTC = 台灣時間 18:00 (傍晚出刊)
-    - cron: '0 10 * * *'
+    # 每天定時執行 2 次（台灣時間 Asia/Taipei UTC+8）：
+    # 💡 關鍵技巧：避開全球整點 (:00) 與半點 (:30) 的 GitHub 伺服器排隊大塞車！
+    # 23:25 UTC = 台灣時間 07:25 (早晨推播，精準準時抵達)
+    - cron: '25 23 * * *'
+    # 09:55 UTC = 台灣時間 17:55 (傍晚下班前推播，精準準時抵達)
+    - cron: '55 9 * * *'
   workflow_dispatch: # 支援在 GitHub 網頁上手動點擊「Run workflow」隨時觸發
     inputs:
       force_mode:
@@ -21,10 +22,15 @@ permissions:
 jobs:
   run-radar:
     runs-on: ubuntu-latest
+    env:
+      TZ: 'Asia/Taipei'
 
     steps:
       - name: 檢出專案代碼
         uses: actions/checkout@v4
+
+      - name: 設定伺服器為台灣時區 (Asia/Taipei)
+        run: sudo timedatectl set-timezone Asia/Taipei
 
       - name: 設定 Python 環境 (3.11)
         uses: actions/setup-python@v5
@@ -65,4 +71,4 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add latest_newsletter.md latest_distilled.json data/archive
-          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: archive newsletter and update latest [skip ci]" && git push)
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: archive newsletter and update latest at $(date +'%Y-%m-%d %H:%M') (Asia/Taipei) [skip ci]" && git push)

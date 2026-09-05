@@ -6,7 +6,16 @@ import yaml
 import subprocess
 import threading
 import webbrowser
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+try:
+    from zoneinfo import ZoneInfo
+    TAIPEI_TZ = ZoneInfo("Asia/Taipei")
+except Exception:
+    TAIPEI_TZ = timezone(timedelta(hours=8))
+
+def get_taipei_now() -> datetime:
+    return datetime.now(TAIPEI_TZ)
+
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
@@ -1011,7 +1020,7 @@ class QuietRadarHandler(BaseHTTPRequestHandler):
                 def _worker():
                     global IS_RUNNING, RUNNING_LOGS
                     mode_label = "【🧪 測試模式 (忽略防重，無新資料自動回退)】" if is_test_mode else "【⚡ 標準模式】"
-                    RUNNING_LOGS.append(f"[{datetime.now().strftime('%H:%M:%S')}] 🚀 開始執行 QuietRadar 管線 {mode_label}...")
+                    RUNNING_LOGS.append(f"[{get_taipei_now().strftime('%H:%M:%S')}] 🚀 開始執行 QuietRadar 管線 {mode_label}...")
                     cmd = [sys.executable, "pipeline.py"]
                     if is_test_mode:
                         cmd.extend(["--test", "--force"])
@@ -1028,7 +1037,7 @@ class QuietRadarHandler(BaseHTTPRequestHandler):
                             RUNNING_LOGS.append(line.strip())
                     proc.stdout.close()
                     proc.wait()
-                    RUNNING_LOGS.append(f"[{datetime.now().strftime('%H:%M:%S')}] 🏁 執行完成，Exit Code: {proc.returncode}")
+                    RUNNING_LOGS.append(f"[{get_taipei_now().strftime('%H:%M:%S')}] 🏁 執行完成，Exit Code: {proc.returncode}")
                     IS_RUNNING = False
 
                 threading.Thread(target=_worker, daemon=True).start()

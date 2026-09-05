@@ -6,7 +6,17 @@ import hashlib
 import logging
 import re
 import argparse
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+try:
+    from zoneinfo import ZoneInfo
+    TAIPEI_TZ = ZoneInfo("Asia/Taipei")
+except Exception:
+    TAIPEI_TZ = timezone(timedelta(hours=8))
+
+def get_taipei_now() -> datetime:
+    """取得台灣時區 (Asia/Taipei, UTC+8) 當前時間"""
+    return datetime.now(TAIPEI_TZ)
+
 from typing import List, Dict, Any, Optional, Tuple
 
 import yaml
@@ -51,7 +61,7 @@ class ProcessedArticle(Base):
     title = Column(String(512))
     url = Column(String(1024))
     user_id = Column(String(64), default="default")
-    created_at = Column(DateTime, default=datetime.now)
+    created_at = Column(DateTime, default=get_taipei_now)
 
 Base.metadata.create_all(bind=engine)
 
@@ -115,7 +125,7 @@ def record_processed_articles(session, articles: List[Dict[str, Any]]):
                 title=a["title"][:500],
                 url=norm_url[:1000],
                 user_id="default",
-                created_at=datetime.now()
+                created_at=get_taipei_now()
             )
             session.add(record)
     session.commit()
@@ -784,7 +794,7 @@ def format_newsletter_markdown(items: List[Dict[str, Any]], template: Optional[D
     統一生成電子報 Markdown 內容，供本地檔案存檔 (latest_newsletter.md) 與 Bark 推播共用，確保格式 100% 一致。
     """
     if not now_str:
-        now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+        now_str = get_taipei_now().strftime("%Y-%m-%d %H:%M")
     tpl = template or {}
     
     header_tpl = tpl.get("header", "# ⚡ QuietRadar 降噪科技電子報\n> 出刊時間：{time} | 本期精選：{count} 則\n---")
@@ -856,7 +866,7 @@ def generate_newsletter_file(items: List[Dict[str, Any]], filepath: str = "lates
     archive_dir = os.path.join("data", "archive")
     try:
         os.makedirs(archive_dir, exist_ok=True)
-        timestamp_str = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+        timestamp_str = get_taipei_now().strftime("%Y-%m-%d_%H%M%S")
         archive_path = os.path.join(archive_dir, f"newsletter_{timestamp_str}.md")
         with open(archive_path, "w", encoding="utf-8") as af:
             af.write(content)
@@ -1012,7 +1022,7 @@ class SimpleBarkNotifier:
         body_markdown = full_markdown or format_newsletter_markdown(items, template=template, overview=overview)
         chunks = split_markdown_for_bark(body_markdown, max_chunk_bytes=2400)
 
-        now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+        now_str = get_taipei_now().strftime("%Y-%m-%d %H:%M")
         overall_success = True
 
         # 1. 取得由 GUI 輸出結構框架 (output_template) 定義的各段推播標題模板
@@ -1316,7 +1326,7 @@ def run_pipeline(test_mode: bool = False, force: bool = False):
         distilled_data = {
             "overview": overview,
             "items": distilled_items,
-            "time": datetime.now().strftime("%Y-%m-%d %H:%M")
+            "time": get_taipei_now().strftime("%Y-%m-%d %H:%M")
         }
         with open("latest_distilled.json", "w", encoding="utf-8") as df:
             json.dump(distilled_data, df, ensure_ascii=False, indent=2)
@@ -1324,7 +1334,7 @@ def run_pipeline(test_mode: bool = False, force: bool = False):
         # 同步封存 JSON 資料結構
         archive_dir = os.path.join("data", "archive")
         os.makedirs(archive_dir, exist_ok=True)
-        ts_now = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+        ts_now = get_taipei_now().strftime("%Y-%m-%d_%H%M%S")
         with open(os.path.join(archive_dir, f"distilled_{ts_now}.json"), "w", encoding="utf-8") as adf:
             json.dump(distilled_data, adf, ensure_ascii=False, indent=2)
     except Exception as e:
