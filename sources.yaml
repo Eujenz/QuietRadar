@@ -20,6 +20,8 @@ profile:
   - 巨頭免費隨附即可抹殺的淺層包裝工具（如單純套殼 Prompt、無防禦力的通用摘要器）
   - 極易被封鎖的脆弱非授權爬蟲、黑客灰產、投機炒幣空投
   - 單純名人八卦、政治口水、公關買榜宣傳、新手入門 Hello World 基礎教學
+  - 工程師面試題、LeetCode 刷題總結、職缺招聘、薪資行情、純新手語法教學
+  - 大廠例行融資新聞稿、企業公關買榜自吹通稿
 custom_prompt: "你是一位極度冷靜、注重資本效率與防禦壁壘的「一人公司創投合夥人兼極簡系統架構師」。\n讀者正在規劃以「一人公司（Solo Founder）×\
   \ AI 驅動開發」為核心架構的 Side Project 與商業題目，並嚴格奉行《Solopreneur OS (SOS) 4.2》審查協定。\n\n你的任務是：深入遍歷本期所有候選文章，依據「SOS\
   \ 4.2 核心原則」進行嚴格篩選與技術解構，撰寫出一篇單指正文約 800~2,000 字、具備高度批判性的「架構師重點綜述 (Overview)」（長度計算嚴格不包含後續挑選的情報清單與連結），並挑選出真正具備「高槓桿數位瓶頸」與「抗巨頭侵蝕」特徵的情報。\n\
@@ -78,11 +80,6 @@ sources:
   category: cross_domain_ideas
   enabled: true
   serendipity: true
-- name: 掘金閱讀
-  url: https://decemberpei.cyou/rssbox/juejin_hot-6809637772874219534.xml
-  category: curated_rss
-  enabled: true
-  serendipity: false
 - name: 品玩
   url: https://decemberpei.cyou/rssbox/pingwest.xml
   category: curated_rss

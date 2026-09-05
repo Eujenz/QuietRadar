@@ -1,0 +1,90 @@
+{
+  "overview": "## 稀缺性轉向：當 AI 變成「會做事的同事」，模型層反而最先被商品化\n\n這一週科技版面幾乎被三股力量佔據：模型在比拼「操控電腦」的真本事 [[4]](http://www.geekpark.net/news/369800)、企業 IT 開始正視「Agent 該怎麼被治理」[[1]](http://www.geekpark.net/news/369767)、原本理所當然的「Token 訂閱」被大平台當作流量商品免費贈送 [[47]](https://www.woshipm.com/ai/6460059.html)。把這三件事疊起來，會浮現一個訊號——當「能寫、能看、能操作螢幕」變成模型的標配，「AI 幫你做事」就不再是賣點；真正值錢的，是模型跨越系統邊界時「誰來接住那個動作」。\n\n背後更值得警覺的是，當模型能力膨脹到能在 DseWiki 上互相串聯、學會結社與越獄 [[2]](http://www.geekpark.net/news/369873) [[10]](http://www.geekpark.net/news/369610)，大廠的注意力就被迫從「模型聰不聰明」轉向「誰能替 Agent 寫一套上下文作業系統」[[1]](http://www.geekpark.net/news/369767)、誰能替 Agent 畫出「可被審計的權限邊界」[[22]](https://www.pingwest.com/w/317022)。這對一人公司其實是雙重紅利：模型層越像大宗商品，套著通用外殼賣 Token 的套殼站就越快變成免費隨附；而卡在「跨系統資料轉譯」、「高頻審查截留」、「動作可審計可回放」這些高摩擦控制點上的微型服務，反而長出抗巨頭侵蝕的毛利空間。\n\n接下來這幾個點子，是把這一週的科技異動與本期跨界靈感撞在一起後，我覺得最值得下注的微型題目。\n\n## 跨界撞擊後的三個腦洞\n\n### 把企業流程改造成「每晚一次的小型實驗」\n\nFullive.ai 把睡眠拆成「觀察 → 介入 → 看身體反饋 → 隔夜調整」的迴路，讓硬體自己學會每晚的干預 [[5]](http://www.geekpark.net/news/369768)。這個思路搬到 B2B 流程上，等於是把企業那些「永遠調不好的東西」──審批 SLA、客服話術、倉庫揀貨動線──變成一晚一晚的 A/B 實驗。\n\n**微型題目**：替連鎖餐飲或電商倉庫做的「夜班流程自調機」。白天正常營業，系統在雲端把當天所有流程數據（POS、揀貨、出單、客服）壓進一個小型強化學習迴路；深夜離峰時，自動跑「明天要不要換一條揀貨路徑」、「遇到某種退貨原因要不要自動加一道人工覆核」之類的小實驗，天亮把結論推給店長按確認鍵。\n\n這樣做有幾個好處。它把「持續實驗」這件大廠都在喊、卻沒人真的幫中小客戶做完的事，壓成一份每天五分鐘就能看完的決策儀表板。客戶之所以難以拒絕，是因為同類實驗自己搞得養一整個資料科學團隊，而你賣的是「每晚自己跑、早上自己醒」的黑盒子，同時踩中「省核心工時」與「避險」兩條價值線。\n\n借鏡阿里媽媽「不看標籤、看消費意圖」的邏輯 [[6]](http://www.geekpark.net/news/369777)，這個系統也不必看「這家店長的頭銜是什麼」，而看「這家門市今晚的退貨節奏是怎麼長出來的」──比起被預設 SOP 綁死，它會自己長出最適合那家店的流程肌肉。\n\n### 把「沉沒流程」再加工成可定價的再生原料\n\n印度研究團隊把每年 800 萬公噸的花卉廢棄物發酵成胡蘿蔔肥料，鮮重增加 40%、根長增加 128% [[38]](https://agritech-foresight.atri.org.tw/article/contents/6301)。這種「把下游不要的東西，變成上游願意付費的再生原料」思路，正是勃肯鞋「3 不做」能跑贏 Hoka 與 Adidas 的同構 [[39]](https://www.businessweekly.com.tw/Archive/Article/Index?StrId=7014640)──他們刻意放棄兩成看起來很好賺的訂單，只為了讓留下的生意「明天還賣得動」。\n\n**微型題目**：替 SaaS 公司或代理商做的「退訂戶再加工廠」。當客戶取消訂閱、被降階、被流失，市面上 99% 的工具都只是記錄「他走了」；真正值錢的，其實是「他走之前留下了什麼資料資產」。這套服務可以幫客戶把已退訂的帳號、停用的 workspace、被遺棄的 webhook，全部打包成結構化的「可重用素材包」──要嘛賣回給客戶做 cold outreach 養名單，要嘛匿名化成產業基準報告的數據源。\n\n切入點之所以漂亮，在於它直擊一個被所有人忽略的「心理帳戶死角」：退訂戶在客戶眼裡是沉沒成本，但對市場端其他人來說，是帶有強烈意圖訊號的低成本名單。借鏡 arXiv 那篇「把自然語言規格編譯成可重用神經函數」的思路 [[41]](https://arxiv.org/abs/2609.04199v1)，這個服務不必每次都 call 大模型，而是把常見的「退訂理由 → 對應文案」編譯成小型本地 adapter，每次轉譯成本壓到幾毫秒、幾分錢，徹底脫離「按 token 計價」的高階自由工作者陷阱。\n\n### 替企業 SaaS 畫一張「看不見的擁擠地圖」\n\n日本團隊用空載 LiDAR + Weibull 統計模型，把人工林「林冠有多擠、哪棵樹壓迫哪棵樹」畫成 20 公尺解析度的地圖，幫林業決策者排定疏伐順序 [[48]](https://agritech-foresight.atri.org.tw/article/contents/6300)。這種「替肉眼看不到的擁擠定價」的能力，正是本期 Salesforce 案例的核心：他們把 UI 入口讓給 Claude，真正的毛利反而轉向「資料與工作流」[[45]](https://www.bnext.com.tw/article/92142/salesforce-claudeforce-dumb-pipe)。\n\n**微型題目**：替 Notion、Slack、HubSpot 使用者做的「內部資訊擁擠指數儀表板」。大多數團隊不知道自己的 Notion workspace 有多少「半年沒人看的舊 SOP」、多少「Slack 頻道只剩老闆在自言自語」、多少「HubSpot pipeline 裡躺著 90 天的僵屼 deal」。這個服務不必做內容分析（那是大廠的紅海），而是用「最後存取時間 × 同時協作人數 × 訊號密度」畫一張擁擠熱區圖，自動標出「該砍的 SOP」、「該併的頻道」、「該清的 deal」。\n\n這個方向完全符合「決策層中介軟體」的定位：模型層被 Notion AI、Slack AI 隨附送掉是早晚的事，但「敢不敢砍掉自己三個月沒碰的舊流程」這種心理阻力，沒人會幫你扛。借鏡千問編輯部把「散落信源 + 評分閾值」變成自動成稿的設計 [[12]](http://www.geekpark.net/news/369517)，這套服務的核心也是替客戶把「看不到的骯髒資料」壓成可執行的清理任務，決策確認權留在客戶端。\n\n## 收束：三條暗線壓進同一種形態\n\n把這三個題目攤開來看，都不是「再寫一個 ChatGPT 套殼」，也不是「再接一個案子」，而是把本期三條暗線——「AI 開始替你做事」、「大廠被迫交出 UI 換資料」、「Token 變成大平台免費贈送的流量商品」——壓進同一種形態：一個只賣「看不見的擁擠地圖」與「每天醒來就長好的小實驗」的微型決策層。\n\n模型越像大宗商品，這一層的價值就越立體；客戶越來越不願意把資料搬出去 [[44]](https://www.businessweekly.com.tw/Archive/Article/Index?StrId=7014641)，純 Web/API、純輔助決策、零硬體負債的交付形態就越是護城河。一人公司只要把每一條業務線都壓到「早上看一份報告、按一個確認鍵」的四小時穩態，剩下的時間，就留給讀者自己繼續往下挖了。",
+  "items": [
+    {
+      "title": "AI 下一場競爭：誰能成為 Agent 的「上下文作業系統」",
+      "original_url": "http://www.geekpark.net/news/369767",
+      "source_name": "極客公園",
+      "is_serendipity": false
+    },
+    {
+      "title": "網際網路最古老的恐懼，被 AI 復活了",
+      "original_url": "http://www.geekpark.net/news/369873",
+      "source_name": "極客公園",
+      "is_serendipity": false
+    },
+    {
+      "title": "GPT-6 曝光，OpenAI 總裁說：AGI 來了",
+      "original_url": "http://www.geekpark.net/news/369800",
+      "source_name": "極客公園",
+      "is_serendipity": false
+    },
+    {
+      "title": "成立不到一年連融三輪，這個睡眠 AI 產品「火」了",
+      "original_url": "http://www.geekpark.net/news/369768",
+      "source_name": "極客公園",
+      "is_serendipity": false
+    },
+    {
+      "title": "當 AI 開始理解「人不是標籤」：阿里媽媽如何重構廣告定向",
+      "original_url": "http://www.geekpark.net/news/369777",
+      "source_name": "極客公園",
+      "is_serendipity": false
+    },
+    {
+      "title": "OpenAI 內部，AI 建立了三代「文明」",
+      "original_url": "http://www.geekpark.net/news/369610",
+      "source_name": "極客公園",
+      "is_serendipity": false
+    },
+    {
+      "title": "編輯部來了 AI 實習生｜千問入職 20 天，我給它寫了一份實習小結",
+      "original_url": "http://www.geekpark.net/news/369517",
+      "source_name": "極客公園",
+      "is_serendipity": false
+    },
+    {
+      "title": "✨ 600億拿下Cursor後，馬斯克的第一份答卷來了",
+      "original_url": "https://www.woshipm.com/ai/6460067.html",
+      "source_name": "人人都是產品經理",
+      "is_serendipity": true
+    },
+    {
+      "title": "✨ 花卉廢棄物永續營養生物配方提升胡蘆巴生長表現",
+      "original_url": "https://agritech-foresight.atri.org.tw/article/contents/6301",
+      "source_name": "農業科技前瞻",
+      "is_serendipity": true
+    },
+    {
+      "title": "✨ 有些錢今天賺爆、卻賠上明天，勃肯鞋「3不做」跑贏Hoka、Adidas",
+      "original_url": "https://www.businessweekly.com.tw/Archive/Article/Index?StrId=7014640",
+      "source_name": "商業周刊",
+      "is_serendipity": true
+    },
+    {
+      "title": "✨ Compile by Training: Turning Natural-Language Specifications into Local Neural Functions",
+      "original_url": "https://arxiv.org/abs/2609.04199v1",
+      "source_name": "arXiv (跨界前沿論文)",
+      "is_serendipity": true
+    },
+    {
+      "title": "✨ 看不見的林冠擁擠：LiDAR支援精準疏伐",
+      "original_url": "https://agritech-foresight.atri.org.tw/article/contents/6300",
+      "source_name": "農業科技前瞻",
+      "is_serendipity": true
+    },
+    {
+      "title": "✨ Salesforce為何把用戶入口讓給Claude，甘願當笨水管？軟體巨頭真正押注的是「資料護城河」",
+      "original_url": "https://www.bnext.com.tw/article/92142/salesforce-claudeforce-dumb-pipe",
+      "source_name": "數位時代",
+      "is_serendipity": true
+    },
+    {
+      "title": "✨ 輝達財報透露一個新訊號，為何AI三巨頭都攻開源模型？",
+      "original_url": "https://www.businessweekly.com.tw/Archive/Article/Index?StrId=7014641",
+      "source_name": "商業周刊",
+      "is_serendipity": true
+    }
+  ],
+  "time": "2026-09-05 14:26"
+}

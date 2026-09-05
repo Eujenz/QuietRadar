@@ -19,6 +19,17 @@ def get_taipei_now() -> datetime:
 
 from typing import List, Dict, Any, Optional, Tuple
 
+try:
+    import opencc
+    _OPENCC_CONVERTER = opencc.OpenCC('s2twp.json')
+    def to_taiwan_traditional(text: str) -> str:
+        if not text:
+            return ""
+        return _OPENCC_CONVERTER.convert(text)
+except Exception:
+    def to_taiwan_traditional(text: str) -> str:
+        return text or ""
+
 import yaml
 import httpx
 import feedparser
@@ -130,6 +141,26 @@ def record_processed_articles(session, articles: List[Dict[str, Any]]):
             session.add(record)
     session.commit()
 
+def round_robin_interleave(articles: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    依據信源 (source_name) 進行公平輪詢交叉排列，確保各信源均衡展現，杜絕前序單一信源霸佔候選池。
+    """
+    if not articles:
+        return []
+    buckets: Dict[str, List[Dict[str, Any]]] = {}
+    for a in articles:
+        buckets.setdefault(a["source_name"], []).append(a)
+    result = []
+    while True:
+        added = False
+        for s_name in list(buckets.keys()):
+            if buckets[s_name]:
+                result.append(buckets[s_name].pop(0))
+                added = True
+        if not added:
+            break
+    return result
+
 def extract_keywords_from_list(items: List[str]) -> List[str]:
     kws = set()
     for item in items:
@@ -237,7 +268,12 @@ def fetch_sources(sources_config: List[Dict[str, Any]], profile: Optional[Dict[s
             max_age_days = settings.get("max_article_age_days", 7)
 
             for entry in entries[:25]:  # 擴大候選池掃描範圍
-                title = entry.get("title", "").strip()
+                raw_title = entry.get("title", "").strip()
+                # 徹底清洗 HTML 標籤與屬性殘渣（針對掘金等含 <a>、<div> 或未閉合引號的 RSS）
+                clean_title = re.sub(r'<[^>]+>', '', raw_title)
+                clean_title = re.sub(r'["\'>]+', '', clean_title)
+                title = re.sub(r'\s+', ' ', clean_title).strip()
+                title = sanitize_taiwan_terms(title)
                 raw_link = entry.get("link", "").strip()
                 
                 # 1. 空標題與無效條目過濾（借鏡 TrendRadar 兜底機制）
@@ -310,7 +346,7 @@ def fetch_sources(sources_config: List[Dict[str, Any]], profile: Optional[Dict[s
                 
                 h = hashlib.sha256(f"{link}|{title}".encode("utf-8")).hexdigest()
                 raw_articles.append({
-                    "source_name": name,
+                    "source_name": sanitize_taiwan_terms(name),
                     "title": title,
                     "url": link,
                     "summary": clean_text[:4000],
@@ -627,10 +663,13 @@ BUZZWORD_REPLACEMENTS = [
 
 def sanitize_taiwan_terms(text: str) -> str:
     """
-    確定性過濾：清除大陸黑話與轉換為台灣在地用語。
+    確定性過濾：清除大陸黑話與轉換為台灣在地用語，並全域轉換為台灣繁體慣用語 (OpenCC s2twp)。
     """
     if not text:
         return text
+    # 1. 先用 OpenCC 轉換簡體字並做標準台灣詞彙轉換 (s2twp: Simplified to Traditional Taiwan with Phrases)
+    text = to_taiwan_traditional(text)
+    # 2. 再套用自訂大廠黑話與特定科技用語洗滌字典
     for pattern, repl in BUZZWORD_REPLACEMENTS:
         text = re.sub(pattern, repl, text)
     return text
@@ -774,11 +813,12 @@ def to_superscript_citations(text: str, style: str = "A") -> str:
     - 'C': [[¹]](url) - 方括號內置上標
     """
     superscript_map = str.maketrans("0123456789", "⁰¹²³⁴⁵⁶⁷⁸⁹")
+    digit_map = str.maketrans("⁰¹²³⁴⁵⁶⁷⁸⁹", "0123456789")
 
     def repl(match):
-        num_str = match.group(1)
+        raw_num = match.group(1).translate(digit_map)
         url = match.group(2)
-        sup_num = num_str.translate(superscript_map)
+        sup_num = raw_num.translate(superscript_map)
         if style == "A":
             return f"[{sup_num}]({url})"
         elif style == "B":
@@ -786,7 +826,154 @@ def to_superscript_citations(text: str, style: str = "A") -> str:
         else:
             return f"[[{sup_num}]]({url})"
 
-    return re.sub(r'\[+([0-9]+)\]+\((https?://[^\)]+)\)', repl, text)
+    return re.sub(r'\[+([0-9⁰¹²³⁴⁵⁶⁷⁸⁹]+)\]+\((https?://[^\)]+)\)', repl, text)
+
+
+def extract_url_key(url: str) -> str:
+    """提取 URL 中的核心文章 ID 或唯一路徑識別符，用於容錯對齊"""
+    if not url:
+        return ""
+    # 提取查詢參數中的 ID (如 StrId=7014632, id=123)
+    m = re.search(r'(?:id|strid|article_id)=(\w+)', url, re.IGNORECASE)
+    if m:
+        return m.group(1).lower()
+    # 支援路徑中帶有數字 ID (例如 /article/92140/...) 或結尾帶有數字 ID (例如 /news/369801, /contents/6305, /share/6460051.html)
+    m2 = re.search(r'/(\d{4,})(?:/|\.html|$)', url)
+    if m2:
+        return m2.group(1)
+    return ""
+
+
+def find_matching_candidate(url: str, candidates: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """在候選池或現有清單中智慧查找與指定 URL 匹配的文章項目（支援規範化與核心 ID 容錯）"""
+    if not url or not candidates:
+        return None
+    norm_u = normalize_url(url)
+    key_u = extract_url_key(url)
+    
+    # 1. 精確符合
+    for cand in candidates:
+        cand_u = cand.get("url") or cand.get("original_url") or ""
+        if cand_u == url or normalize_url(cand_u) == norm_u:
+            return cand
+            
+    # 2. 核心 ID 識別符容錯符合 (防禦 LLM 網址微幅筆誤，如漏掉 /Index 或拼錯 slug)
+    if key_u:
+        for cand in candidates:
+            cand_u = cand.get("url") or cand.get("original_url") or ""
+            if extract_url_key(cand_u) == key_u:
+                return cand
+                
+    return None
+
+
+def align_citations_and_items(
+    overview: str, 
+    items: List[Dict[str, Any]], 
+    target_candidates: Optional[List[Dict[str, Any]]] = None
+) -> Tuple[str, List[Dict[str, Any]]]:
+    """
+    動態論文式引用對齊引擎 (Dynamic Citation Alignment Engine)：
+    1. 遍歷 overview 中的所有論文式角注連結，依「文內首次出現順序」萃取唯一 URL 清單。
+    2. 自動將 URL 與 items 及候選池 target_candidates 進行雙向錨定；若有文內引用但在 items 遺漏的文章，自動從候選池找回並補齊詮釋資料。
+    3. 將文內所有角注編號依序重排為嚴格單調遞增的 [[1]](url), [[2]](url), ... [[K]](url)。
+    4. 調整 items 清單，將被引用的文章排在最前方 (1..K)，其後緊隨未在正文引述但入選的精選情報 (K+1..M)。
+    5. 全面套用台灣正體化與在地黑話洗滌 (OpenCC s2twp + BUZZWORD_REPLACEMENTS)。
+    100% 保證正文角標 [¹]、[²] 與文末清單編號 1..N 絕對一對一嚴格對齊，杜絕斷鏈與序號跳號！
+    """
+    if not overview or not overview.strip():
+        sanitized_items = []
+        for it in items:
+            item_copy = dict(it)
+            item_copy["title"] = sanitize_taiwan_terms(item_copy.get("title", ""))
+            item_copy["source_name"] = sanitize_taiwan_terms(item_copy.get("source_name", ""))
+            sanitized_items.append(item_copy)
+        return overview, sanitized_items
+
+    # 匹配文內角注：支援 [[1]](url)、[1](url) 以及上標數字 [¹](url)
+    citation_pat = re.compile(r'\[+([0-9⁰¹²³⁴⁵⁶⁷⁸⁹]+)\]+\((https?://[^\s\)]+)\)')
+
+    # 建立候選池檢索來源
+    candidates_pool = []
+    if target_candidates:
+        candidates_pool.extend(target_candidates)
+    candidates_pool.extend(items)
+
+    ordered_cited_urls = []
+    seen_keys = set()
+
+    for match in citation_pat.finditer(overview):
+        raw_url = match.group(2).strip().rstrip('.,;:')
+        key = extract_url_key(raw_url) or normalize_url(raw_url) or raw_url
+        if key not in seen_keys:
+            seen_keys.add(key)
+            ordered_cited_urls.append(raw_url)
+
+    aligned_items = []
+    url_to_idx = {}
+    url_to_canonical = {}
+
+    for idx, raw_url in enumerate(ordered_cited_urls, 1):
+        matched = find_matching_candidate(raw_url, candidates_pool)
+        if matched:
+            canonical_url = matched.get("url") or matched.get("original_url") or raw_url
+            clean_title = sanitize_taiwan_terms(matched.get("title", "").strip())
+            source_name = sanitize_taiwan_terms(matched.get("source_name", "精選情報").strip())
+            is_serendipity = matched.get("is_serendipity", False)
+        else:
+            canonical_url = raw_url
+            clean_title = raw_url
+            source_name = "精選情報"
+            is_serendipity = False
+
+        item_dict = {
+            "title": clean_title,
+            "original_url": canonical_url,
+            "source_name": source_name,
+            "is_serendipity": is_serendipity
+        }
+        aligned_items.append(item_dict)
+
+        # 建立映射以更新 overview 中的序號與 URL
+        url_to_idx[raw_url] = idx
+        url_to_idx[canonical_url] = idx
+        url_to_canonical[raw_url] = canonical_url
+        norm_raw = normalize_url(raw_url)
+        if norm_raw:
+            url_to_idx[norm_raw] = idx
+        key_raw = extract_url_key(raw_url)
+        if key_raw:
+            url_to_idx[f"key:{key_raw}"] = idx
+
+    # 收集在 items 中但未在 overview 中被引用的延伸情報
+    for it in items:
+        cand_u = it.get("original_url") or it.get("url") or ""
+        matched_cand = find_matching_candidate(cand_u, aligned_items)
+        if not matched_cand:
+            clean_it = dict(it)
+            clean_it["title"] = sanitize_taiwan_terms(clean_it.get("title", "").strip())
+            clean_it["source_name"] = sanitize_taiwan_terms(clean_it.get("source_name", "精選情報").strip())
+            aligned_items.append(clean_it)
+
+    # 重新序列化 overview 中的所有引用連結，確保角標嚴格等於 1..K
+    def replace_citation(m: re.Match) -> str:
+        u = m.group(2).strip().rstrip('.,;:')
+        target_idx = url_to_idx.get(u) or url_to_idx.get(normalize_url(u))
+        if not target_idx:
+            k = extract_url_key(u)
+            if k:
+                target_idx = url_to_idx.get(f"key:{k}")
+        
+        canonical = url_to_canonical.get(u, u)
+        if target_idx is not None:
+            return f"[[{target_idx}]]({canonical})"
+        return m.group(0)
+
+    new_overview = citation_pat.sub(replace_citation, overview)
+    new_overview = sanitize_taiwan_terms(new_overview)
+
+    logger.info(f"📐 [引用對齊引擎] 完成對齊：共標定 {len(ordered_cited_urls)} 則文內角注，文末清單依序組織 {len(aligned_items)} 則情報（1..{len(ordered_cited_urls)} 嚴格對應文內角注）")
+    return new_overview, aligned_items
 
 
 def format_newsletter_markdown(items: List[Dict[str, Any]], template: Optional[Dict[str, Any]] = None, overview: str = "", now_str: Optional[str] = None) -> str:
@@ -803,11 +990,6 @@ def format_newsletter_markdown(items: List[Dict[str, Any]], template: Optional[D
     item_tpl = tpl.get("item_format", "{index}. [{title}]({url})")
     footer_tpl = tpl.get("footer", "---")
 
-    grouped_by_source: Dict[str, List[Dict[str, Any]]] = {}
-    for item in items:
-        src = item.get("source_name", "精選情報")
-        grouped_by_source.setdefault(src, []).append(item)
-
     header_text = header_tpl.replace("{time}", now_str).replace("{count}", str(len(items))).strip()
     lines = [header_text, ""]
 
@@ -822,14 +1004,16 @@ def format_newsletter_markdown(items: List[Dict[str, Any]], template: Optional[D
         lines.append(overview_text)
         lines.append("")
 
-    global_idx = 1
-    for source_name, source_items in grouped_by_source.items():
-        grp_text = group_tpl.replace("{source}", source_name).replace("{count}", str(len(source_items))).strip()
-        lines.append(grp_text)
-        lines.append("")
-        for item in source_items:
+    # 判斷是否具備文內引用序號（若有 overview 且包含論文式注釋）
+    # 依序渲染 1..N 項條目，保持 100% 論文式嚴格對齊
+    has_citations = bool(overview and re.search(r'\[+([0-9⁰¹²³⁴⁵⁶⁷⁸⁹]+)\]+\(https?://', overview))
+    
+    if has_citations:
+        global_idx = 1
+        for item in items:
             title = sanitize_taiwan_terms(item.get("title", "").strip())
             url = item.get("original_url", "").strip()
+            source_name = sanitize_taiwan_terms(item.get("source_name", "精選情報").strip())
             # 徹底移除 [跨界靈感]、[跨界漫遊] 等贅字，純粹保留 EMOJI ✨
             title = re.sub(r'\[跨界[^\]]*\]\s*', '', title).strip()
             if item.get("is_serendipity"):
@@ -837,13 +1021,45 @@ def format_newsletter_markdown(items: List[Dict[str, Any]], template: Optional[D
                     title = f"✨ {title}"
             else:
                 title = re.sub(r'^✨\s*', '', title).strip()
-            item_text = item_tpl.replace("{index}", str(global_idx)).replace("{title}", title).replace("{url}", url).replace("{source}", source_name).strip()
+
+            item_text = item_tpl.replace("{index}", str(global_idx)).replace("{title}", title).replace("{url}", url)
+            if "{source}" in item_tpl:
+                item_text = item_text.replace("{source}", source_name)
+            elif source_name:
+                item_text = f"{item_text} · {source_name}"
+
             # 移除無效 html <br> 標籤，純粹使用 Markdown 標準換行語法
             item_text = re.sub(r'<\s*br\s*/?\s*>', '', item_text).strip()
             # 關鍵：行尾帶有雙空格 (  ) 且各項目以空行分隔，100% 保證任何 Markdown 解析器（含 Bark/iOS）絕對各自換行！
             lines.append(f"{item_text}  ")
             lines.append("")
             global_idx += 1
+    else:
+        # 無引用或無觀點時，依來源分組呈現
+        grouped_by_source: Dict[str, List[Dict[str, Any]]] = {}
+        for item in items:
+            src = sanitize_taiwan_terms(item.get("source_name", "精選情報"))
+            grouped_by_source.setdefault(src, []).append(item)
+
+        global_idx = 1
+        for source_name, source_items in grouped_by_source.items():
+            grp_text = group_tpl.replace("{source}", source_name).replace("{count}", str(len(source_items))).strip()
+            lines.append(grp_text)
+            lines.append("")
+            for item in source_items:
+                title = sanitize_taiwan_terms(item.get("title", "").strip())
+                url = item.get("original_url", "").strip()
+                title = re.sub(r'\[跨界[^\]]*\]\s*', '', title).strip()
+                if item.get("is_serendipity"):
+                    if not title.startswith("✨"):
+                        title = f"✨ {title}"
+                else:
+                    title = re.sub(r'^✨\s*', '', title).strip()
+                item_text = item_tpl.replace("{index}", str(global_idx)).replace("{title}", title).replace("{url}", url).replace("{source}", source_name).strip()
+                item_text = re.sub(r'<\s*br\s*/?\s*>', '', item_text).strip()
+                lines.append(f"{item_text}  ")
+                lines.append("")
+                global_idx += 1
 
     if footer_tpl.strip():
         lines.append(footer_tpl.replace("{time}", now_str).replace("{count}", str(len(items))).strip())
@@ -1192,37 +1408,23 @@ def run_pipeline(test_mode: bool = False, force: bool = False):
         serendipity_quota = max(2, int(max_pool * serendipity_ratio)) if serendipity_enabled else 0
 
     # 槓鈴策略配額組裝 (Barbell Candidate Pool Assembly)
-    core_articles = [a for a in unprocessed if not a.get("is_serendipity", False)]
-    serendipity_articles = [a for a in unprocessed if a.get("is_serendipity", False)]
+    # 對核心與跨界文章分別執行信源公平輪詢交錯排序 (Round-Robin)，杜絕前序信源霸佔整個候選池
+    core_articles = round_robin_interleave([a for a in unprocessed if not a.get("is_serendipity", False)])
+    serendipity_articles = round_robin_interleave([a for a in unprocessed if a.get("is_serendipity", False)])
 
     # 跨界靈感蓄水池保障 (Serendipity Longevity Reservoir)：
-    # 跨界文章（農業科技、商業周刊、經理人）發文頻率通常比高頻科技部落格慢得多。
+    # 跨界文章（農業科技、商業周刊、經理人、arXiv）發文頻率通常比高頻科技部落格慢得多。
     # 若本輪未讀的新跨界文章不足 serendipity_quota，自動從本次爬取的既有跨界文章 (raw_articles) 補足！
     # 確保每次出刊永遠具備足額的跨界靈感素材進行撞擊！
     if len(serendipity_articles) < serendipity_quota:
         seen_urls = {a["url"] for a in serendipity_articles}
-        raw_cross = [a for a in raw_articles if a.get("is_serendipity", False) and a["url"] not in seen_urls]
+        raw_cross = round_robin_interleave([a for a in raw_articles if a.get("is_serendipity", False) and a["url"] not in seen_urls])
         needed_cross = serendipity_quota - len(serendipity_articles)
         supplement_cross = raw_cross[:needed_cross]
         if supplement_cross:
             logger.info(f"💡 [跨界蓄水池啟動] 全新跨界文章僅 {len(serendipity_articles)} 篇，自動從本期爬取之跨界情報中調用 {len(supplement_cross)} 篇補足配額！")
             serendipity_articles.extend(supplement_cross)
-
-    # 跨界文章來源去中心化輪轉，避免單一來源佔滿所有跨界配額
-    if serendipity_articles:
-        source_buckets: Dict[str, List[Dict[str, Any]]] = {}
-        for a in serendipity_articles:
-            source_buckets.setdefault(a["source_name"], []).append(a)
-        diversified_serendipity = []
-        while len(diversified_serendipity) < len(serendipity_articles):
-            added = False
-            for s_name, s_list in source_buckets.items():
-                if s_list:
-                    diversified_serendipity.append(s_list.pop(0))
-                    added = True
-            if not added:
-                break
-        serendipity_articles = diversified_serendipity
+            serendipity_articles = round_robin_interleave(serendipity_articles)
 
     # 理想配額：保障 serendipity_quota 篇跨界文章，其餘分配給核心文章
     # 當某一方數量不足時，動態由另一方填補，確保研讀池始終飽和
@@ -1317,6 +1519,10 @@ def run_pipeline(test_mode: bool = False, force: bool = False):
     if enable_humanizer and overview:
         cleaner = SpeakHumanCleaner()
         overview = cleaner.clean(overview)
+
+    # 動態論文式引用對齊引擎 (Dynamic Citation Alignment Engine)：
+    # 確保正文角注 [[1]](url) 與文末清單嚴格 1..N 順序對齊，補齊缺漏文章，並統一台灣繁體化
+    overview, distilled_items = align_citations_and_items(overview, distilled_items, target_candidates)
 
     output_template = config.get("output_template", {})
 
