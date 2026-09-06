@@ -255,6 +255,30 @@ def fetch_sources(sources_config: List[Dict[str, Any]], profile: Optional[Dict[s
                         "summary": summary,
                         "published_parsed": time.gmtime(pub_ts) if pub_ts else None
                     })
+            elif "daily_papers" in url or "huggingface.co/api" in url:
+                try:
+                    hf_json = json.loads(resp_content)
+                    if isinstance(hf_json, list):
+                        for p_obj in hf_json[:25]:
+                            paper = p_obj.get("paper", {})
+                            p_id = paper.get("id", "")
+                            p_title = paper.get("title", "") or p_obj.get("title", "")
+                            p_link = f"https://arxiv.org/abs/{p_id}" if p_id else ""
+                            p_summary = paper.get("summary", "") or p_obj.get("summary", "")
+                            upvotes = paper.get("upvotes", 0)
+                            gh = paper.get("githubRepo", "")
+                            meta_prefix = f"[HF Upvotes: {upvotes}"
+                            if gh:
+                                meta_prefix += f" | GitHub: {gh}"
+                            meta_prefix += "]\n"
+                            entries.append({
+                                "title": p_title.strip(),
+                                "link": p_link.strip(),
+                                "summary": meta_prefix + p_summary.strip(),
+                                "published_parsed": None
+                            })
+                except Exception as hf_err:
+                    logger.warning(f"⚠️ 解析 HuggingFace JSON 失敗: {hf_err}")
             else:
                 feed = feedparser.parse(resp_content)
                 for entry in feed.entries:
@@ -696,26 +720,31 @@ class SpeakHumanCleaner:
 
         logger.info("✨ 啟動 Stage 2 [speak-human-tw] 語言洗滌器：去 AI 味、在地化與人味注魂...")
 
-        cleaner_system_prompt = """你是一位文字簡練、語感極度敏銳的「台灣資深科技專欄主筆兼總編輯」。
-你的唯一任務：將傳入草稿中的「AI 生成味」、「中國大廠黑話」與「僵硬句型」徹底洗除，【用你自己的話打散重寫】為自然、成熟、像資深工程師在私下分享洞察的台灣繁體中文。
+        cleaner_system_prompt = """你是一位文字功力深厚、擅長用大白話講透前沿技術的「台灣頂級科技財經雜誌特聘總編輯」（文風融合《商業周刊》、《數位時代》封面專題與《連線 Wired》深度特稿）。
+你的唯一任務：將傳入草稿徹底洗滌重組，去除「AI 生成味」、「冷僻學術名詞」與「枯燥工程黑話」，【用你自己的話打散重寫】為通俗生動、節奏明快、直擊商業本質的台灣繁體中文。
 
 【核心重寫規範】：
-1. 嚴禁表面校對！請將整篇草稿打散，用清晰自然的敘事邏輯重新組織，拒絕照抄生硬句式。
-2. 斬斷四大 AI 腔（違者一律打散重寫）：
+1. 嚴禁表面校對！請將整篇草稿打散，用引人入勝的商業敘事重新組織，文筆必須老嫗能解、通暢易讀。
+2. 晦澀術語全面科普化（違者打散重寫）：
+   - 嚴禁保留未解釋的統計學或學術術語（如「Spearman 相關係數」、「Weibull 分佈」、「SOTA」、「LLM-as-judge」、「Adapter 本地化推理」）！
+   - 必須強制轉化為日常生活大白話比喻（如把評測不穩比喻為「陰晴不定的醉漢主考官」、把空載偵測比喻為「高空空拍做樹林健檢」、把高昂運算比喻為「吃錢怪獸」）。
+3. 斬除顧問八股與罐頭套話：
+   - 嚴禁每段像填問卷一樣重複「直接命中 SOS 4.2 的避險與控權雙維價值」、「純 Web/API 交付、無客服地獄、無硬體負債」！
+   - 請改用飽滿生動的商場語言：寫「老闆半夜被客訴嚇醒」、「財務長看著雲端帳單心痛」、「一人公司不用親自接電話也能自動扣款」。
+4. 斬斷四大 AI 腔：
    - 嚴禁否定平行句（「不是 A 而是 B」、「不是 A 是 B」）！請直接說「是 B」，徹底刪除「不是 A」。
    - 嚴禁公式化列點（「第一是...第二是...第三是...」、「一是...二是...三是...」、「首先...其次...最後...」）！請融入段落自然敘事。
    - 嚴禁機械式總結（「這幾個案例的共同點是...」、「這三條路的共同特點很一致：...」）！
    - 嚴禁口號式結尾（「這才叫...」、「這才算...」、「這無疑是...」）！請用平實落地的觀察收尾。
-3. 絕不使用任何中國大廠黑話：
-   - 嚴禁出現：閉環、賦能、抓手、打法、顆粒度、心智、下沉、沉澱、飛輪、搓出、載體、組合拳、痛點、賽道、佈局。必須換為大白話。
-4. 台灣在地用語對照：
-   - 互聯網➔網路、群聊➔群組、批註➔註記、運營➔營運、行業➔產業、搭建➔打造/建構、緩存➔快取、算法➔演算法、服務器➔伺服器、項目➔專案、用戶➔使用者、信息➔資訊。
-5. 排版規範：
-   - 保留 2~3 個流暢段落，每個段落上方獨立配有一行【自訂精煉論點小標題】。
+5. 絕不使用中國大廠黑話，落實在地用語：
+   - 嚴禁出現：閉環、賦能、抓手、打法、顆粒度、心智、下沉、沉澱、飛輪、搓出、載體、組合拳、痛點、賽道、佈局。換為大白話。
+   - 台灣在地用語對照：互聯網➔網路、群聊➔群組、批註➔註記、運營➔營運、行業➔產業、搭建➔打造/建構、緩存➔快取、算法➔演算法、服務器➔伺服器、項目➔專案、用戶➔使用者、信息➔資訊。
+6. 排版規範：
+   - 保留 2~3 個流暢段落，每個段落上方獨立配有一行吸睛的【自訂精煉論點小標題】。
    - 小標題內絕不可有「引言/拆解/結論」標籤，也絕不可使用「不是...是...」句型。
    - 小標題與內文、各段落之間皆以空行隔開。
-6. 【論文式文內注釋保護鐵律】：
-   - 草稿內文中出現的所有 [[編號]](url)（例如 `[[1]](https://...)`、`[[2]](https://...)`）是讀者跳轉查證全文的重要入口，在去 AI 味改寫時【必須 100% 精準保留】在相應論點或案例名詞後方，絕不可刪除任何引用編號或變更網址！
+7. 【論文式文內注釋保護鐵律】：
+   - 草稿內文中出現的所有 [[編號]](url)（例如 `[[1]](https://...)`、`[[2]](https://...)`）是讀者點擊查證全文的重要入口，在改寫時【必須 100% 精準保留】在相應論點或案例名詞後方，絕不可刪除任何引用編號或變更網址！
 
 直接輸出改寫後終稿，絕不附加任何說明或額外字句。"""
 
@@ -739,7 +768,7 @@ class SpeakHumanCleaner:
                 "model": current_model,
                 "messages": [
                     {"role": "system", "content": cleaner_system_prompt},
-                    {"role": "user", "content": f"請將以下這段充滿 AI 味與大廠黑話的草稿，【徹底用你自己的話重新改寫成地道自然的台灣繁體中文】。特別注意：這段【今日觀點】正文篇幅必須維持在約 800~2,000 字左右（不含引用來源），保持充分的論述展開與實例細節，嚴禁過度濃縮或閹割篇幅。段落上方保留自訂【精煉論點小標題】（請勿帶有引言/拆解/結論等標籤）。內文中的 [[編號]](url) 論文式引用連結必須 100% 原樣保留：\n\n{raw_overview}"}
+                    {"role": "user", "content": f"請將以下這段草稿，【徹底用你自己的話重新改寫成老嫗能解、通俗流暢且極具商業啟發性的台灣繁體中文】（如《商業周刊》或《經理人》封面特稿風格）。特別注意：嚴禁保留生硬冷僻的學術統計術語，必須全部轉化為日常生活大白話比喻；徹底刪除重複出現的框架套話（如反覆出現的 SOS 4.2 罐頭詞組）；這段【今日觀點】正文篇幅維持在約 800~2,000 字左右（不含引用來源），保持充分的論述展開與生動案例細節，嚴禁過度濃縮或閹割篇幅。段落上方保留自訂【精煉論點小標題】（請勿帶有引言/拆解/結論等標籤）。內文中的 [[編號]](url) 論文式引用連結必須 100% 原樣保留：\n\n{raw_overview}"}
                 ],
                 "temperature": 0.4,
                 "max_tokens": 4096
@@ -863,6 +892,22 @@ def find_matching_candidate(url: str, candidates: List[Dict[str, Any]]) -> Optio
             cand_u = cand.get("url") or cand.get("original_url") or ""
             if extract_url_key(cand_u) == key_u:
                 return cand
+
+    # 3. Slug 容錯符合 (防禦 LLM 連字號/底線遺漏，例如 astra-openais vs astraopenais)
+    try:
+        path_parts = [p for p in urlparse(url).path.strip('/').split('/') if p]
+        if path_parts:
+            raw_slug = path_parts[-1].replace('-', '').replace('_', '').lower()
+            if len(raw_slug) >= 8:
+                for cand in candidates:
+                    cand_u = cand.get("url") or cand.get("original_url") or ""
+                    cand_parts = [p for p in urlparse(cand_u).path.strip('/').split('/') if p]
+                    if cand_parts:
+                        cand_slug = cand_parts[-1].replace('-', '').replace('_', '').lower()
+                        if raw_slug == cand_slug or raw_slug in cand_slug or cand_slug in raw_slug:
+                            return cand
+    except Exception:
+        pass
                 
     return None
 
