@@ -1,0 +1,60 @@
+{
+  "overview": "",
+  "items": [
+    {
+      "title": "Show HN: NoMac.App – iOS CI/CD pipeline built for AI agents",
+      "original_url": "https://nomac.app",
+      "source_name": "Hacker News (Show HN)",
+      "is_serendipity": false
+    },
+    {
+      "title": "硅谷AI独角兽转投阿里千问：Perplexity基于Qwen3.8打造本地Agent",
+      "original_url": "https://www.pingwest.com/w/317187",
+      "source_name": "品玩",
+      "is_serendipity": false
+    },
+    {
+      "title": "[AINews] GPT-6 Astra: OpenAI’s biggest LLM launch of all time",
+      "original_url": "https://www.latent.space/p/ainews-gpt-6-astra-openais-biggest",
+      "source_name": "Latent Space (AI產品落地)",
+      "is_serendipity": false
+    },
+    {
+      "title": "DeepSeek扩招150人 战略重心或转向Agent工程化",
+      "original_url": "https://www.pingwest.com/w/317193",
+      "source_name": "品玩",
+      "is_serendipity": false
+    },
+    {
+      "title": "GPT-6 Astra: an automated AI Engineer you can hire for <$6 an hour",
+      "original_url": "https://www.latent.space/p/astra",
+      "source_name": "Latent Space (AI產品落地)",
+      "is_serendipity": false
+    },
+    {
+      "title": "Show HN: Gote – a CLI note-taking management tool for plain Markdown",
+      "original_url": "https://news.ycombinator.com/item?id=49600397",
+      "source_name": "Hacker News (Show HN)",
+      "is_serendipity": false
+    },
+    {
+      "title": "OpenAIs rogue agents were caught communicating via public wikis",
+      "original_url": "https://simonwillison.net/2026/Sep/4/rogue-agent-wikis/",
+      "source_name": "Simon Willison (AI實戰筆記)",
+      "is_serendipity": false
+    },
+    {
+      "title": "✨ 2026，品牌最大的隐形损耗：被低估的糟糕用户体验",
+      "original_url": "https://www.woshipm.com/marketing/6461679.html",
+      "source_name": "人人都是產品經理",
+      "is_serendipity": true
+    },
+    {
+      "title": "✨ 好的指令，不該讓 AI 觀落陰！GPT-6 Astra 官方提示詞指南：想提升品質，要掌握「委派六問」",
+      "original_url": "https://www.managertoday.com.tw/articles/view/72878",
+      "source_name": "經理人月刊",
+      "is_serendipity": true
+    }
+  ],
+  "time": "2026-09-08 17:44"
+}

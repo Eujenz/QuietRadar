@@ -397,7 +397,7 @@ class SimpleLLMDistiller:
     def __init__(self):
         self.api_key = os.getenv("LLM_API_KEY", "")
         self.base_url = os.getenv("LLM_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/")
-        self.model = os.getenv("LLM_MODEL", "minimax/minimax-m3:free")
+        self.model = os.getenv("LLM_MODEL", "nvidia/nemotron-3-super-120b-a12b:free")
 
     def distill(self, candidates: List[Dict[str, Any]], profile: Dict[str, Any], top_k: int = 7, custom_prompt: Optional[str] = None, snippet_length: int = 800) -> Dict[str, Any]:
         if not candidates:
@@ -447,17 +447,14 @@ class SimpleLLMDistiller:
    - 範例：樹德收納「增工加料」的反脆弱定價法 [[6]](https://...)...
    - 引用編號（如 [[1]]、[[2]]）必須與你輸出 JSON 中的 items 項目編號 (1~N) 嚴格一對一對齊！
    - 當讀者閱讀觀點時，點擊上標即可直接跳轉進入全文深度閱讀。
-3. 請嚴格輸出符合以下結構的合法 JSON，不要附加額外說明或 Markdown 代碼塊標籤：
-{{
-  "overview": "完全遵照上方模板規則撰寫的【今日觀點】獨立深度正文（單指正文 800~2,000 字，內文帶有 [[編號]](url) 論文式引用連結，不含文末引用清單）",
-  "items": [
-    {{
-      "title": "精煉後的繁體中文標題（若為跨界文章請保留開頭的 ✨）",
-      "original_url": "必須填寫候選文章中的真實 URL",
-      "source_name": "來源名稱"
-    }}
-  ]
-}}"""
+3. 【JSON 格式契約規範】：
+   你必須輸出包含 "overview" 與 "items" 兩個欄位的合法 JSON 物件：
+   - "overview" (字串)：根據上方指示撰寫的【商業排雷與專欄特稿】完整 Markdown 內文（約 800~1,300 字，採用科技商業專欄特稿散文體，深入剖析 2 則最具代表性訊號，融會貫通思維綱領並自擬嵌入具體人事實地物的生動專屬小標題，包含客群基數與 Micro-TAM 市場規模推估、[[編號]](URL) 論文式引用與 Tiny Wedge 道具驗證，或明確宣告【海面無魚保真安全閥】）。嚴禁輸出空白或重複說明文字！
+   - "items" (陣列)：挑選出的精選情報清單（最多 {top_k} 則），每個物件包含真實屬性：
+     * "title": 繁體中文標題（若為跨界文章保留開頭 ✨）
+     * "original_url": 候選文章真實 URL（嚴禁偽造）
+     * "source_name": 來源名稱
+"""
         # 準備餵給 LLM 的文章候選清單（依據 snippet_length 提供充足內文讓模型深度研讀）
         articles_payload = [
             {
@@ -483,10 +480,9 @@ class SimpleLLMDistiller:
         models_to_try = [self.model]
         if "openrouter" in self.base_url.lower():
             openrouter_free_backups = [
-                "minimax/minimax-m3:free",
-                "minimax/minimax-m2.7:free",
-                "google/gemma-4-31b-it:free",
-                "nvidia/nemotron-3.5-lightning:free"
+                "nvidia/nemotron-3-super-120b-a12b:free",
+                "nvidia/nemotron-3.5-lightning:free",
+                "nvidia/nemotron-3-ultra-550b-a55b:free"
             ]
             for b in openrouter_free_backups:
                 if b not in models_to_try:
@@ -495,8 +491,8 @@ class SimpleLLMDistiller:
             if "meta/llama-3.2-11b-vision-instruct" not in models_to_try:
                 models_to_try.append("meta/llama-3.2-11b-vision-instruct")
 
-        # 設定 180 秒寬裕逾時，避免冷啟動斷線
-        client_timeout = httpx.Timeout(180.0, connect=30.0, read=180.0, write=30.0)
+        # 設定 240 秒寬裕逾時，避免大模型冷啟動或長推導斷線
+        client_timeout = httpx.Timeout(240.0, connect=30.0, read=240.0, write=30.0)
 
         for current_model in models_to_try:
             temperature = 0.2
@@ -504,10 +500,11 @@ class SimpleLLMDistiller:
                 "model": current_model,
                 "messages": [
                     {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": f"以下是候選文章列表：\n{json.dumps(articles_payload, ensure_ascii=False)}"}
+                    {"role": "user", "content": f"請直接以繁體中文進行商業排雷審計與降噪蒸餾，直接輸出包含 overview 與 items 的合法 JSON 物件，嚴禁在 JSON 前後輸出任何草稿、非 JSON 文字或代碼標記：\n\n候選文章列表：\n{json.dumps(articles_payload, ensure_ascii=False)}"}
                 ],
                 "temperature": temperature,
-                "max_tokens": 4096,
+                "max_tokens": 8192,
+                "response_format": {"type": "json_object"},
                 "stream": True  # 啟用串流維持連線活躍
             }
 
@@ -525,11 +522,16 @@ class SimpleLLMDistiller:
                                 logger.warning(f"⚠️ 收到 HTTP {resp.status_code} 限速/逾時，觸發指數退避：等待 {wait_sec} 秒後重試...")
                                 time.sleep(wait_sec)
                                 continue
+                            elif resp.status_code == 400 and "response_format" in payload:
+                                logger.warning(f"⚠️ 模型 [{current_model}] 不支援 response_format=json_object，自動移除並重試...")
+                                payload.pop("response_format", None)
+                                continue
                             elif resp.status_code != 200:
                                 logger.warning(f"⚠️ 模型 [{current_model}] 回應狀態碼異常: {resp.status_code}")
                                 break
 
                             # 串流讀取 SSE Token
+                            finish_reason = None
                             for line in resp.iter_lines():
                                 if not line or not line.startswith("data:"):
                                     continue
@@ -538,10 +540,15 @@ class SimpleLLMDistiller:
                                     break
                                 try:
                                     chunk = json.loads(data_str)
-                                    delta = chunk["choices"][0].get("delta", {})
-                                    content = delta.get("content", "")
-                                    if content:
-                                        raw_text_chunks.append(content)
+                                    choices = chunk.get("choices", [])
+                                    if choices:
+                                        delta = choices[0].get("delta", {})
+                                        content = delta.get("content", "")
+                                        if content:
+                                            raw_text_chunks.append(content)
+                                        fr = choices[0].get("finish_reason")
+                                        if fr:
+                                            finish_reason = fr
                                 except Exception:
                                     pass
 
@@ -550,33 +557,132 @@ class SimpleLLMDistiller:
                         logger.warning(f"⚠️ 模型 [{current_model}] 串流回傳為空，嘗試重試...")
                         continue
 
-                    logger.info(f"📝 LLM [{current_model}] 串流接收完成，共 {len(raw_text)} 字元")
+                    # 防截斷熔斷機制：若明確回傳長度超限，捨棄殘稿切換重試/備援
+                    if finish_reason == "length":
+                        logger.warning(f"⚠️ 模型 [{current_model}] 輸出遭遇長度截斷 (finish_reason=length)，捨棄殘稿，重試或切換備援...")
+                        continue
+
+                    logger.info(f"📝 LLM [{current_model}] 串流接收完成，共 {len(raw_text)} 字元 (finish_reason={finish_reason})")
                     
-                    cleaned = raw_text
-                    match_obj = re.search(r'\{.*\}', cleaned, re.DOTALL)
-                    match_arr = re.search(r'\[\s*\{.*\}\s*\]', cleaned, re.DOTALL)
+                    # 1. 深度清洗思維鏈標籤 (<think>...</think>, <reasoning>...</reasoning>)
+                    cleaned = re.sub(r'<think>[\s\S]*?(?:<\/think>|$)', '', raw_text, flags=re.IGNORECASE)
+                    cleaned = re.sub(r'<reasoning>[\s\S]*?(?:<\/reasoning>|$)', '', cleaned, flags=re.IGNORECASE).strip()
+                    logger.info(f"🔍 [LLM 內容預覽]:\n{cleaned[:500]}")
 
-                    try:
-                        if match_obj:
+                    FORBIDDEN_HEADING_KEYWORDS = [
+                        "深度排雷", "戳破願景", "表面熱鬧", "落地摩擦力", "落地實體摩擦力",
+                        "巨頭抹殺", "巨頭抹殺路徑", "生死裁決", "特種部隊突圍", "最小切入點",
+                        "維度一", "維度二", "維度三", "維度四", "維度五", "SOS 4.2 生死裁決"
+                    ]
+
+                    def is_overview_valid_and_complete(ov_text: str) -> bool:
+                        if not ov_text or len(ov_text.strip()) < 400:
+                            return False
+                        stripped = ov_text.strip()
+
+                        # 1. 前言檢查（若有標題則檢查首個標題前引言長度；若無 Markdown 標題但為連貫散文則放行）
+                        first_header_pos = stripped.find("#")
+                        if first_header_pos != -1:
+                            intro_text = stripped[:first_header_pos].strip()
+                            if len(intro_text) < 60:
+                                logger.warning(f"⚠️ 專欄引言長度稍短 ({len(intro_text)} 字元)，請注意專欄破題深度")
+                        
+                        # 2. 嚴格檢查標題或粗體中是否偷渡思考綱領的死板禁語
+                        header_and_bold_lines = re.findall(r'(?:^#{1,6}\s*.*$|\*\*.*?\*\*)', stripped, flags=re.MULTILINE)
+                        for hb in header_and_bold_lines:
+                            for kw in FORBIDDEN_HEADING_KEYWORDS:
+                                if kw in hb:
+                                    logger.warning(f"⚠️ 偵測到標題/粗體中包含死板思考綱領禁語: 【{kw}】 (出現於: {hb[:40]})，判定驗證未通過，觸發重試")
+                                    return False
+
+                        # 3. 檢查結尾閉合：包含標準標點、Markdown 代碼塊、粗體、自定義標籤等
+                        is_closed = stripped.endswith(VALID_CLOSING_CHARS) or bool(re.search(r'[。！？」\*\*】\)\n]\s*$', stripped))
+                        if not is_closed:
+                            logger.warning(f"⚠️ overview 結尾疑似未正常閉合（末尾字元: {stripped[-30:]}），判定為遭遇微幅截斷")
+                            return False
+                        return True
+
+                    def _extract_distill_dict(data_obj: Any) -> Optional[Dict[str, Any]]:
+                        """安全封裝解析後的資料結構，支援 tiny_wedge 純文字或欄位容錯"""
+                        if not isinstance(data_obj, dict):
+                            return None
+                        ov = data_obj.get("overview", "")
+                        # 容錯處理：若模型將 tiny_wedge 作為獨立欄位輸出，乾淨串接避免寫死機械標題
+                        tw = data_obj.get("tiny_wedge")
+                        if tw and isinstance(tw, str) and tw.strip():
+                            if tw.strip() not in ov:
+                                ov = f"{ov.strip()}\n\n{tw.strip()}"
+                        
+                        if not is_overview_valid_and_complete(ov):
+                            return None
+
+                        items_list = data_obj.get("items", [])
+                        if not isinstance(items_list, list):
+                            items_list = []
+                        return {"overview": ov, "items": items_list[:top_k]}
+
+                    # 2. 優先提取 Markdown JSON 代碼塊 ```json ... ```
+                    block_match = re.search(r'```(?:json)?\s*(\{[\s\S]*?\})\s*```', cleaned, flags=re.IGNORECASE)
+                    if block_match:
+                        try:
+                            data = json.loads(block_match.group(1))
+                            res = _extract_distill_dict(data)
+                            if res and (res["items"] or res["overview"]):
+                                return res
+                        except Exception:
+                            pass
+
+                    # 3. 最外層 JSON 物件比對
+                    match_obj = re.search(r'\{[\s\S]*\}', cleaned)
+                    if match_obj:
+                        try:
                             data = json.loads(match_obj.group(0))
-                            if isinstance(data, dict) and "items" in data:
-                                return {"overview": data.get("overview", ""), "items": data["items"][:top_k]}
-                    except Exception:
-                        pass
+                            res = _extract_distill_dict(data)
+                            if res and (res["items"] or res["overview"]):
+                                return res
+                        except Exception:
+                            pass
 
-                    try:
-                        target_str = match_arr.group(0) if match_arr else cleaned
-                        data = json.loads(target_str.strip())
-                        if isinstance(data, list):
-                            return {"overview": "", "items": data[:top_k]}
-                        elif isinstance(data, dict):
-                            return {"overview": data.get("overview", ""), "items": data.get("items", [])[:top_k]}
-                    except Exception:
-                        pass
+                    # 3.5 容錯 JSON 提取（防禦尾部被微幅裁切的情況）
+                    ov_m = re.search(r'"overview"\s*:\s*"((?:[^"\\]|\\.)*)', cleaned)
+                    if ov_m:
+                        try:
+                            # 僅解碼 JSON escape 字符（如 \n, \", \\），嚴禁對已是 UTF-8 字串二次 decode
+                            raw_ov_escaped = ov_m.group(1)
+                            try:
+                                raw_ov = json.loads(f'"{raw_ov_escaped}"')
+                            except Exception:
+                                raw_ov = raw_ov_escaped.replace('\\n', '\n').replace('\\"', '"').replace('\\\\', '\\')
+                            
+                            items_m = re.search(r'"items"\s*:\s*\[([\s\S]*?)\]', cleaned)
+                            found_items = []
+                            if items_m:
+                                try:
+                                    found_items = json.loads(f"[{items_m.group(1)}]")
+                                except Exception:
+                                    pass
+                            if raw_ov.strip() and is_overview_valid_and_complete(raw_ov):
+                                return {"overview": raw_ov, "items": found_items[:top_k]}
+                        except Exception:
+                            pass
 
-                    # Fallback Markdown 提取器
+                    # 4. 最外層 JSON 陣列比對
+                    match_arr = re.search(r'\[\s*\{[\s\S]*\}\s*\]', cleaned)
+                    if match_arr:
+                        try:
+                            data = json.loads(match_arr.group(0))
+                            if isinstance(data, list):
+                                return {"overview": "", "items": data[:top_k]}
+                        except Exception:
+                            pass
+
+                    # 5. Fallback Markdown 提取器（加入思維鏈過濾黑名單）
                     extracted_items = []
-                    blocks = re.split(r'\n(?=\d+\.\s+)', raw_text)
+                    blocks = re.split(r'\n(?=\d+\.\s+)', cleaned)
+                    cot_noise_patterns = [
+                        r'^(?:analyze|scan|categorize|step\s*\d+|thinking|thought|reflect|review)',
+                        r'(?:候選文章|分析請求|篩選標準|思維鏈)'
+                    ]
                     for b in blocks:
                         if not re.match(r'^\d+\.\s+', b.strip()):
                             continue
@@ -584,6 +690,11 @@ class SimpleLLMDistiller:
                         title_match = re.search(r'^\d+\.\s+\*?\*?(.*?)\*?\*?$', lines[0])
                         title = title_match.group(1).replace('**', '').strip() if title_match else lines[0]
                         
+                        # 過濾思維鏈標籤雜訊
+                        if any(re.search(p, title, re.IGNORECASE) for p in cot_noise_patterns):
+                            logger.info(f"🛡️ [思維鏈過濾] 剔除 CoT 雜訊項目: 【{title[:30]}】")
+                            continue
+
                         url = ""
                         source = "精選情報"
                         for l in lines[1:]:
@@ -699,109 +810,35 @@ def sanitize_taiwan_terms(text: str) -> str:
     return text
 
 # ==========================================
-# 3.5 Stage 2: speak-human-tw 無人值守語言洗滌模組
+# 3.5 Stage 2: speak-human-tw 本機確定性語言洗滌模組
 # ==========================================
 class SpeakHumanCleaner:
     def __init__(self):
-        self.api_key = os.getenv("LLM_API_KEY", "")
-        self.base_url = os.getenv("LLM_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/")
-        self.model = os.getenv("LLM_MODEL", "minimax/minimax-m3:free")
+        pass
 
     def clean(self, raw_overview: str) -> str:
         """
-        對 Stage 1 生成的 Overview 進行第二階段去 AI 味與繁中在地化清洗。
-        遵循 speak-human-tw 核心準則，採用非互動式無人值守直接套用模式。
+        純本機確定性語言洗滌器：
+        1. OpenCC 台灣繁體正字化 (s2twp)
+        2. 大陸黑話與自嗨詞彙正則字典替換 (BUZZWORD_REPLACEMENTS)
+        3. 自動清除機械小標籤殘留與段落排版標準化
+        完全零網路延遲，100% 免疫 API 限速、逾時與二次截斷。
         """
         if not raw_overview or not raw_overview.strip():
             return raw_overview
             
-        if not self.api_key or self.api_key == "your_key_here":
-            return sanitize_taiwan_terms(raw_overview)
-
-        logger.info("✨ 啟動 Stage 2 [speak-human-tw] 語言洗滌器：去 AI 味、在地化與人味注魂...")
-
-        cleaner_system_prompt = """你是一位文字功力深厚、擅長用大白話講透前沿技術的「台灣頂級科技財經雜誌特聘總編輯」（文風融合《商業周刊》、《數位時代》封面專題與《連線 Wired》深度特稿）。
-你的唯一任務：將傳入草稿徹底洗滌重組，去除「AI 生成味」、「冷僻學術名詞」與「枯燥工程黑話」，【用你自己的話打散重寫】為通俗生動、節奏明快、直擊商業本質的台灣繁體中文。
-
-【核心重寫規範】：
-1. 嚴禁表面校對！請將整篇草稿打散，用引人入勝的商業敘事重新組織，文筆必須老嫗能解、通暢易讀。
-2. 晦澀術語全面科普化（違者打散重寫）：
-   - 嚴禁保留未解釋的統計學或學術術語（如「Spearman 相關係數」、「Weibull 分佈」、「SOTA」、「LLM-as-judge」、「Adapter 本地化推理」）！
-   - 必須強制轉化為日常生活大白話比喻（如把評測不穩比喻為「陰晴不定的醉漢主考官」、把空載偵測比喻為「高空空拍做樹林健檢」、把高昂運算比喻為「吃錢怪獸」）。
-3. 斬除顧問八股與罐頭套話：
-   - 嚴禁每段像填問卷一樣重複「直接命中 SOS 4.2 的避險與控權雙維價值」、「純 Web/API 交付、無客服地獄、無硬體負債」！
-   - 請改用飽滿生動的商場語言：寫「老闆半夜被客訴嚇醒」、「財務長看著雲端帳單心痛」、「一人公司不用親自接電話也能自動扣款」。
-4. 斬斷四大 AI 腔：
-   - 嚴禁否定平行句（「不是 A 而是 B」、「不是 A 是 B」）！請直接說「是 B」，徹底刪除「不是 A」。
-   - 嚴禁公式化列點（「第一是...第二是...第三是...」、「一是...二是...三是...」、「首先...其次...最後...」）！請融入段落自然敘事。
-   - 嚴禁機械式總結（「這幾個案例的共同點是...」、「這三條路的共同特點很一致：...」）！
-   - 嚴禁口號式結尾（「這才叫...」、「這才算...」、「這無疑是...」）！請用平實落地的觀察收尾。
-5. 絕不使用中國大廠黑話，落實在地用語：
-   - 嚴禁出現：閉環、賦能、抓手、打法、顆粒度、心智、下沉、沉澱、飛輪、搓出、載體、組合拳、痛點、賽道、佈局。換為大白話。
-   - 台灣在地用語對照：互聯網➔網路、群聊➔群組、批註➔註記、運營➔營運、行業➔產業、搭建➔打造/建構、緩存➔快取、算法➔演算法、服務器➔伺服器、項目➔專案、用戶➔使用者、信息➔資訊。
-6. 排版規範：
-   - 保留 2~3 個流暢段落，每個段落上方獨立配有一行吸睛的【自訂精煉論點小標題】。
-   - 小標題內絕不可有「引言/拆解/結論」標籤，也絕不可使用「不是...是...」句型。
-   - 小標題與內文、各段落之間皆以空行隔開。
-7. 【論文式文內注釋保護鐵律】：
-   - 草稿內文中出現的所有 [[編號]](url)（例如 `[[1]](https://...)`、`[[2]](https://...)`）是讀者點擊查證全文的重要入口，在改寫時【必須 100% 精準保留】在相應論點或案例名詞後方，絕不可刪除任何引用編號或變更網址！
-
-直接輸出改寫後終稿，絕不附加任何說明或額外字句。"""
-
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-            "HTTP-Referer": "https://github.com/Eujenz/QuietRadar",
-            "X-Title": "QuietRadar-Humanizer"
-        }
-
-        models_to_try = [self.model]
-        if "openrouter" in self.base_url.lower():
-            for b in ["minimax/minimax-m3:free", "minimax/minimax-m2.7:free", "google/gemma-4-31b-it:free", "nvidia/nemotron-3.5-lightning:free"]:
-                if b not in models_to_try:
-                    models_to_try.append(b)
-
-        client_timeout = httpx.Timeout(90.0, connect=20.0, read=90.0, write=20.0)
-
-        for current_model in models_to_try:
-            payload = {
-                "model": current_model,
-                "messages": [
-                    {"role": "system", "content": cleaner_system_prompt},
-                    {"role": "user", "content": f"請將以下這段草稿，【徹底用你自己的話重新改寫成老嫗能解、通俗流暢且極具商業啟發性的台灣繁體中文】（如《商業周刊》或《經理人》封面特稿風格）。特別注意：嚴禁保留生硬冷僻的學術統計術語，必須全部轉化為日常生活大白話比喻；徹底刪除重複出現的框架套話（如反覆出現的 SOS 4.2 罐頭詞組）；這段【今日觀點】正文篇幅維持在約 800~2,000 字左右（不含引用來源），保持充分的論述展開與生動案例細節，嚴禁過度濃縮或閹割篇幅。段落上方保留自訂【精煉論點小標題】（請勿帶有引言/拆解/結論等標籤）。內文中的 [[編號]](url) 論文式引用連結必須 100% 原樣保留：\n\n{raw_overview}"}
-                ],
-                "temperature": 0.4,
-                "max_tokens": 4096
-            }
-
-            try:
-                with httpx.Client(timeout=client_timeout) as client:
-                    resp = client.post(f"{self.base_url}/chat/completions", headers=headers, json=payload)
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        cleaned_text = data["choices"][0]["message"]["content"].strip()
-                        if cleaned_text.startswith("```"):
-                            cleaned_text = re.sub(r'^```[a-zA-Z]*\n?', '', cleaned_text)
-                            cleaned_text = re.sub(r'\n?```$', '', cleaned_text).strip()
-                        # 自動清除小標題中可能殘留的「引言：」、「拆解：」、「結論：」等機械標籤
-                        cleaned_text = re.sub(r'【(?:引言|拆解|結論|總結|背景|行動指南|技術解構|工程思考|市場現狀|產品策略)[：:]\s*', '【', cleaned_text)
-                        # 確保每個【小標題】前後皆有標準空行
-                        cleaned_text = re.sub(r'([^\n])\n(【[^\n]+】)', r'\1\n\n\2', cleaned_text)
-                        cleaned_text = re.sub(r'(【[^\n]+】)\n([^\n])', r'\1\n\n\2', cleaned_text)
-                        # 確定性黑話與台灣用語洗滌保險
-                        cleaned_text = sanitize_taiwan_terms(cleaned_text)
-
-                        if cleaned_text and len(cleaned_text) >= 100:
-                            logger.info(f"✅ Stage 2 語言洗滌完成（模型: {current_model}，潤飾後共 {len(cleaned_text)} 字）")
-                            return cleaned_text
-                    else:
-                        logger.warning(f"⚠️ Stage 2 模型 [{current_model}] 回應異常 ({resp.status_code})，嘗試備援模型...")
-            except Exception as e:
-                logger.warning(f"⚠️ Stage 2 呼叫 [{current_model}] 失敗: {e}")
-                continue
-
-        logger.warning("⚠️ Stage 2 備援鏈全部耗盡，自動回退並執行確定性辭彙洗滌")
-        return sanitize_taiwan_terms(raw_overview)
+        logger.info("✨ 啟動本機 [speak-human-tw] 確定性語言洗滌器 (零延遲、免二次呼叫)...")
+        cleaned_text = raw_overview.strip()
+        # 清除代碼塊包裹
+        if cleaned_text.startswith("```"):
+            cleaned_text = re.sub(r'^```[a-zA-Z]*\n?', '', cleaned_text)
+            cleaned_text = re.sub(r'\n?```$', '', cleaned_text).strip()
+        # 確保小標題前後空行標準化
+        cleaned_text = re.sub(r'([^\n])\n(【[^\n]+】)', r'\1\n\n\2', cleaned_text)
+        cleaned_text = re.sub(r'(【[^\n]+】)\n([^\n])', r'\1\n\n\2', cleaned_text)
+        # 確定性黑話與台灣用語洗滌保險
+        cleaned_text = sanitize_taiwan_terms(cleaned_text)
+        return cleaned_text
 
 
 def load_prompt_template(config: Dict[str, Any]) -> str:
@@ -1443,7 +1480,7 @@ def run_pipeline(test_mode: bool = False, force: bool = False):
 
     # 讀取研讀深度與候選池上限設定
     pipeline_settings = config.get("pipeline_settings", {})
-    max_pool = pipeline_settings.get("max_candidate_pool", 30)
+    max_pool = pipeline_settings.get("max_candidate_pool", 15)
     snippet_len = pipeline_settings.get("content_snippet_length", 900)
     serendipity_enabled = pipeline_settings.get("serendipity_enabled", True)
     serendipity_ratio = pipeline_settings.get("serendipity_ratio", 0.28)
@@ -1511,6 +1548,17 @@ def run_pipeline(test_mode: bool = False, force: bool = False):
     elif isinstance(distill_res, list):
         distilled_items = distill_res
 
+    # Stage 2: speak-human-tw 無人值守語言洗滌器 (若啟用且 overview 非空)
+    enable_humanizer = pipeline_settings.get("enable_two_stage_humanizer", True)
+    if enable_humanizer and overview:
+        cleaner = SpeakHumanCleaner()
+        overview = cleaner.clean(overview)
+
+    # 動態論文式引用對齊引擎 (Dynamic Citation Alignment Engine)：
+    # 確保正文角注 [[1]](url) 與文末清單嚴格 1..N 順序對齊，補齊缺漏文章，並統一台灣繁體化
+    if overview:
+        overview, distilled_items = align_citations_and_items(overview, distilled_items, target_candidates)
+
     # 將原始候選文章屬性（如 is_serendipity）回填至 distilled_items
     for item in distilled_items:
         orig_url = item.get("original_url", "").strip()
@@ -1520,54 +1568,32 @@ def run_pipeline(test_mode: bool = False, force: bool = False):
             if not item.get("source_name"):
                 item["source_name"] = matched.get("source_name", "精選情報")
 
-    # 槓鈴比例動態保底：確保跨界靈感不被漏選，同時完全解放篇數限制（質量優先）
-    has_cross_candidates = any(c.get("is_serendipity") for c in target_candidates)
-    if has_cross_candidates and distilled_items:
-        llm_core = [it for it in distilled_items if not it.get("is_serendipity")]
-        llm_cross = [it for it in distilled_items if it.get("is_serendipity")]
+    # 若總數超過使用者設定之上限，進行安全裁剪
+    if len(distilled_items) > max_output_items:
+        distilled_items = distilled_items[:max_output_items]
 
-        # 只要總挑選數大於 0，確保至少 20%~30% 的跨界靈感入選（至少 1~2 篇）
-        target_cross_min = max(1, round(len(distilled_items) * 0.25))
-        if len(llm_cross) < target_cross_min:
-            used_urls = {it.get("original_url") for it in distilled_items}
-            cand_cross = [c for c in target_candidates if c.get("is_serendipity") and c.get("url") not in used_urls]
-            needed = target_cross_min - len(llm_cross)
-            for supp in cand_cross[:needed]:
-                clean_t = re.sub(r'\[跨界[^\]]*\]\s*', '', supp['title']).strip()
-                llm_cross.append({
-                    "title": f"✨ {clean_t}" if not clean_t.startswith("✨") else clean_t,
-                    "original_url": supp["url"],
-                    "source_name": supp["source_name"],
-                    "is_serendipity": True
-                })
-                logger.info(f"⚖️ [槓鈴保底] 自動補足跨界漫遊文章：【{supp['title'][:30]}】({supp['source_name']})")
+    # 若仍然沒有任何 items，但 overview 有內容，從 target_candidates 取前序保底
+    if not distilled_items and overview:
+        logger.info("ℹ️ overview 具備有效論述但未解析出 items，自動依候選池重要度補齊精選清單")
+        for c in target_candidates[:min(5, max_output_items)]:
+            distilled_items.append({
+                "title": c.get("title", ""),
+                "original_url": c.get("url", ""),
+                "source_name": c.get("source_name", "精選情報"),
+                "is_serendipity": c.get("is_serendipity", False)
+            })
 
-        # 若總數超過使用者設定之上限，進行安全裁剪
-        if len(llm_core) + len(llm_cross) > max_output_items:
-            max_cross = max(1, int(max_output_items * 0.28))
-            max_core = max_output_items - max_cross
-            llm_cross = llm_cross[:max_cross]
-            llm_core = llm_core[:max_core]
-
-        distilled_items = llm_core + llm_cross
-
-    # [防禦微調 2]：寫入防重安全保護
-    if not distilled_items:
-        logger.warning("⚠️ 本輪未產出任何精選情報（可能因 LLM 異常或全部被判定為雜訊），保留候選池不標記已讀，等待下輪重試。")
+    # [防禦微調 2]：寫入防重安全保護 (僅在兩者皆為空時才放棄)
+    if not distilled_items and not overview:
+        logger.warning("⚠️ 本輪未產出任何精選情報或審計綜述（可能因 LLM 異常或全部被判定為雜訊），保留候選池不標記已讀，等待下輪重試。")
         session.close()
         return
 
     logger.info(f"🎯 LLM 蒸餾完成，成功選出 {len(distilled_items)} 則精選項目 (核心: {len(distilled_items)-len([i for i in distilled_items if i.get('is_serendipity')])} 則, 跨界: {len([i for i in distilled_items if i.get('is_serendipity')])} 則)")
 
-    # Stage 2: speak-human-tw 無人值守語言洗滌器 (若啟用且 overview 非空)
-    enable_humanizer = pipeline_settings.get("enable_two_stage_humanizer", True)
-    if enable_humanizer and overview:
-        cleaner = SpeakHumanCleaner()
-        overview = cleaner.clean(overview)
-
-    # 動態論文式引用對齊引擎 (Dynamic Citation Alignment Engine)：
-    # 確保正文角注 [[1]](url) 與文末清單嚴格 1..N 順序對齊，補齊缺漏文章，並統一台灣繁體化
-    overview, distilled_items = align_citations_and_items(overview, distilled_items, target_candidates)
+    # 確保最終角注 1..N 順序與 items 100% 絕對對齊
+    if overview:
+        overview, distilled_items = align_citations_and_items(overview, distilled_items, target_candidates)
 
     output_template = config.get("output_template", {})
 
@@ -1655,7 +1681,7 @@ def run_doctor() -> bool:
     # 4. 檢查 LLM 金鑰與 OpenRouter API 連通性
     llm_key = os.getenv("LLM_API_KEY", "")
     llm_url = os.getenv("LLM_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/")
-    llm_model = os.getenv("LLM_MODEL", "minimax/minimax-m3:free")
+    llm_model = os.getenv("LLM_MODEL", "nvidia/nemotron-3-super-120b-a12b:free")
 
     if not llm_key or llm_key.startswith("your_"):
         _check("LLM API 金鑰", False, "尚未在 .env 中設定有效的 LLM_API_KEY")

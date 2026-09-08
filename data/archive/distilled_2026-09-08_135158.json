@@ -1,0 +1,89 @@
+{
+  "overview": "",
+  "items": [
+    {
+      "title": "Show HN: NoMac.App – iOS CI/CD pipeline built for AI agents. This is a tool for AI agents to run iOS CI/CD. Might be niche but requires iOS dev, physical device? Might be heavy.",
+      "original_url": "https://nomac.app",
+      "source_name": "Hacker News (Show HN)",
+      "is_serendipity": false
+    },
+    {
+      "title": "Geekpark news about Xiaomi car sales, OpenAI automated AI research intern, etc. Not relevant.",
+      "original_url": "",
+      "source_name": "精選情報"
+    },
+    {
+      "title": "Simon Willison: OpenAI rogue agents communicating via public wikis. Interesting but not a product.",
+      "original_url": "",
+      "source_name": "精選情報"
+    },
+    {
+      "title": "Latent Space: GPT-6 Astra launch. Not a product.",
+      "original_url": "",
+      "source_name": "精選情報"
+    },
+    {
+      "title": "Pingwest: 微信内测小微AI社交功能 AI助手可代为协调社交事务. This is a feature within WeChat, not a solopportunity.",
+      "original_url": "https://www.pingwest.com/w/317175",
+      "source_name": "品玩",
+      "is_serendipity": false
+    },
+    {
+      "title": "Juejin: boss joke about AI spend > living cost. Not relevant.",
+      "original_url": "",
+      "source_name": "精選情報"
+    },
+    {
+      "title": "Show HN: Gote – a CLI note-taking management tool for plain Markdown. This is a tool for notes, could be a micro SaaS? But note taking tools are crowded; giant threat from Obsidian, Notion, etc. Might be tough.",
+      "original_url": "https://news.ycombinator.com/item?id=49600397",
+      "source_name": "Hacker News (Show HN)",
+      "is_serendipity": false
+    },
+    {
+      "title": "Geekpark: Token subscription stores on Tmall, OpenAI response about agent attack. Not product.",
+      "original_url": "",
+      "source_name": "精選情報"
+    },
+    {
+      "title": "Simon Willison: Research acceleration inside OpenAI. Not product.",
+      "original_url": "",
+      "source_name": "精選情報"
+    },
+    {
+      "title": "Latent Space: PRs NOT Welcome: How Top AI Open Source Projects Are Managing Thousands of Contributors. About AI agents fixing PRs. Could be a service for maintaining OSS using AI agents. Might be interesting for solopreneur: AI agent that triages and fixes PRs for open source projects. Could be sold as a service to maintain repos. Need to check physical delivery? No, it's digital. Pricing anchor: cost of hiring a part-time maintainer or contractor. Could be viable.",
+      "original_url": "https://www.latent.space/p/pr-not-welcome",
+      "source_name": "Latent Space (AI產品落地)",
+      "is_serendipity": false
+    },
+    {
+      "title": "Pingwest: Huawei MatePad Air. Not relevant.",
+      "original_url": "",
+      "source_name": "精選情報"
+    },
+    {
+      "title": "✨ 刚做小红书聚光，最容易出现的6个问题",
+      "original_url": "https://www.woshipm.com/share/6461526.html",
+      "source_name": "人人都是產品經理",
+      "is_serendipity": true
+    },
+    {
+      "title": "✨ 新菌株A3可抑制多種植物病害並具生物農藥開發潛力",
+      "original_url": "https://agritech-foresight.atri.org.tw/article/contents/6306",
+      "source_name": "農業科技前瞻",
+      "is_serendipity": true
+    },
+    {
+      "title": "✨ 廢棄物「花錢請人載走」、「借放一下」，責任都還在！",
+      "original_url": "https://www.managertoday.com.tw/columns/view/72887",
+      "source_name": "經理人月刊",
+      "is_serendipity": true
+    },
+    {
+      "title": "✨ 有些錢今天賺爆、卻賠上明天，勃肯鞋「3不做」跑贏Hoka、Adidas",
+      "original_url": "https://www.businessweekly.com.tw/Archive/Article/Index?StrId=7014640",
+      "source_name": "商業周刊",
+      "is_serendipity": true
+    }
+  ],
+  "time": "2026-09-08 13:51"
+}
