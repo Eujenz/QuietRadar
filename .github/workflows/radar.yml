@@ -68,5 +68,5 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add latest_newsletter.md latest_distilled.json data/archive
+          git add latest_newsletter.md latest_distilled.json data/archive data/signals data/signal_reviews
           git diff --quiet && git diff --staged --quiet || (git commit -m "chore: archive newsletter and update latest at $(date +'%Y-%m-%d %H:%M') (Asia/Taipei) [skip ci]" && git push)

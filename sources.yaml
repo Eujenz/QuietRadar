@@ -24,7 +24,7 @@ profile:
   - 大廠例行融資新聞稿、企業公關買榜自吹通稿
 
 output_template:
-  header: "> 出刊時間：{time} | 本期精選：{count} 則 \n---\n"
+  header: "> 出刊時間：{time} | 本期精選：{count} 則\n---\n"
   overview: '{overview}
 
 

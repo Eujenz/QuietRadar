@@ -17,7 +17,7 @@ def get_taipei_now() -> datetime:
     """取得台灣時區 (Asia/Taipei, UTC+8) 當前時間"""
     return datetime.now(TAIPEI_TZ)
 
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any, Optional, Tuple, Union
 
 try:
     import opencc
@@ -171,7 +171,12 @@ def extract_keywords_from_list(items: List[str]) -> List[str]:
                 kws.add(p.lower())
     return list(kws)
 
-def fetch_sources(sources_config: List[Dict[str, Any]], profile: Optional[Dict[str, Any]] = None, pipeline_settings: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+def fetch_sources(
+    sources_config: List[Dict[str, Any]],
+    profile: Optional[Dict[str, Any]] = None,
+    pipeline_settings: Optional[Dict[str, Any]] = None,
+    return_stats: bool = False
+) -> Union[List[Dict[str, Any]], Tuple[List[Dict[str, Any]], Dict[str, Any]]]:
     raw_articles = []
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) QuietRadar/1.0"}
     
@@ -186,10 +191,13 @@ def fetch_sources(sources_config: List[Dict[str, Any]], profile: Optional[Dict[s
     total_scanned = 0
     dropped_negative = 0
     dropped_strict = 0
+    sources_tried = 0
+    successful_sources = 0
     
     for src in sources_config:
         if not src.get("enabled", True):
             continue
+        sources_tried += 1
         name = src["name"]
         url = src["url"]
         logger.info(f"📡 正在抓取來源: [{name}] ({url})")
@@ -236,6 +244,8 @@ def fetch_sources(sources_config: List[Dict[str, Any]], profile: Optional[Dict[s
             if not resp_content and not feedly_data:
                 logger.warning(f"⚠️ 來源 [{name}] 抓取失敗，跳過此來源")
                 continue
+
+            successful_sources += 1
 
             entries = []
             if is_feedly_json and feedly_data:
@@ -388,7 +398,79 @@ def fetch_sources(sources_config: List[Dict[str, Any]], profile: Optional[Dict[s
     if filter_mode == "smart":
         raw_articles.sort(key=lambda x: x.get("relevance_score", 0), reverse=True)
 
+    stats = {
+        "sources_tried": sources_tried,
+        "successful_sources": successful_sources,
+        "total_scanned": total_scanned,
+        "dropped_negative": dropped_negative,
+        "dropped_strict": dropped_strict,
+        "accepted_count": len(raw_articles)
+    }
+    if return_stats:
+        return raw_articles, stats
     return raw_articles
+
+# ==========================================
+# 2.5 Provenance 核心例外與脫敏工具
+# ==========================================
+class CitationProvenanceError(Exception):
+    """當 LLM 輸出違反來源契約（出現 URL、舊引用格式、未授權 Source ID 等）時拋出此例外，拒絕產出報告。"""
+    pass
+
+def scrub_urls(text: str) -> str:
+    """
+    全域 URL 脫敏過濾器 (Input URL Scrubber)。
+    使用粗暴積極阻斷模式將任何疑似 URL 替換為 [URL_REMOVED]，確保 No URL Seen 邊界。
+    """
+    if not text:
+        return text or ""
+    return re.sub(r'(?i)(?:https?://|www\.)\S+', '[URL_REMOVED]', text)
+
+def build_llm_context(
+    candidates: List[Dict[str, Any]],
+    snippet_length: int = 800
+) -> Tuple[Dict[str, Dict[str, Any]], List[Dict[str, Any]]]:
+    """
+    從候選池建立：
+    1. candidate_map: 私有字典 (LLM-private)，包含 canonical_url, article_key, title, source_name 等。
+    2. articles_payload: 供 LLM 研讀的安全資料清單，徹底拔除 URL，且所有文字欄位經由 scrub_urls 脫敏。
+    """
+    candidate_map: Dict[str, Dict[str, Any]] = {}
+    articles_payload: List[Dict[str, Any]] = []
+
+    for i, a in enumerate(candidates):
+        source_id = f"S{i+1:02d}"
+        raw_url = a.get("url", "") or a.get("original_url", "")
+        norm_url = normalize_url(raw_url)
+        art_key = hashlib.sha256(norm_url.encode("utf-8")).hexdigest()
+        title = a.get("title", "").strip()
+        src_name = a.get("source_name", "精選情報").strip()
+        is_serendipity = bool(a.get("is_serendipity", False))
+        raw_snippet = a.get("summary", "")
+        if snippet_length and snippet_length > 0:
+            raw_snippet = raw_snippet[:snippet_length]
+
+        # 1. 登記於 Python 私有 candidate_map (LLM-private)
+        candidate_map[source_id] = {
+            "source_id": source_id,
+            "article_key": art_key,
+            "canonical_url": raw_url,
+            "title": title,
+            "source_name": src_name,
+            "is_serendipity": is_serendipity
+        }
+
+        # 2. 構建完全不含 URL 的 LLM Payload (所有字串經由 scrub_urls 脫敏)
+        display_title = f"✨ {title}" if is_serendipity else title
+        articles_payload.append({
+            "source_id": source_id,
+            "source_name": scrub_urls(src_name),
+            "title": scrub_urls(display_title),
+            "is_serendipity": is_serendipity,
+            "content_snippet": scrub_urls(raw_snippet)
+        })
+
+    return candidate_map, articles_payload
 
 # ==========================================
 # 3. LLM 意圖對齊與降噪蒸餾模組
@@ -399,13 +481,21 @@ class SimpleLLMDistiller:
         self.base_url = os.getenv("LLM_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/")
         self.model = os.getenv("LLM_MODEL", "nvidia/nemotron-3-ultra-550b-a55b:free")
 
-    def distill(self, candidates: List[Dict[str, Any]], profile: Dict[str, Any], top_k: int = 7, custom_prompt: Optional[str] = None, snippet_length: int = 800) -> Dict[str, Any]:
+    def distill(
+        self,
+        candidates: List[Dict[str, Any]],
+        profile: Dict[str, Any],
+        top_k: int = 7,
+        custom_prompt: Optional[str] = None,
+        snippet_length: int = 800,
+        historical_context: Optional[str] = None
+    ) -> Dict[str, Any]:
         if not candidates:
-            return {"overview": "", "items": []}
+            return {"overview": "", "signals": []}
             
         if not self.api_key or self.api_key == "your_key_here":
             logger.error("❌ 未配置有效的 LLM_API_KEY，無法進行蒸餾")
-            return {"overview": "", "items": []}
+            return {"overview": "", "signals": []}
         
         # 100% 以 Prompt 模板庫為單一真理源（Single Source of Truth），徹底消除 Python 程式碼與模板的衝突
         if not custom_prompt or not custom_prompt.strip():
@@ -418,18 +508,25 @@ class SimpleLLMDistiller:
         else:
             base_instructions = custom_prompt.strip()
 
+        # 檢查傳入之 candidates 是否已為 articles_payload (包含 source_id)
+        if candidates and "source_id" in candidates[0]:
+            articles_payload = candidates
+        else:
+            _, articles_payload = build_llm_context(candidates, snippet_length=snippet_length)
+
         # 計算槓鈴配額（7~8成核心 : 2~3成跨界）
-        # 槓鈴挑選原則（動態比例：約 70~80% 核心 : 20~30% 跨界，質量優先）
-        has_serendipity = any(c.get("is_serendipity") for c in candidates)
+        has_serendipity = any(c.get("is_serendipity") for c in articles_payload)
         if has_serendipity:
-            quota_rule = f"""1. 【槓鈴策略精選原則 (約 7~8成核心 : 2~3成跨界，上限 {top_k} 則，質量優先)】:
-   請深入研讀下方候選文章，挑選出真正具備商業啟發性、新奇且可行的情報（最多 {top_k} 則，寧缺毋濫；若本期值得探討的文章多，可挑選 8~{top_k} 則；若素材平庸則精煉挑選）。
+            quota_rule = f"""1. 【槓鈴策略精選原則 (約 7~8成核心 : 2~3成跨界，質量優先)】:
+   請深入研讀下方候選文章，挑選出真正具備商業啟發性、新奇且可行的情報（寧缺毋濫）。
    在精選出的情報項目中，請嚴格維持槓鈴比例：
    - 🎯 核心業務情報：約佔 70% ~ 80%
    - ✨ 跨界漫遊靈感：約佔 20% ~ 30%（必須從清單標題帶有 ✨ 的文章中挑選）
    嚴禁全部挑選核心文章而遺漏跨界靈感！"""
         else:
-            quota_rule = f"1. 請精選出最具閱讀價值的候選文章（最多 {top_k} 則，質量優先），並完全依據上方守則撰寫獨立深度論述正文。"
+            quota_rule = "1. 請精選出最具閱讀價值的候選文章，並完全依據上方守則撰寫獨立深度論述正文。"
+
+        hist_section = f"\n---\n{historical_context}\n" if historical_context else ""
 
         system_prompt = f"""{base_instructions}
 
@@ -437,36 +534,27 @@ class SimpleLLMDistiller:
 【本期檢索動態偏好】:
 - 讀者關注主題：{json.dumps(profile.get('interests', []), ensure_ascii=False)}
 - 讀者排斥的主題 (直接淘汰)：{json.dumps(profile.get('negative_topics', []), ensure_ascii=False)}
-
+{hist_section}
 ---
 【系統輸出格式契約 (JSON) 與論文式文內注釋鐵律】:
 {quota_rule}
 2. 【論文式文內注釋鐵律】：
-   - 在 overview 論述正文中，凡提及、借鏡特定文章的商業案例、技術架構、實驗數據或跨界理論時，必須在該名詞或觀點句後方標註論文式可點擊角標連結：`[[編號]](文章真實URL)`。
-   - 範例：借鏡騰訊混元 Hy4 preview 的成本壓制 [[1]](http://...)...
-   - 範例：樹德收納「增工加料」的反脆弱定價法 [[6]](https://...)...
-   - 引用編號（如 [[1]]、[[2]]）必須與你輸出 JSON 中的 items 項目編號 (1~N) 嚴格一對一對齊！
-   - 當讀者閱讀觀點時，點擊上標即可直接跳轉進入全文深度閱讀。
+   - 在 overview 論述正文中，凡提及、借鏡特定文章的商業案例、技術架構、實驗數據或跨界理論時，必須在該名詞或觀點句後方標註候選文章的 Source ID 代碼：`[S01]`、`[S02]`。
+   - 範例：借鏡騰訊混元 Hy4 preview 的成本壓制 [S01]...
+   - 範例：樹德收納「增工加料」的反脆弱定價法 [S06]...
+   - 只能引用候選文章列表中提供給你的 Source ID 代碼，嚴禁自造 ID。若無合適來源則不得引用。
+   - 【絕對禁止】：正文與 JSON 中嚴禁輸出任何真實 URL 網址（如 http://、https://、www.）或舊式角注（如 [[1]](url)）。違者將導致整份報告直接作廢！
 3. 【JSON 格式契約規範】：
-   你必須輸出包含 "overview" 與 "items" 兩個欄位的合法 JSON 物件：
-   - "overview" (字串)：根據上方指示撰寫的【商業排雷與專欄特稿】完整 Markdown 內文（充分發揮、剖析透徹，不限字數，採用科技商業專欄特稿散文體，深入剖析最具代表性訊號，融會貫通思維綱領並自擬嵌入具體人事實地物的生動專屬小標題，包含客群基數與 Micro-TAM 市場規模推估、[[編號]](URL) 論文式引用與 Tiny Wedge 道具驗證，或明確宣告【海面無魚保真安全閥】）。嚴禁輸出空白或重複說明文字！
-   - "items" (陣列)：挑選出的精選情報清單（最多 {top_k} 則），每個物件包含真實屬性：
-     * "title": 繁體中文標題（若為跨界文章保留開頭 ✨）
-     * "original_url": 候選文章真實 URL（嚴禁偽造）
-     * "source_name": 來源名稱
+   你必須輸出包含 "overview" 與 "signals" 欄位的合法 JSON 物件：
+   - "overview" (字串)：根據上方指示撰寫的【商業排雷與專欄特稿】完整 Markdown 內文（採用科技商業專欄特稿散文體，深入剖析最具代表性訊號，自擬嵌入具體人事實地物的生動專屬小標題，凡引用處標註 [S01] 等代碼，嚴禁輸出任何網址）。
+   - "signals" (陣列，0~6 條)：從本期情報中萃取出的高槓桿商業/技術訊號（描述跨來源共同模式、行為/技術/市場變革，非單文摘要）。每條物件結構如下：
+     * "title": 訊號精煉標題
+     * "summary": 商業/技術實質事實（約 80~120 字，嚴禁空話）
+     * "why_it_matters": 商業價值、替代成本或防禦意涵
+     * "novelty": 只能為 "NEW"、"KNOWN" 或 "EVOLVING" 之一
+     * "novelty_basis": 依據歷史情報庫說明判定為 NEW/KNOWN/EVOLVING 之事實依據
+     * "source_ids": 支持此訊號的本期授權代碼清單，例如 ["S01", "S02"]（不可為空，且嚴禁引用歷史代碼作為來源）
 """
-        # 準備餵給 LLM 的文章候選清單（依據 snippet_length 提供充足內文讓模型深度研讀）
-        articles_payload = [
-            {
-                "index": i + 1,
-                "source": a["source_name"],
-                "title": f"✨ {a['title']}" if a.get("is_serendipity") else a["title"],
-                "url": a["url"],
-                "is_serendipity": a.get("is_serendipity", False),
-                "content_snippet": a["summary"][:snippet_length] if (snippet_length and snippet_length > 0) else a["summary"]
-            }
-            for i, a in enumerate(candidates)
-        ]
         
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -479,7 +567,6 @@ class SimpleLLMDistiller:
         # 嚴格依使用者指定順序，僅嘗試兩款免費模型：
         # 第一順位：nvidia/nemotron-3-ultra-550b-a55b:free
         # 第二順位：nvidia/nemotron-3-super-120b-a12b:free
-        # 嚴禁擅自切換其他模型；若兩者皆失敗則直接中斷不產出
         models_to_try = [
             "nvidia/nemotron-3-ultra-550b-a55b:free",
             "nvidia/nemotron-3-super-120b-a12b:free"
@@ -490,14 +577,21 @@ class SimpleLLMDistiller:
 
         for current_model in models_to_try:
             temperature = 0.2
+            messages_list = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"請直接以繁體中文進行商業排雷審計與降噪蒸餾，直接輸出包含 overview 與 signals 的合法 JSON 物件，凡引用處僅能標註候選文章的 Source ID 代碼 (例如 [S01])，嚴禁輸出任何 URL 網址或舊式角注格式，嚴禁在 JSON 前後輸出任何草稿或非 JSON 文字：\n\n候選文章列表：\n{json.dumps(articles_payload, ensure_ascii=False)}"}
+            ]
+
+            # 最終防禦：對所有 messages[*].content 執行全域 URL Scrubbing
+            for msg in messages_list:
+                if isinstance(msg, dict) and "content" in msg:
+                    msg["content"] = scrub_urls(msg["content"])
+
             payload = {
                 "model": current_model,
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": f"請直接以繁體中文進行商業排雷審計與降噪蒸餾，直接輸出包含 overview 與 items 的合法 JSON 物件，嚴禁在 JSON 前後輸出任何草稿、非 JSON 文字或代碼標記：\n\n候選文章列表：\n{json.dumps(articles_payload, ensure_ascii=False)}"}
-                ],
+                "messages": messages_list,
                 "temperature": temperature,
-                "max_tokens": 8192,
+                "max_tokens": 16384,
                 "response_format": {"type": "json_object"},
                 "stream": True  # 啟用串流維持連線活躍
             }
@@ -534,6 +628,10 @@ class SimpleLLMDistiller:
                                     break
                                 try:
                                     chunk = json.loads(data_str)
+                                    if "error" in chunk:
+                                        err_msg = chunk["error"].get("message", "")
+                                        logger.warning(f"⚠️ 串流收到服務端錯誤: {err_msg}")
+                                        break
                                     choices = chunk.get("choices", [])
                                     if choices:
                                         delta = choices[0].get("delta", {})
@@ -609,10 +707,10 @@ class SimpleLLMDistiller:
                         if not is_overview_valid_and_complete(ov):
                             return None
 
-                        items_list = data_obj.get("items", [])
-                        if not isinstance(items_list, list):
-                            items_list = []
-                        return {"overview": ov, "items": items_list[:top_k]}
+                        res = {"overview": ov}
+                        if "signals" in data_obj and isinstance(data_obj["signals"], list):
+                            res["signals"] = data_obj["signals"]
+                        return res
 
                     # 2. 優先提取 Markdown JSON 代碼塊 ```json ... ```
                     block_match = re.search(r'```(?:json)?\s*(\{[\s\S]*?\})\s*```', cleaned, flags=re.IGNORECASE)
@@ -646,15 +744,8 @@ class SimpleLLMDistiller:
                             except Exception:
                                 raw_ov = raw_ov_escaped.replace('\\n', '\n').replace('\\"', '"').replace('\\\\', '\\')
                             
-                            items_m = re.search(r'"items"\s*:\s*\[([\s\S]*?)\]', cleaned)
-                            found_items = []
-                            if items_m:
-                                try:
-                                    found_items = json.loads(f"[{items_m.group(1)}]")
-                                except Exception:
-                                    pass
                             if raw_ov.strip() and is_overview_valid_and_complete(raw_ov):
-                                return {"overview": raw_ov, "items": found_items[:top_k]}
+                                return {"overview": raw_ov}
                         except Exception:
                             pass
 
@@ -667,7 +758,7 @@ class SimpleLLMDistiller:
                     break
 
         logger.error("❌ 第一順位與第二順位模型皆已嘗試完畢，未產出合規內文。")
-        return {"overview": "", "items": []}
+        return {"overview": ""}
 
 # ==========================================
 # 3.4 確定性繁中在地化與黑話洗滌字典
@@ -701,6 +792,9 @@ BUZZWORD_REPLACEMENTS = [
     (r"佈局", "規劃"),
     (r"賽道", "領域"),
     (r"痛點", "實質困擾"),
+    (r"一人操盤手", "獨立開發者"),
+    (r"單人操盤手", "獨立開發者"),
+    (r"操盤手", "獨立開發者"),
 
     # 大陸日常與科技用語 ➔ 台灣在地用語
     (r"互聯網", "網路"),
@@ -831,189 +925,158 @@ def to_superscript_citations(text: str, style: str = "A") -> str:
     return re.sub(r'\[+([0-9⁰¹²³⁴⁵⁶⁷⁸⁹]+)\]+\((https?://[^\)]+)\)', repl, text)
 
 
-def extract_url_key(url: str) -> str:
-    """提取 URL 中的核心文章 ID 或唯一路徑識別符，用於容錯對齊"""
-    if not url:
-        return ""
-    # 提取查詢參數中的 ID (如 StrId=7014632, id=123)
-    m = re.search(r'(?:id|strid|article_id)=(\w+)', url, re.IGNORECASE)
-    if m:
-        return m.group(1).lower()
-    # 支援路徑中帶有數字 ID (例如 /article/92140/...) 或結尾帶有數字 ID (例如 /news/369801, /contents/6305, /share/6460051.html)
-    m2 = re.search(r'/(\d{4,})(?:/|\.html|$)', url)
-    if m2:
-        return m2.group(1)
-    return ""
+def iter_strings(value: Any):
+    """遞迴產生字典、列表或純文字中所有的字串值"""
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, dict):
+        for v in value.values():
+            yield from iter_strings(v)
+    elif isinstance(value, (list, tuple, set)):
+        for v in value:
+            yield from iter_strings(v)
 
+# 統一 Source-ID 解析規格常數
+SUSPECTED_SOURCE_TOKEN_RE = re.compile(r'\[\s*([sS][\-_ ]*?\d[^\]]*?)\s*\]')
+VALID_SOURCE_ID_RE = re.compile(r'^S(?:0[1-9]|[1-9]\d{1,2})$')
 
-def find_matching_candidate(url: str, candidates: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
-    """在候選池或現有清單中智慧查找與指定 URL 匹配的文章項目（支援規範化與核心 ID 容錯）"""
-    if not url or not candidates:
-        return None
-    norm_u = normalize_url(url)
-    key_u = extract_url_key(url)
-    
-    # 1. 精確符合
-    for cand in candidates:
-        cand_u = cand.get("url") or cand.get("original_url") or ""
-        if cand_u == url or normalize_url(cand_u) == norm_u:
-            return cand
-            
-    # 2. 核心 ID 識別符容錯符合 (防禦 LLM 網址微幅筆誤，如漏掉 /Index 或拼錯 slug)
-    if key_u:
-        for cand in candidates:
-            cand_u = cand.get("url") or cand.get("original_url") or ""
-            if extract_url_key(cand_u) == key_u:
-                return cand
+def extract_source_tokens(text: str) -> List[Tuple[str, str, bool]]:
+    r"""
+    從文本中掃描所有「疑似 Source-ID」引用標記。
+    第一層過濾：只捕捉符合疑似特徵（以 [s/S 開頭並接續數字）的 token。
+    第二層過濾：判斷是否嚴格符合標準格式 ^S(0[1-9]|[1-9]\d{1,2})$（例如 S01..S99, S100..S999）。
+    回傳清單，每個元素為 (full_raw_token, inner_token, is_valid_format)。
+    例:
+      '[S01]'   -> ('[S01]', 'S01', True)
+      '[s01]'   -> ('[s01]', 's01', False)
+      '[S-01]'  -> ('[S-01]', 'S-01', False)
+      '[S_01]'  -> ('[S_01]', 'S_01', False)
+      '[S001]'  -> ('[S001]', 'S001', False)
+      '[S1]'    -> ('[S1]', 'S1', False)
+      '[S01x]'  -> ('[S01x]', 'S01x', False)
+      '[S 01]'  -> ('[S 01]', 'S 01', False)
+    普通 Markdown 如 [Summary], [Source], [Strategy], [System Design], [1], [2] 不會被捕捉。
+    """
+    if not text:
+        return []
+    results = []
+    for m in SUSPECTED_SOURCE_TOKEN_RE.finditer(text):
+        raw = m.group(0)
+        inner = m.group(1).strip()
+        is_valid = bool(VALID_SOURCE_ID_RE.match(inner))
+        results.append((raw, inner, is_valid))
+    return results
 
-    # 3. Slug 容錯符合 (防禦 LLM 連字號/底線遺漏，例如 astra-openais vs astraopenais)
-    try:
-        path_parts = [p for p in urlparse(url).path.strip('/').split('/') if p]
-        if path_parts:
-            raw_slug = path_parts[-1].replace('-', '').replace('_', '').lower()
-            if len(raw_slug) >= 8:
-                for cand in candidates:
-                    cand_u = cand.get("url") or cand.get("original_url") or ""
-                    cand_parts = [p for p in urlparse(cand_u).path.strip('/').split('/') if p]
-                    if cand_parts:
-                        cand_slug = cand_parts[-1].replace('-', '').replace('_', '').lower()
-                        if raw_slug == cand_slug or raw_slug in cand_slug or cand_slug in raw_slug:
-                            return cand
-    except Exception:
-        pass
-                
-    return None
+def validate_llm_output(data: Dict[str, Any], candidate_map: Dict[str, Any]) -> None:
+    r"""
+    全域 Output Validator (嚴格 Provenance 檢查)：
+    1. 遞迴掃描 data 中所有字串值，嚴禁出現 URL (http://, https://, www.)。
+    2. 嚴禁出現舊式帶連結的角注格式 (例如 [[1]](http..) 或 [1](http..))，但不誤殺正常 Markdown 列表 [1]。
+    3. 檢查 overview 中所有的 [Sxx] 標籤：格式必須為合規格式，且必須全數存在於 candidate_map 中。
+       若出現畸形或未授權 token（例如 [S-01], [s01], [S1], [S001], [S99]），一律拒絕！
+    4. 若有 signals 欄位，檢查每個 signal 的 source_ids 是否非空、格式合規且皆在 candidate_map 中。
+    若違反任何一項，立即拋出 CitationProvenanceError，絕不嘗試任何修復！
+    """
+    if not isinstance(data, dict):
+        raise CitationProvenanceError("LLM 輸出非合法 JSON 物件")
 
+    url_pat = re.compile(r'(?i)(?:https?://|www\.)\S+')
+    legacy_pat = re.compile(r'\[+([0-9⁰¹²³⁴⁵⁶⁷⁸⁹]+)\]+\([^\)]+\)')
 
-def align_citations_and_items(
+    # 1 & 2: 全域遞迴字串檢查 (先檢查舊式角注格式，再檢查裸 URL)
+    for s in iter_strings(data):
+        if legacy_pat.search(s):
+            m = legacy_pat.search(s).group(0)
+            raise CitationProvenanceError(f"LLM 輸出違反契約：檢測到舊式帶連結引用格式 [{m}]")
+        if url_pat.search(s):
+            m = url_pat.search(s).group(0)
+            raise CitationProvenanceError(f"LLM 輸出違反契約：檢測到非法 URL 輸出 [{m}]")
+
+    # 3. 檢查 overview 中的 [Sxx] 標籤
+    overview = data.get("overview", "")
+    if overview:
+        for raw_token, inner_token, is_valid in extract_source_tokens(overview):
+            if not is_valid:
+                raise CitationProvenanceError(f"LLM 輸出違反契約：檢測到不合規的 Source ID 格式 [{inner_token}]")
+            if inner_token not in candidate_map:
+                raise CitationProvenanceError(f"LLM 輸出違反契約：檢測到未授權的 Source ID [{inner_token}]")
+
+    # 4. 若有 signals，檢查合法性與來源
+    signals = data.get("signals")
+    if signals is not None:
+        from signal_ledger import validate_signals_output
+        validate_signals_output(signals, candidate_map, VALID_SOURCE_ID_RE)
+
+def extract_source_ids(overview: str, candidate_map: Dict[str, Any]) -> List[str]:
+    """
+    從 overview 依正文首次出現順序萃取唯一合法的 [Sxx] 清單。
+    使用與 validate_llm_output 相同的 extract_source_tokens 解析規範。
+    """
+    if not overview:
+        return []
+    seen = set()
+    ordered_ids = []
+    for raw_token, inner_token, is_valid in extract_source_tokens(overview):
+        if is_valid and inner_token in candidate_map and inner_token not in seen:
+            seen.add(inner_token)
+            ordered_ids.append(inner_token)
+    return ordered_ids
+
+def resolve_overview_citations(
     overview: str, 
-    items: List[Dict[str, Any]], 
-    target_candidates: Optional[List[Dict[str, Any]]] = None
+    candidate_map: Dict[str, Any]
 ) -> Tuple[str, List[Dict[str, Any]]]:
     """
-    動態論文式引用對齊引擎 (Dynamic Citation Alignment Engine)：
-    1. 遍歷 overview 中的所有論文式角注連結，依「文內首次出現順序」萃取唯一 URL 清單。
-    2. 自動將 URL 與 items 及候選池 target_candidates 進行雙向錨定；若有文內引用但在 items 遺漏的文章，自動從候選池找回並補齊詮釋資料。
-    3. 將文內所有角注編號依序重排為嚴格單調遞增的 [[1]](url), [[2]](url), ... [[K]](url)。
-    4. 調整 items 清單，將被引用的文章排在最前方 (1..K)，其後緊隨未在正文引述但入選的精選情報 (K+1..M)。
-    5. 全面套用台灣正體化與在地黑話洗滌 (OpenCC s2twp + BUZZWORD_REPLACEMENTS)。
-    100% 保證正文角標 [¹]、[²] 與文末清單編號 1..N 絕對一對一嚴格對齊，杜絕斷鏈與序號跳號！
+    將已通過驗證的正文 [Sxx] 依首次出現順序替換為角注 [¹](canonical_url)、[²](canonical_url)...
+    並生成專供 Presentation Layer 使用的 citation_sources 清單 (1..K)。
+    使用共用之 SUSPECTED_SOURCE_TOKEN_RE 與 VALID_SOURCE_ID_RE 規則。
     """
     if not overview or not overview.strip():
-        sanitized_items = []
-        for it in items:
-            item_copy = dict(it)
-            item_copy["title"] = sanitize_taiwan_terms(item_copy.get("title", ""))
-            item_copy["source_name"] = sanitize_taiwan_terms(item_copy.get("source_name", ""))
-            sanitized_items.append(item_copy)
-        return overview, sanitized_items
+        return overview, []
 
-    # 0. 容錯修復：若模型輸出不帶 URL 的純角標（例如 [[1]]、[1]），自動依序號補齊 items 中的 URL
-    digit_map = str.maketrans("⁰¹²³⁴⁵⁶⁷⁸⁹", "0123456789")
-    def fill_bare_citations(text: str) -> str:
-        def repl_bare(m):
-            raw_full = m.group(0)
-            if re.search(r'\(\s*https?://', raw_full):
-                return raw_full
-            num_str = re.search(r'[0-9⁰¹²³⁴⁵⁶⁷⁸⁹]+', raw_full).group(0)
-            idx = int(num_str.translate(digit_map))
-            if 1 <= idx <= len(items):
-                u = items[idx - 1].get("original_url") or items[idx - 1].get("url") or ""
-                if u:
-                    return f"[[{idx}]]({u})"
-            return raw_full
-        bare_pat = re.compile(r'\[+[0-9⁰¹²³⁴⁵⁶⁷⁸⁹]+\]+(?:\([^\)]+\))?')
-        return bare_pat.sub(repl_bare, text)
+    ordered_ids = extract_source_ids(overview, candidate_map)
+    superscript_map = str.maketrans("0123456789", "⁰¹²³⁴⁵⁶⁷⁸⁹")
 
-    overview = fill_bare_citations(overview)
+    token_to_idx = {s_id: idx for idx, s_id in enumerate(ordered_ids, 1)}
+    citation_sources = []
 
-    # 匹配文內角注：支援 [[1]](url)、[1](url) 以及上標數字 [¹](url)
-    citation_pat = re.compile(r'\[+([0-9⁰¹²³⁴⁵⁶⁷⁸⁹]+)\]+\((https?://[^\s\)]+)\)')
+    for idx, s_id in enumerate(ordered_ids, 1):
+        cand = candidate_map[s_id]
+        citation_sources.append({
+            "citation_number": idx,
+            "source_id": s_id,
+            "article_key": cand["article_key"],
+            "title": sanitize_taiwan_terms(cand["title"]),
+            "original_url": cand["canonical_url"],
+            "source_name": sanitize_taiwan_terms(cand["source_name"]),
+            "is_serendipity": cand.get("is_serendipity", False)
+        })
 
-    # 建立候選池檢索來源
-    candidates_pool = []
-    if target_candidates:
-        candidates_pool.extend(target_candidates)
-    candidates_pool.extend(items)
-
-    ordered_cited_urls = []
-    seen_keys = set()
-
-    for match in citation_pat.finditer(overview):
-        raw_url = match.group(2).strip().rstrip('.,;:')
-        key = extract_url_key(raw_url) or normalize_url(raw_url) or raw_url
-        if key not in seen_keys:
-            seen_keys.add(key)
-            ordered_cited_urls.append(raw_url)
-
-    aligned_items = []
-    url_to_idx = {}
-    url_to_canonical = {}
-
-    for idx, raw_url in enumerate(ordered_cited_urls, 1):
-        matched = find_matching_candidate(raw_url, candidates_pool)
-        if matched:
-            canonical_url = matched.get("url") or matched.get("original_url") or raw_url
-            clean_title = sanitize_taiwan_terms(matched.get("title", "").strip())
-            source_name = sanitize_taiwan_terms(matched.get("source_name", "精選情報").strip())
-            is_serendipity = matched.get("is_serendipity", False)
-        else:
-            canonical_url = raw_url
-            clean_title = raw_url
-            source_name = "精選情報"
-            is_serendipity = False
-
-        item_dict = {
-            "title": clean_title,
-            "original_url": canonical_url,
-            "source_name": source_name,
-            "is_serendipity": is_serendipity
-        }
-        aligned_items.append(item_dict)
-
-        # 建立映射以更新 overview 中的序號與 URL
-        url_to_idx[raw_url] = idx
-        url_to_idx[canonical_url] = idx
-        url_to_canonical[raw_url] = canonical_url
-        norm_raw = normalize_url(raw_url)
-        if norm_raw:
-            url_to_idx[norm_raw] = idx
-        key_raw = extract_url_key(raw_url)
-        if key_raw:
-            url_to_idx[f"key:{key_raw}"] = idx
-
-    # 收集在 items 中但未在 overview 中被引用的延伸情報
-    for it in items:
-        cand_u = it.get("original_url") or it.get("url") or ""
-        matched_cand = find_matching_candidate(cand_u, aligned_items)
-        if not matched_cand:
-            clean_it = dict(it)
-            clean_it["title"] = sanitize_taiwan_terms(clean_it.get("title", "").strip())
-            clean_it["source_name"] = sanitize_taiwan_terms(clean_it.get("source_name", "精選情報").strip())
-            aligned_items.append(clean_it)
-
-    # 重新序列化 overview 中的所有引用連結，確保角標嚴格等於 1..K
-    def replace_citation(m: re.Match) -> str:
-        u = m.group(2).strip().rstrip('.,;:')
-        target_idx = url_to_idx.get(u) or url_to_idx.get(normalize_url(u))
-        if not target_idx:
-            k = extract_url_key(u)
-            if k:
-                target_idx = url_to_idx.get(f"key:{k}")
-        
-        canonical = url_to_canonical.get(u, u)
-        if target_idx is not None:
-            return f"[[{target_idx}]]({canonical})"
+    def repl(m: re.Match) -> str:
+        inner = m.group(1).strip()
+        if VALID_SOURCE_ID_RE.match(inner):
+            idx = token_to_idx.get(inner)
+            if idx is not None:
+                cand = candidate_map.get(inner, {})
+                url = cand.get("canonical_url", "")
+                sup_idx = str(idx).translate(superscript_map)
+                return f"[{sup_idx}]({url})"
         return m.group(0)
 
-    new_overview = citation_pat.sub(replace_citation, overview)
-    new_overview = sanitize_taiwan_terms(new_overview)
+    resolved_overview = SUSPECTED_SOURCE_TOKEN_RE.sub(repl, overview)
+    resolved_overview = sanitize_taiwan_terms(resolved_overview)
 
-    logger.info(f"📐 [引用對齊引擎] 完成對齊：共標定 {len(ordered_cited_urls)} 則文內角注，文末清單依序組織 {len(aligned_items)} 則情報（1..{len(ordered_cited_urls)} 嚴格對應文內角注）")
-    return new_overview, aligned_items
+    logger.info(f"📐 [引用解析模組] 完成解析：正文共標定 {len(ordered_ids)} 則角注，建立 {len(citation_sources)} 則 citation_sources")
+    return resolved_overview, citation_sources
 
 
-def format_newsletter_markdown(items: List[Dict[str, Any]], template: Optional[Dict[str, Any]] = None, overview: str = "", now_str: Optional[str] = None) -> str:
+def format_newsletter_markdown(
+    items: List[Dict[str, Any]],
+    template: Optional[Dict[str, Any]] = None,
+    overview: str = "",
+    signals: Optional[List[Dict[str, Any]]] = None,
+    now_str: Optional[str] = None
+) -> str:
     """
     統一生成電子報 Markdown 內容，供本地檔案存檔 (latest_newsletter.md) 與 Bark 推播共用，確保格式 100% 一致。
     """
@@ -1039,6 +1102,44 @@ def format_newsletter_markdown(items: List[Dict[str, Any]], template: Optional[D
         overview_text = overview_tpl.replace("{overview}", cleaned_overview).strip()
         overview_text = re.sub(r'([^\n])\n---', r'\1\n\n---', overview_text)
         lines.append(overview_text)
+        lines.append("")
+
+    # 3A 交付層：優雅渲染結構化 Signal 清單 (若當期無訊號則乾淨略過，不產生破版空標題)
+    if signals:
+        lines.append("## 🎯 【今日情報訊號】")
+        lines.append("")
+        for idx, sig in enumerate(signals, 1):
+            s_title = sanitize_taiwan_terms(sig.get("title", "").strip())
+            s_novelty = sig.get("novelty", "NEW").strip().upper()
+            s_summary = sanitize_taiwan_terms(sig.get("summary", "").strip())
+            s_why = sanitize_taiwan_terms(sig.get("why_it_matters", "").strip())
+            s_asset = sanitize_taiwan_terms(sig.get("asset_potential", "").strip())
+            s_interpretation = sanitize_taiwan_terms(sig.get("interpretation", "").strip())
+            s_unknowns = sanitize_taiwan_terms(sig.get("unknowns", "").strip())
+            s_sources = sig.get("sources", [])
+
+            lines.append(f"### {idx}. [{s_novelty}] {s_title}")
+            lines.append(f"- **實質事實**：{s_summary}")
+            lines.append(f"- **商業價值**：{s_why}")
+            if s_asset:
+                lines.append(f"- **資產累積**：{s_asset}")
+            if s_interpretation:
+                lines.append(f"- **戰略推演**：{s_interpretation}")
+            if s_unknowns:
+                lines.append(f"- **盲區疑問**：{s_unknowns}")
+            if s_sources:
+                src_links = []
+                for src in s_sources:
+                    src_name = sanitize_taiwan_terms(src.get("source_name", "來源").strip())
+                    src_title = sanitize_taiwan_terms(src.get("title", "").strip())
+                    src_url = src.get("canonical_url", "").strip()
+                    if src_url:
+                        src_links.append(f"[{src_name}: {src_title}]({src_url})")
+                    else:
+                        src_links.append(f"{src_name}: {src_title}")
+                lines.append(f"- **佐證來源**：{'、'.join(src_links)}")
+            lines.append("")
+        lines.append("---")
         lines.append("")
 
     # 判斷是否具備文內引用序號（若有 overview 且包含論文式注釋）
@@ -1067,8 +1168,7 @@ def format_newsletter_markdown(items: List[Dict[str, Any]], template: Optional[D
 
             # 移除無效 html <br> 標籤，純粹使用 Markdown 標準換行語法
             item_text = re.sub(r'<\s*br\s*/?\s*>', '', item_text).strip()
-            # 關鍵：行尾帶有雙空格 (  ) 且各項目以空行分隔，100% 保證任何 Markdown 解析器（含 Bark/iOS）絕對各自換行！
-            lines.append(f"{item_text}  ")
+            lines.append(f"{item_text}")
             lines.append("")
             global_idx += 1
     else:
@@ -1108,85 +1208,158 @@ def format_newsletter_markdown(items: List[Dict[str, Any]], template: Optional[D
     return full_markdown
 
 
-def generate_newsletter_file(items: List[Dict[str, Any]], filepath: str = "latest_newsletter.md", template: Optional[Dict[str, Any]] = None, overview: str = "") -> str:
-    content = format_newsletter_markdown(items, template=template, overview=overview)
+def generate_newsletter_file(
+    items: List[Dict[str, Any]],
+    filepath: str = "latest_newsletter.md",
+    template: Optional[Dict[str, Any]] = None,
+    overview: str = "",
+    signals: Optional[List[Dict[str, Any]]] = None,
+    archive: bool = True
+) -> str:
+    content = format_newsletter_markdown(items, template=template, overview=overview, signals=signals)
     with open(filepath, "w", encoding="utf-8") as f:
         f.write(content)
     logger.info(f"📄 已成功生成最新電子報檔案: {filepath}")
 
-    # 資產封存機制 (Archive Asset)：
-    # 每一期產出的電子報都是寶貴的智力資產，自動按時間戳封存至 data/archive/
-    archive_dir = os.path.join("data", "archive")
-    try:
-        os.makedirs(archive_dir, exist_ok=True)
-        timestamp_str = get_taipei_now().strftime("%Y-%m-%d_%H%M%S")
-        archive_path = os.path.join(archive_dir, f"newsletter_{timestamp_str}.md")
-        with open(archive_path, "w", encoding="utf-8") as af:
-            af.write(content)
-        logger.info(f"📦 已將本期電子報作為資產封存至: {archive_path}")
-    except Exception as e:
-        logger.warning(f"⚠️ 封存電子報至 data/archive 失敗: {e}")
+    if archive:
+        # 資產封存機制 (Archive Asset)：
+        # 每一期產出的電子報都是寶貴的智力資產，自動按時間戳封存至 data/archive/
+        try:
+            archive_dir = os.path.join("data", "archive")
+            os.makedirs(archive_dir, exist_ok=True)
+            ts_now = get_taipei_now().strftime("%Y-%m-%d_%H%M%S")
+            archive_path = os.path.join(archive_dir, f"newsletter_{ts_now}.md")
+            with open(archive_path, "w", encoding="utf-8") as af:
+                af.write(content)
+            logger.info(f"📦 已將本期電子報作為資產封存至: {archive_path}")
+        except Exception as e:
+            logger.warning(f"⚠️ 封存電子報至 data/archive 失敗: {e}")
 
     return content
 
 
-def chunk_text_by_bytes(text: str, max_chunk_bytes: int = 2400) -> List[str]:
+# QuietRadar 應用層保守安全上限 (UTF-8 位元組，確保遠低於 Apple APNs 4KB / 4096-byte 負載限制)
+DEFAULT_BARK_CHUNK_CEILING = 2400
+
+
+def chunk_markdown_lossless(content: str, max_chunk_bytes: int = DEFAULT_BARK_CHUNK_CEILING) -> List[str]:
     """
-    通用、嚴格保證每段都不超過 max_chunk_bytes 的分段器。
-    優先在段落雙換行 (\n\n) 切分；
-    若單段過長，在單換行 (\n) 切分；
-    若單行仍過長，在中文標點分界切分。
-    保證每一段的 UTF-8 位元組數 <= max_chunk_bytes！
+    通用、嚴格保證每段都不超過 max_chunk_bytes 的確定性無失真分段器。
+
+    切分優先級：
+    1. UTF-8 byte safety (由 Python str 字元切片與 UTF-8 位元組檢查保證，絕無 UnicodeDecodeError)
+    2. 無失真 (Lossless: "".join(chunks) == content)
+    3. 優先避免切斷 Markdown link [title](url)
+    4. 段落邊界 (\\n\\n)
+    5. 換行邊界 (\\n)
+    6. 句子標點邊界 (。、！、？、；)
+    7. 硬位元組邊界作為最終安全墊（絕不丟棄字符）
     """
-    text = text.strip()
-    if not text:
+    if not content:
         return []
 
     def get_bytes(s: str) -> int:
         return len(s.encode("utf-8"))
 
-    if get_bytes(text) <= max_chunk_bytes:
-        return [text]
+    if get_bytes(content) <= max_chunk_bytes:
+        return [content]
+
+    # 預先尋找所有 Markdown link 的區間 [start, end)
+    link_pattern = re.compile(r'\[[^\]]+\]\([^\)]+\)')
+    link_spans = [m.span() for m in link_pattern.finditer(content)]
+
+    def is_inside_link(idx: int) -> Optional[Tuple[int, int]]:
+        for start, end in link_spans:
+            if start < idx < end:
+                return (start, end)
+        return None
 
     chunks = []
-    rem = text
-    while get_bytes(rem) > max_chunk_bytes:
-        est_chars = int(max_chunk_bytes / 2.5)
-        cut = rem[:est_chars]
+    pos = 0
+    total_len = len(content)
 
-        last_break = cut.rfind("\n\n")
-        if last_break == -1 or last_break < int(est_chars * 0.3):
-            last_break = cut.rfind("\n")
-        if last_break == -1 or last_break < int(est_chars * 0.3):
-            for punc in ["。", "！", "？", "；", "；\n"]:
-                pos = cut.rfind(punc)
-                if pos > last_break and pos >= int(est_chars * 0.3):
-                    last_break = pos + len(punc)
-        if last_break == -1 or last_break < 30:
-            last_break = est_chars
-
-        cand = rem[:last_break].strip()
-        while get_bytes(cand) > max_chunk_bytes and len(cand) > 30:
-            cand = cand[:int(len(cand) * 0.85)].strip()
-            sub_break = max(cand.rfind("\n"), cand.rfind("。"))
-            if sub_break > 30:
-                cand = cand[:sub_break + 1].strip()
-
-        if cand:
-            chunks.append(cand)
-            rem = rem[len(cand):].strip()
-        else:
+    while pos < total_len:
+        # 若剩餘所有內容已小於等於 max_chunk_bytes，直接作為最後一個 chunk
+        rem_bytes = get_bytes(content[pos:])
+        if rem_bytes <= max_chunk_bytes:
+            chunks.append(content[pos:])
             break
 
-    if rem:
-        chunks.append(rem)
+        # 1. 透過二分搜尋找到在 content[pos:] 中，位元組數 <= max_chunk_bytes 的最大字元數
+        low = 1
+        high = total_len - pos
+        max_char_idx = low
+        while low <= high:
+            mid = (low + high) // 2
+            if get_bytes(content[pos:pos + mid]) <= max_chunk_bytes:
+                max_char_idx = mid
+                low = mid + 1
+            else:
+                high = mid - 1
+
+        hard_cut = pos + max_char_idx
+        # 門檻：至少前進 20% 的字元數，避免在極早的位置斷開產生碎片
+        min_advance = max(1, int(max_char_idx * 0.2))
+
+        # 2. 尋找最佳語義切分點
+        chosen_cut = None
+
+        # 2a. 段落邊界 (\n\n)
+        p_para = content.rfind("\n\n", pos + min_advance, hard_cut)
+        if p_para != -1:
+            chosen_cut = p_para + 2
+        else:
+            # 2b. 單換行邊界 (\n)
+            p_nl = content.rfind("\n", pos + min_advance, hard_cut)
+            if p_nl != -1:
+                chosen_cut = p_nl + 1
+            else:
+                # 2c. 句子標點邊界
+                best_punc = -1
+                punc_len = 0
+                for punc in ["。", "！", "？", "；\n", "；"]:
+                    p_punc = content.rfind(punc, pos + min_advance, hard_cut)
+                    if p_punc > best_punc:
+                        best_punc = p_punc
+                        punc_len = len(punc)
+                if best_punc != -1:
+                    chosen_cut = best_punc + punc_len
+
+        # 若找到語義切分點，檢查是否剛好落在 Markdown link 內部
+        if chosen_cut is not None:
+            span = is_inside_link(chosen_cut)
+            if span:
+                l_start, l_end = span
+                if l_start > pos:
+                    chosen_cut = l_start
+                else:
+                    chosen_cut = None
+
+        # 3. 若無合適語義切分點，使用 hard_cut，但檢查 Markdown link 保護
+        if chosen_cut is None:
+            span = is_inside_link(hard_cut)
+            if span:
+                l_start, l_end = span
+                if l_start > pos:
+                    chosen_cut = l_start
+                else:
+                    chosen_cut = hard_cut
+            else:
+                chosen_cut = hard_cut
+
+        # 4. 防禦性確保必須有所進展
+        if chosen_cut <= pos:
+            chosen_cut = hard_cut
+
+        chunks.append(content[pos:chosen_cut])
+        pos = chosen_cut
 
     return chunks
 
 
-def split_markdown_for_bark(content: str, max_chunk_bytes: int = 2400) -> List[Dict[str, Any]]:
+def split_markdown_for_bark(content: str, max_chunk_bytes: int = DEFAULT_BARK_CHUNK_CEILING) -> List[Dict[str, Any]]:
     """
-    將超長 Markdown 電子報依據 UTF-8 位元組大小（嚴格限制 <= 2400 bytes，徹底防禦 Apple APNs 4KB 與 Bark Nginx 413 限制）
+    將超長 Markdown 電子報依據 UTF-8 位元組大小（以 DEFAULT_BARK_CHUNK_CEILING 為保守安全上限）
     安全拆分為多個推播批次。
     回傳清單，每個元素包含：
     {
@@ -1200,52 +1373,30 @@ def split_markdown_for_bark(content: str, max_chunk_bytes: int = 2400) -> List[D
     if not content or not content.strip():
         return [{"page": 1, "total": 1, "is_first": True, "type": "full", "markdown": ""}]
 
-    def get_bytes(s: str) -> int:
-        return len(s.encode("utf-8"))
+    raw_chunks = chunk_markdown_lossless(content, max_chunk_bytes=max_chunk_bytes)
+    total_count = len(raw_chunks)
 
-    if get_bytes(content) <= max_chunk_bytes:
-        return [{"page": 1, "total": 1, "is_first": True, "type": "full", "markdown": content}]
-
-    # 準確切分「今日觀點正文」與「文末引用來源清單」
-    # 尋找第一個引用條目 (例如 1. [ 或 [1] [)
-    item_match = re.search(r'\n(?:\[1\]|1\.)\s*\[', content)
-    if item_match:
-        prefix = content[:item_match.start()]
-        div_pos = prefix.rfind("\n---")
-        if div_pos != -1:
-            part1 = content[:div_pos].rstrip()
-            part2 = content[div_pos:].lstrip("-").strip()
+    result = []
+    for i, c in enumerate(raw_chunks):
+        is_first = (i == 0)
+        if total_count == 1:
+            c_type = "full"
+        elif is_first:
+            c_type = "overview"
+        elif "## 📰" in c or re.search(r'\n(?:\[1\]|1\.)\s*\[', c):
+            c_type = "sources"
         else:
-            part1 = prefix.rstrip()
-            part2 = content[item_match.start():].strip()
-    else:
-        part1 = content
-        part2 = ""
+            c_type = "continuation"
 
-    # 核心修復：對 part1 (觀點) 與 part2 (引用清單) 皆嚴格執行 <= max_chunk_bytes 分塊，絕不遺漏！
-    part1_chunks = chunk_text_by_bytes(part1, max_chunk_bytes)
-    part2_chunks = chunk_text_by_bytes(part2, max_chunk_bytes) if part2 else []
-
-    total_chunks = []
-    for i, c in enumerate(part1_chunks):
-        total_chunks.append({
-            "is_first": (i == 0),
-            "type": "overview" if i == 0 else "continuation",
-            "markdown": c
-        })
-    for c in part2_chunks:
-        total_chunks.append({
-            "is_first": False,
-            "type": "sources",
+        result.append({
+            "page": i + 1,
+            "total": total_count,
+            "is_first": is_first,
+            "type": c_type,
             "markdown": c
         })
 
-    total_count = len(total_chunks)
-    for i, item in enumerate(total_chunks):
-        item["page"] = i + 1
-        item["total"] = total_count
-
-    return total_chunks
+    return result
 
 
 # ==========================================
@@ -1262,18 +1413,18 @@ class SimpleBarkNotifier:
         ]
         self.device_key = self.device_keys[0] if self.device_keys else ""
 
-    def send_digest(self, items: List[Dict[str, Any]], template: Optional[Dict[str, Any]] = None, overview: str = "", full_markdown: Optional[str] = None) -> bool:
+    def send_digest(self, items: List[Dict[str, Any]], template: Optional[Dict[str, Any]] = None, overview: str = "", signals: Optional[List[Dict[str, Any]]] = None, full_markdown: Optional[str] = None) -> bool:
         if not self.device_keys:
             logger.warning("⚠️ 未配置有效的 BARK_DEVICE_KEY，跳過手機推播")
-            return False
+            return True
 
         if not items:
             logger.info("ℹ️ 無精選文章，不觸發推播")
             return True
 
         # 若未直接傳入已格式化的 full_markdown，則調用統一格式化函式生成
-        body_markdown = full_markdown or format_newsletter_markdown(items, template=template, overview=overview)
-        chunks = split_markdown_for_bark(body_markdown, max_chunk_bytes=2400)
+        body_markdown = full_markdown or format_newsletter_markdown(items, template=template, overview=overview, signals=signals)
+        chunks = split_markdown_for_bark(body_markdown, max_chunk_bytes=DEFAULT_BARK_CHUNK_CEILING)
 
         now_str = get_taipei_now().strftime("%Y-%m-%d %H:%M")
         overall_success = True
@@ -1327,7 +1478,7 @@ class SimpleBarkNotifier:
                     title = render_bark_title(bark_continue_fmt, page, total)
 
                 payload = {
-                    "markdown": c_md,
+                    "markdown": c_md.strip(),
                     "group": "QuietRadar",
                     "icon": "https://cdn-icons-png.flaticon.com/512/3208/3208726.png",
                     "sound": "calypso",
@@ -1372,7 +1523,7 @@ def run_pipeline(test_mode: bool = False, force: bool = False):
     config_path = "sources.yaml"
     if not os.path.exists(config_path):
         logger.error(f"❌ 找不到 {config_path} 設定檔！")
-        return
+        return False
     with open(config_path, "r", encoding="utf-8") as f:
         config = yaml.safe_load(f)
 
@@ -1382,8 +1533,14 @@ def run_pipeline(test_mode: bool = False, force: bool = False):
     custom_prompt = load_prompt_template(config)
 
     # 2. 抓取文章（傳入 profile 與 pipeline_settings 執行標題前置漏斗過濾）
-    raw_articles = fetch_sources(sources, profile=profile, pipeline_settings=pipeline_settings)
+    raw_articles, fetch_stats = fetch_sources(sources, profile=profile, pipeline_settings=pipeline_settings, return_stats=True)
     logger.info(f"📥 抓取與漏斗篩選完成，共取得 {len(raw_articles)} 篇候選文章")
+
+    # 全數訂閱來源連線失敗判定 (Total RSS Failure)
+    if fetch_stats["sources_tried"] > 0 and fetch_stats["successful_sources"] == 0:
+        logger.error(f"❌ 全數 RSS 訂閱源連線失敗 (0/{fetch_stats['sources_tried']} 成功)，判定為重大連線中斷，中斷任務且不發布空報告。")
+        if not test_mode:
+            return False
 
     # 3. 資料庫比對防重
     session = SessionLocal()
@@ -1431,7 +1588,7 @@ def run_pipeline(test_mode: bool = False, force: bool = False):
             logger.info("✨ 沒有新文章需要處理，本次任務結束。")
             logger.info("💡 提示：若要進行 OUTPUT 測試，請加上 '--test' (如: python pipeline.py --test) 或在 Web 控制台點擊「測試 OUTPUT」！")
             session.close()
-            return
+            return True
 
     # 讀取研讀深度與候選池上限設定
     pipeline_settings = config.get("pipeline_settings", {})
@@ -1490,91 +1647,157 @@ def run_pipeline(test_mode: bool = False, force: bool = False):
     snippet_desc = f"{snippet_len} 字" if snippet_len > 0 else "完整內文 (不截斷)"
     logger.info(f"📚 LLM 研讀池就緒：共送入 {len(target_candidates)} 篇候選文章，每篇內文上限 {snippet_desc}（本輪總計向大模型投餵約 {total_chars:,} 字元實質正文）")
 
-    # 4. LLM 蒸餾降噪 (依據候選文章深度與質量動態精選，上限 max_output_items)
+    # 4. 建立 LLM 隔離上下文 (build_llm_context) 與執行 LLM 蒸餾
+    candidate_map, articles_payload = build_llm_context(target_candidates, snippet_length=snippet_len)
+
+    # Step 2: 載入近 30 天歷史 Signals 上下文
+    from signal_ledger import (
+        load_recent_signals,
+        format_historical_signals_context,
+        reconcile_and_build_signals,
+        save_daily_signals,
+        load_daily_signals
+    )
+    recent_signals = load_recent_signals(days=30, max_signals=20)
+    historical_context = format_historical_signals_context(recent_signals)
+
     max_output_items = pipeline_settings.get("max_output_items", 15)
     distiller = SimpleLLMDistiller()
-    distill_res = distiller.distill(target_candidates, profile, top_k=max_output_items, custom_prompt=custom_prompt, snippet_length=snippet_len)
+    distill_res = distiller.distill(
+        articles_payload,
+        profile,
+        top_k=max_output_items,
+        custom_prompt=custom_prompt,
+        snippet_length=snippet_len,
+        historical_context=historical_context
+    )
     
-    overview = ""
-    distilled_items = []
-    if isinstance(distill_res, dict):
-        overview = distill_res.get("overview", "")
-        distilled_items = distill_res.get("items", [])
-    elif isinstance(distill_res, list):
-        distilled_items = distill_res
+    if not isinstance(distill_res, dict) or not distill_res.get("overview") or not distill_res["overview"].strip():
+        logger.warning("⚠️ 第一順位與第二順位模型皆未產出合規內文 (overview 為空)，依指示中斷本次任務，不產出報告、不推播、不記錄防重。")
+        session.close()
+        return False
 
-    # Stage 2: speak-human-tw 無人值守語言洗滌器 (若啟用且 overview 非空)
+    # 若大模型產出訊號數量大於 6 條，自動取前 6 條精選訊號以符合規格契約
+    if isinstance(distill_res.get("signals"), list) and len(distill_res["signals"]) > 6:
+        logger.info(f"ℹ️ LLM 回傳之 signals 數量 ({len(distill_res['signals'])}) 超過 6 條上限，自動保留前 6 條核心訊號以符合規格契約")
+        distill_res["signals"] = distill_res["signals"][:6]
+
+    # 4.1 第一次全域嚴格校驗 (Raw Output Validation)
+    try:
+        validate_llm_output(distill_res, candidate_map)
+    except Exception as e:
+        if isinstance(e, CitationProvenanceError) or e.__class__.__name__ == "CitationProvenanceError":
+            logger.error(f"❌ [Provenance 驗證失敗] LLM 輸出違反來源契約: {e}，中斷任務且絕不產出報告。")
+            session.close()
+            return False
+        raise e
+
+    overview = distill_res["overview"]
+
+    # 4.2 speak-human-tw 語言洗滌器 (若啟用且 overview 非空)
     enable_humanizer = pipeline_settings.get("enable_two_stage_humanizer", True)
     if enable_humanizer and overview:
         cleaner = SpeakHumanCleaner()
         overview = cleaner.clean(overview)
 
-    # 動態論文式引用對齊引擎 (Dynamic Citation Alignment Engine)：
-    # 確保正文角注 [[1]](url) 與文末清單嚴格 1..N 順序對齊，補齊缺漏文章，並統一台灣繁體化
-    if overview:
-        overview, distilled_items = align_citations_and_items(overview, distilled_items, target_candidates)
+    # 4.3 第二次全域嚴格校驗 (Post-Humanizer Validation)
+    try:
+        validate_llm_output({"overview": overview}, candidate_map)
+    except Exception as e:
+        if isinstance(e, CitationProvenanceError) or e.__class__.__name__ == "CitationProvenanceError":
+            logger.error(f"❌ [Provenance 驗證失敗] 洗滌後文本標籤受損或違約: {e}，中斷任務且絕不產出報告。")
+            session.close()
+            return False
+        raise e
 
-    # 將原始候選文章屬性（如 is_serendipity）回填至 distilled_items
-    for item in distilled_items:
-        orig_url = item.get("original_url", "").strip()
-        matched = next((c for c in target_candidates if c.get("url") == orig_url or (orig_url and orig_url in c.get("url", ""))), None)
-        if matched:
-            item["is_serendipity"] = matched.get("is_serendipity", False)
-            if not item.get("source_name"):
-                item["source_name"] = matched.get("source_name", "精選情報")
+    # 4.4 引用解析與來源清單建構 (resolve_overview_citations)
+    overview, citation_sources = resolve_overview_citations(overview, candidate_map)
+    # Step 1: 暫時保持 items == citation_sources，確保電子報渲染相容
+    distilled_items = citation_sources
 
-    # 若總數超過使用者設定之上限，進行安全裁剪
-    if len(distilled_items) > max_output_items:
-        distilled_items = distilled_items[:max_output_items]
+    logger.info(f"🎯 引用解析與來源建構完成：正文引用 {len(citation_sources)} 則來源")
 
-    # 若仍然沒有任何 items，但 overview 有內容，從 target_candidates 取前序保底
-    if not distilled_items and overview:
-        logger.info("ℹ️ overview 具備有效論述但未解析出 items，自動依候選池重要度補齊精選清單")
-        for c in target_candidates[:min(5, max_output_items)]:
-            distilled_items.append({
-                "title": c.get("title", ""),
-                "original_url": c.get("url", ""),
-                "source_name": c.get("source_name", "精選情報"),
-                "is_serendipity": c.get("is_serendipity", False)
-            })
+    # Step 2: 處理與組裝 Signals (Reconcile & Build)
+    raw_signals = distill_res.get("signals") or []
+    today_str = get_taipei_now().strftime("%Y-%m-%d")
+    existing_daily = load_daily_signals(today_str)
+    reconciled_signals = reconcile_and_build_signals(
+        raw_signals=raw_signals,
+        candidate_map=candidate_map,
+        date_str=today_str,
+        existing_daily_signals=existing_daily
+    )
 
-    # 鐵律：若模型蒸餾失敗或未產出 overview 內文，直接中斷不產出
-    if not overview or not overview.strip():
-        logger.warning("⚠️ 第一順位與第二順位模型皆未產出合規內文 (overview 為空)，依指示中斷本次任務，不產出報告、不推播、不記錄防重。")
+    # 存檔至 data/signals/YYYY-MM-DD.json (test_mode 時嚴格跳過磁碟寫入)
+    # 核心規章：Ledger persistence MUST succeed before newsletter rendering or Bark delivery!
+    try:
+        save_daily_signals(reconciled_signals, date_str=today_str, test_mode=test_mode)
+        logger.info(f"📊 [Signal Ledger] 本期產出 {len(reconciled_signals)} 則結構化商業/技術訊號")
+    except Exception as e:
+        logger.error(f"❌ [Signal Ledger 儲存失敗] {e}，中斷任務且絕不產出後續內容。")
         session.close()
-        return
-
-    logger.info(f"🎯 LLM 蒸餾完成，成功選出 {len(distilled_items)} 則精選項目 (核心: {len(distilled_items)-len([i for i in distilled_items if i.get('is_serendipity')])} 則, 跨界: {len([i for i in distilled_items if i.get('is_serendipity')])} 則)")
-
-    # 確保最終角注 1..N 順序與 items 100% 絕對對齊
-    if overview:
-        overview, distilled_items = align_citations_and_items(overview, distilled_items, target_candidates)
+        return False
 
     output_template = config.get("output_template", {})
 
-    # 5. 生成 speak-human-tw 風格電子報存檔 (latest_newsletter.md) 並持久化蒸餾結果以利模板即時重繪
-    newsletter_content = generate_newsletter_file(distilled_items, template=output_template, overview=overview)
+    # 5. 生成電子報存檔 (latest_newsletter.md)，test_mode 時不寫入 data/archive/
+    # 核心規章：Newsletter rendering failure 必須阻止 Bark delivery，但不得 rollback 或修改已成功持久化的 Ledger
+    newsletter_content = None
+    try:
+        newsletter_content = generate_newsletter_file(
+            distilled_items,
+            template=output_template,
+            overview=overview,
+            signals=reconciled_signals,
+            archive=not test_mode
+        )
+    except Exception as e:
+        logger.error(f"❌ 生成電子報檔案失敗: {e}（已持久化之 Signal Ledger 完好保留，跳過後續 Bark 推播）")
+        newsletter_content = None
+
     try:
         distilled_data = {
+            "date": get_taipei_now().strftime("%Y-%m-%d"),
+            "generated_at": get_taipei_now().strftime("%Y-%m-%dT%H:%M:%S+08:00"),
             "overview": overview,
+            "citation_sources": citation_sources,
             "items": distilled_items,
+            "signal_count": len(reconciled_signals),
+            "signals": reconciled_signals,
             "time": get_taipei_now().strftime("%Y-%m-%d %H:%M")
         }
         with open("latest_distilled.json", "w", encoding="utf-8") as df:
             json.dump(distilled_data, df, ensure_ascii=False, indent=2)
 
-        # 同步封存 JSON 資料結構
-        archive_dir = os.path.join("data", "archive")
-        os.makedirs(archive_dir, exist_ok=True)
-        ts_now = get_taipei_now().strftime("%Y-%m-%d_%H%M%S")
-        with open(os.path.join(archive_dir, f"distilled_{ts_now}.json"), "w", encoding="utf-8") as adf:
-            json.dump(distilled_data, adf, ensure_ascii=False, indent=2)
+        # 同步封存 JSON 資料結構 (僅非 test_mode 時封存至 archive)
+        if not test_mode:
+            archive_dir = os.path.join("data", "archive")
+            os.makedirs(archive_dir, exist_ok=True)
+            ts_now = get_taipei_now().strftime("%Y-%m-%d_%H%M%S")
+            with open(os.path.join(archive_dir, f"distilled_{ts_now}.json"), "w", encoding="utf-8") as adf:
+                json.dump(distilled_data, adf, ensure_ascii=False, indent=2)
     except Exception as e:
         logger.warning(f"⚠️ 寫入或封存 distilled json 失敗: {e}")
 
     # 6. 發送 Bark 推播（使用完全相同的 Markdown 內容）
-    notifier = SimpleBarkNotifier()
-    notifier.send_digest(distilled_items, template=output_template, overview=overview, full_markdown=newsletter_content)
+    # 核心規章：Bark failure 僅記錄日誌，絕不得修改或破壞 Signal Ledger
+    bark_ok = True
+    if newsletter_content:
+        try:
+            notifier = SimpleBarkNotifier()
+            bark_ok = notifier.send_digest(
+                distilled_items,
+                template=output_template,
+                overview=overview,
+                signals=reconciled_signals,
+                full_markdown=newsletter_content
+            )
+        except Exception as e:
+            logger.error(f"❌ Bark 推播過程異常: {e}（Signal Ledger 完好不受影響）")
+            bark_ok = False
+    else:
+        logger.warning("⚠️ 由於電子報生成失敗，跳過 Bark 手機推播（Signal Ledger 資產已安全持久化）")
+        bark_ok = False
 
     # 7. 確定蒸餾推播流程成功後，將本次參與蒸餾的文章指紋寫入資料庫
     if test_mode:
@@ -1582,7 +1805,13 @@ def run_pipeline(test_mode: bool = False, force: bool = False):
     else:
         record_processed_articles(session, target_candidates)
     session.close()
+
+    if not newsletter_content or not bark_ok:
+        logger.error("❌ 交付環節遭遇失敗（電子報生成失敗或 Bark 推播失敗），Signal Ledger 已安全持久化，返回非零狀態碼以警示運維。")
+        return False
+
     logger.info("🏁 任務圓滿完成！已成功發送推播並生成 latest_newsletter.md 電子報。")
+    return True
 
 def run_doctor() -> bool:
     """
@@ -1697,6 +1926,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.doctor:
-        run_doctor()
+        ok = run_doctor()
+        sys.exit(0 if ok else 1)
     else:
-        run_pipeline(test_mode=args.test, force=args.force)
+        success = run_pipeline(test_mode=args.test, force=args.force)
+        sys.exit(0 if success else 1)
