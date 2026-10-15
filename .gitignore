@@ -28,3 +28,5 @@ Thumbs.db
 
 # 生成之日誌與除錯檔案
 *.log
+.pytest_cache/
+.superpowers/
