@@ -6,34 +6,28 @@ pipeline_settings:
   max_candidate_pool: 15
   serendipity_ratio: 0.28
   max_output_items: 10
+  active_prompt_template: editorial
 profile:
   interests:
-  - 一人公司（Solopreneur）、獨立開發（Indie Hacker）、微型創業與創辦人時間脫鉤（Founder Time Decoupling）
-  - 高槓桿數位瓶頸（Digital Bottleneck）、垂直 B2B Micro-SaaS、跨生態情報引擎、決策層中介軟體（Decision Layer）
-  - 五維價值推力：增收（Revenue）、降本（Cost）、避險（Risk）、省核心工時（Time）、營運掌控權（Control）
-  - 巨頭防禦策略：Micro-TAM 利基屏障、跨平台中立性（Platform Agnostic）、套裝免疫力（Bundling Resistance）
-  - AI Agent 自動化管線、私有業務工作流資料沉澱、零接觸無人值守運作（No Support Debt）
+  - 產業利潤池轉移（Profit Pool Shifts）與既有利潤空間被侵蝕之商業結構重組
+  - 技術商業化與落地摩擦力（Commercialization Friction）、真實制度與合規成本、數據主權
+  - 第二層效應（Second-Order Effects）：新技術熱潮背後承擔外部成本之受害者與實質獲利方
+  - 基礎設施大宗商品化（Commoditization of Infrastructure）與垂直利基護城河（Niche Moats）
+  - 跨生態中立性（Platform Agnostic）與巨頭搭售免疫力（Bundling Resistance）
   negative_topics:
-  - 實體庫存、物流出貨、退換貨處理、代購代銷、C2C 撮合市集爭議
-  - 現場硬體設備、印表機驅動/網路設定等硬體負債、客製化專案外包（接案地獄）
-  - 以時間換金錢的高級自僱勞動（高時薪顧問、手動代工、一對一手動導入）
-  - 巨頭免費隨附即可抹殺的淺層包裝工具（如單純套殼 Prompt、無防禦力的通用摘要器）
+  - 實體庫存、物流出貨、代購代銷、C2C 撮合市集爭議
+  - 客製化專案外包、接案地獄、以時間換金錢的高級自僱勞動
+  - 巨頭免費隨附即可抹殺的淺層包裝套殼工具、無防禦力的通用摘要器
+  - 缺乏數據支持的公關吹捧稿、大廠例行融資新聞稿、企業買榜自吹通稿
+  - 純新手語法教學、LeetCode 刷題、薪資行情、名人八卦、政治口水
   - 極易被封鎖的脆弱非授權爬蟲、黑客灰產、投機炒幣空投
-  - 單純名人八卦、政治口水、公關買榜宣傳、新手入門 Hello World 基礎教學
-  - 工程師面試題、LeetCode 刷題總結、職缺招聘、薪資行情、純新手語法教學
-  - 大廠例行融資新聞稿、企業公關買榜自吹通稿
 
 output_template:
-  header: "> 出刊時間：{time} | 本期精選：{count} 則\n---\n"
-  overview: '{overview}
-
-
-    ---
-
-    '
-  group_header: '{source} ({count} 則)'
-  item_format: '{index}. [{title}]({url})'
-  footer: '---'
+  header: "> 出刊時間：{time} ｜ 本期精選：{count} 則\n---\n"
+  overview: "{overview}\n\n---\n"
+  group_header: "{source} ({count} 則)"
+  item_format: "{index}. [{title}]({url})"
+  footer: "---"
 sources:
 - name: 人人都是產品經理
   url: http://www.woshipm.com/feed
