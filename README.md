@@ -18,8 +18,8 @@
 ## ✨ 關鍵核心特色
 
 ### 1. 雙階段語言洗滌系統 (Two-Stage Humanizer)
-* **Stage 1 (靈感蒸餾與跨界腦洞)**：遍歷最新情報，以「科技財經特聘主筆」人設提煉具備商業防禦力的微型商業點子（Venture Ideas），所有技術原理強制大白話轉譯。
-* **Stage 2 (`SpeakHumanCleaner` 人味注魂)**：以台灣頂級財經科技雜誌總編輯視角，徹底打散重構草稿，斬斷「四大 AI 腔」（否定平行句、公式化列點、機械式總結、口號結尾），並落實在地台灣繁體中文（OpenCC 轉換 + 術語在地化）。
+* **Stage 1 (跨國政經與科技專欄視角蒸餾)**：以具備 20 年資歷的跨國政經科技專欄總編輯視角（曾任職於《天下雜誌》、《彭博商業周刊》與《日經商業》），在喧囂資訊中冷靜定錨，剖析產業鏈利潤池位移與二階效應（Second-order effects），嚴格採用三段論（【定錨】、【拆解】、【折射】），嚴禁空泛讚嘆、情緒性形容詞與廉價八股。
+* **Stage 2 (`SpeakHumanCleaner` 確定性洗滌與冷冽語氣)**：落實在地台灣繁體中文（OpenCC s2twp + 科技用語在地化），確定性洗去大陸黑話與浮誇公關虛詞，平緩降級驚嘆號（`！` ➔ `。`）並徹底濾除情緒化亢奮 Emoji（如 🚀, 🔥, 🎉），杜絕公式化 Micro-TAM 與假大空驗證道具。
 
 ### 2. 動態論文式文內注釋對齊引擎 (Dynamic Citation Engine)
 * **經典上標角注**：正文論述中的關鍵引用自動轉為精緻角注（如 `[¹](url)` ~ `[⁹](url)`），手機端點擊直接跳轉查證原文。
@@ -72,15 +72,16 @@ BARK_DEVICE_KEY=your_device_key_1, your_device_key_2
 pipeline_settings:
   title_filter_enabled: true
   enable_two_stage_humanizer: true
-  active_prompt_template: solopreneur   # 對應 prompts/solopreneur.md
+  active_prompt_template: editorial     # 對應 prompts/editorial.md（或可選歷史模板 solopreneur.md）
   max_candidate_pool: 50
   serendipity_ratio: 0.28               # 跨界靈感抽取比例 (28%)
   max_output_items: 15
 
 profile:
   interests:
-    - 一人公司（Solopreneur）、獨立開發（Indie Hacker）、微型創業與創辦人時間脫鉤
-    - 垂直 B2B Micro-SaaS、跨生態情報引擎、決策層中介軟體
+    - 產業鏈利潤池位移與護城河消長、定價權轉移與商業化阻力
+    - 基礎模型大宗商品化後，邊緣運算與自適應中介層架構演進
+    - 垂直領域跨界機制創新、二階效應與長期價值捕獲
   negative_topics:
     - 實體庫存、代購代銷、接案外包、炒幣空投、純新手語法教學、企業公關買榜
 
@@ -122,11 +123,14 @@ QuietRadar/
 ├── .github/workflows/
 │   └── radar.yml          # GitHub Actions 定時自動化排程 (Asia/Taipei 時區)
 ├── data/
-│   └── archive/           # 歷史電子報與蒸餾結構化 JSON 自動存檔
+│   ├── archive/           # 歷史電子報與蒸餾結構化 JSON 自動存檔
+│   └── signals/           # 30 天歷史訊號記帳庫 (Signal Ledger)
 ├── prompts/
-│   └── solopreneur.md     # 核心 Prompt 模板（商業周刊與一人公司特稿風格）
+│   ├── editorial.md       # 核心專欄 Prompt 模板（天下雜誌、彭博商業周刊資深總編輯風格）
+│   └── solopreneur.md     # 歷史相容 Prompt 模板
 ├── app.py                 # 現代化視覺控制台伺服器 (原生標準函式庫高效實作)
 ├── pipeline.py            # 核心管線：抓取、漏斗、LLM 蒸餾、雙階段洗滌、注釋對齊與 Bark 推播
+├── signal_ledger.py       # 歷史訊號記帳引擎與語義去重
 ├── sources.yaml           # 訂閱來源清單、使用者畫像與排版模板
 ├── latest_newsletter.md   # 最新出刊之 Markdown 電子報
 ├── latest_distilled.json  # 最新蒸餾結構化資料快照
