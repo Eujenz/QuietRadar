@@ -574,7 +574,7 @@ class SimpleLLMDistiller:
    在精選出的情報項目中，請嚴格維持槓鈴比例：
    - 🎯 核心業務情報：約佔 70% ~ 80%
    - ✨ 跨界漫遊靈感：約佔 20% ~ 30%（必須從清單標題帶有 ✨ 的文章中挑選）
-   嚴禁全部挑選核心文章而遺漏跨界靈感！"""
+   嚴禁全部挑選核心文章而遺漏跨界靈感。"""
         else:
             quota_rule = "1. 請精選出最具閱讀價值的候選文章，並完全依據上方守則撰寫獨立深度論述正文。"
 
@@ -595,14 +595,17 @@ class SimpleLLMDistiller:
    - 範例：借鏡騰訊混元 Hy4 preview 的成本壓制 [S01]...
    - 範例：樹德收納「增工加料」的反脆弱定價法 [S06]...
    - 只能引用候選文章列表中提供給你的 Source ID 代碼，嚴禁自造 ID。若無合適來源則不得引用。
-   - 【絕對禁止】：正文與 JSON 中嚴禁輸出任何真實 URL 網址（如 http://、https://、www.）或舊式角注（如 [[1]](url)）。違者將導致整份報告直接作廢！
+   - 【絕對禁止】：正文與 JSON 中嚴禁輸出任何真實 URL 網址（如 http://、https://、www.）或舊式角注（如 [[1]](url)）。違者將導致整份報告直接作廢。
 3. 【JSON 格式契約規範】：
    你必須輸出包含 "overview" 與 "signals" 欄位的合法 JSON 物件：
-   - "overview" (字串)：根據上方指示撰寫的【商業排雷與專欄特稿】完整 Markdown 內文（採用科技商業專欄特稿散文體，深入剖析最具代表性訊號，自擬嵌入具體人事實地物的生動專屬小標題，凡引用處標註 [S01] 等代碼，嚴禁輸出任何網址）。
-   - "signals" (陣列，0~6 條)：從本期情報中萃取出的高槓桿商業/技術訊號（描述跨來源共同模式、行為/技術/市場變革，非單文摘要）。每條物件結構如下：
+   - "overview" (字串)：根據上方指示撰寫的【專欄特稿】完整 Markdown 內文（採用跨國科技商業專欄特稿風格，深入剖析最具結構性影響的關鍵情報與二階效應，自擬生動具體的章節小標題，凡引用處標註 [S01] 等代碼，嚴禁輸出任何網址）。
+   - "signals" (陣列，0~6 條)：從本期情報中萃取出的關鍵結構性訊號（核心目標為 1~3 條最具結構性影響的關鍵訊號，寧缺毋濫；描述跨來源共同模式、行為/技術/市場變革，非單文摘要）。每條物件結構如下：
      * "title": 訊號精煉標題
-     * "summary": 商業/技術實質事實（約 80~120 字，嚴禁空話）
-     * "why_it_matters": 商業價值、替代成本或防禦意涵
+     * "summary": 客觀事實摘要（以數據與事實驅動，約 80~120 字，嚴禁空話）
+     * "why_it_matters": 商業結構與產業鏈影響
+     * "asset_potential": 長期價值捕獲或資產配置視角
+     * "interpretation": 深層因果機制與解讀
+     * "unknowns": 現階段尚未明朗的結構性變數或下行風險
      * "novelty": 只能為 "NEW"、"KNOWN" 或 "EVOLVING" 之一
      * "novelty_basis": 依據歷史情報庫說明判定為 NEW/KNOWN/EVOLVING 之事實依據
      * "source_ids": 支持此訊號的本期授權代碼清單，例如 ["S01", "S02"]（不可為空，且嚴禁引用歷史代碼作為來源）
@@ -631,7 +634,7 @@ class SimpleLLMDistiller:
             temperature = 0.2
             messages_list = [
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"請直接以繁體中文進行商業排雷審計與降噪蒸餾，直接輸出包含 overview 與 signals 的合法 JSON 物件，凡引用處僅能標註候選文章的 Source ID 代碼 (例如 [S01])，嚴禁輸出任何 URL 網址或舊式角注格式，嚴禁在 JSON 前後輸出任何草稿或非 JSON 文字：\n\n候選文章列表：\n{json.dumps(articles_payload, ensure_ascii=False)}"}
+                {"role": "user", "content": f"請直接以繁體中文進行專欄特稿深度剖析與降噪蒸餾，直接輸出包含 overview 與 signals 的合法 JSON 物件，凡引用處僅能標註候選文章的 Source ID 代碼 (例如 [S01])，嚴禁輸出任何 URL 網址或舊式角注格式，嚴禁在 JSON 前後輸出任何草稿或非 JSON 文字：\n\n候選文章列表：\n{json.dumps(articles_payload, ensure_ascii=False)}"}
             ]
 
             # 最終防禦：對所有 messages[*].content 執行全域 URL Scrubbing
@@ -902,9 +905,16 @@ BUZZWORD_REPLACEMENTS = [
     (r"水平", "水準"),
 ]
 
+# 典型情緒化亢奮 Emoji (須予清除，但保留排版與結構符號如 ▪、｜、——、🎯、⚡、✨、💡、📰)
+HYPE_EMOJIS_PATTERN = re.compile(r'[🚀🔥🎉😱💪👏💥🤩🥳💯]')
+
+
 def sanitize_taiwan_terms(text: str) -> str:
     """
-    確定性過濾：清除大陸黑話與轉換為台灣在地用語，並全域轉換為台灣繁體慣用語 (OpenCC s2twp)。
+    確定性過濾：
+    1. 清除大陸黑話與轉換為台灣在地用語，全域轉換為台灣繁體慣用語 (OpenCC s2twp)。
+    2. 濾除典型情緒化亢奮 Emoji (🚀, 🔥, 🎉, 😱, 💪, 👏, 💥, 🤩, 🥳, 💯)，保留排版與結構符號。
+    3. 自動降級驚嘆號：將全形「！」與非 Markdown 語法（非 ![ 且非 !=）之半形「!」平緩替換為全形句號「。」。
     """
     if not text:
         return text
@@ -913,7 +923,14 @@ def sanitize_taiwan_terms(text: str) -> str:
     # 2. 再套用自訂大廠黑話與特定科技用語洗滌字典
     for pattern, repl in BUZZWORD_REPLACEMENTS:
         text = re.sub(pattern, repl, text)
+    # 3. 濾除典型情緒化亢奮 Emoji
+    text = HYPE_EMOJIS_PATTERN.sub('', text)
+    # 4. 驚嘆號自動降級：全形「！」與非 Markdown 圖片或比較運算子（非 ![ 與 !=）的半形「!」轉換為全形句號「。」
+    text = re.sub(r'！+', '。', text)
+    text = re.sub(r'!+(?![\[=])', '。', text)
+    text = re.sub(r'。{2,}', '。', text)
     return text
+
 
 # ==========================================
 # 3.5 Stage 2: speak-human-tw 本機確定性語言洗滌模組
