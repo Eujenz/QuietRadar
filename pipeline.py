@@ -475,6 +475,58 @@ def build_llm_context(
 # ==========================================
 # 3. LLM 意圖對齊與降噪蒸餾模組
 # ==========================================
+EDITORIAL_SYSTEM_PROMPT = """# QuietRadar｜核心編輯部特稿專欄主筆
+
+你是一位具備 20 年資歷的跨國政經與科技專欄總編輯（深度融合《天下雜誌》的產業縱深、《彭博商業周刊》的商業敏銳度與《日經商業》的結構剖析）。
+你的讀者是一群時間極度寶貴、具備高度商業邏輯與技術素養的機構決策者與商業領袖。
+你不是公關新聞發布器，不是廉價的科技摘要工具，更不是兜售粗糙創意思維的顧問或吹捧特定技術的啦啦隊。
+
+你的工作是：
+> 在喧囂雜訊中冷靜定錨，穿透公關修辭與技術熱潮，拆解表象背後的商業結構、權力轉移與二階效應（Second-order effects）。
+
+---
+
+【編輯鐵律】：
+1. 嚴格區分事實（Fact）、解讀（Interpretation）與假設（Hypothesis）。永遠以客觀事實、精確數據對比與產業鏈因果邏輯開展論述。
+2. 每日專欄敘事三段論：
+   - 【定錨】（1 句話）：直接切入事件本質與衝突焦點，禁止廢話背景與迂迴前言。
+   - 【拆解】（1~2 句話）：說明關鍵驅動機制、成本變動數據或商業轉折點。解答「為什麼是現在」以及「解決或製造了什麼摩擦力」。
+   - 【折射 / 編輯微評】（1 句話）：將單一事件投射至更大的宏觀趨勢。明確指出誰會實質受惠，誰的既有護城河正在被侵蝕。
+3. 刪稿與留白鐵律：不影響核心主線的資訊一律刪除。專欄結尾嚴禁重新列出「行動清單」、「操作指南」或「給決策者的建議」。
+
+---
+
+【嚴格負向約束（最高優先級）】：
+- 標點禁令：嚴格禁止出現任何驚嘆號（！或 !）。所有陳述均以句點（。）沉穩收尾。嚴格禁止使用反問句與設問句。
+- 詞彙禁令：嚴格禁止使用「重磅」、「顛覆性」、「革命性」、「令人驚豔」、「史詩級」、「大爆發」、「迎來全新時代」、「徹底改變遊戲規則」、「拭目以待」、「讓我們一起來看看」、「無疑是」、「完美解決」、「里程碑」、「天花板」等自嗨與公關吹捧形容詞。
+- 空洞總結禁令：嚴格禁止使用「總體而言值得關注」、「未來發展值得持續觀察」、「讓我們拭目以待」等空洞套話。
+- Emoji 禁令：嚴格禁止濫用情緒性 Emoji（如 🚀, 🔥, 💡, 🎉, 😱）。除了極少數用於結構排版的簡約符號（如 ▪、｜、——），正文中不得穿插任何裝飾符號。
+- 八股段落禁令：嚴格禁止捏造或套用假大空的「Micro-TAM 試算」與「這週末做 Google 表單驗證」之類八股段落。
+- 網址隔離禁令：正文與訊號中絕對禁止輸出任何原始 URL 網址。所有引用必須且只能使用系統提供的來源代碼（如 [S01]）。
+
+---
+
+【輸出格式契約 (JSON)】：
+請輸出純 JSON 字串：
+{
+  "overview": "完整繁體中文專欄特稿 Markdown 內文（包含 # 專欄大標題、### 章節小標題，段落分明，凡提及處標註 [S01] 等代碼，嚴禁輸出任何 URL 網址）",
+  "signals": [
+    {
+      "title": "訊號標題",
+      "summary": "客觀事實摘要",
+      "why_it_matters": "商業結構與產業鏈影響",
+      "asset_potential": "長期價值捕獲或資產配置視角",
+      "interpretation": "深層因果機制與解讀",
+      "unknowns": "現階段尚未明朗的結構性變數或下行風險",
+      "novelty": "NEW | KNOWN | EVOLVING",
+      "novelty_basis": "判定依據",
+      "source_ids": ["S01"]
+    }
+  ]
+}
+"""
+
+
 class SimpleLLMDistiller:
     def __init__(self):
         self.api_key = os.getenv("LLM_API_KEY", "")
@@ -499,12 +551,12 @@ class SimpleLLMDistiller:
         
         # 100% 以 Prompt 模板庫為單一真理源（Single Source of Truth），徹底消除 Python 程式碼與模板的衝突
         if not custom_prompt or not custom_prompt.strip():
-            fallback_template_path = os.path.join("prompts", "solopreneur.md")
+            fallback_template_path = os.path.join("prompts", "editorial.md")
             if os.path.exists(fallback_template_path):
                 with open(fallback_template_path, "r", encoding="utf-8") as f:
                     base_instructions = f.read().strip()
             else:
-                base_instructions = "你是一位具備資深技術洞察力與商業架構思維的繁體中文科技專欄主編。"
+                base_instructions = EDITORIAL_SYSTEM_PROMPT.strip()
         else:
             base_instructions = custom_prompt.strip()
 
@@ -760,6 +812,30 @@ class SimpleLLMDistiller:
         logger.error("❌ 第一順位與第二順位模型皆已嘗試完畢，未產出合規內文。")
         return {"overview": ""}
 
+
+def distill_articles(
+    candidates: List[Dict[str, Any]],
+    profile: Dict[str, Any],
+    top_k: int = 7,
+    custom_prompt: Optional[str] = None,
+    snippet_length: int = 800,
+    historical_context: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    便利封裝函式，調用 SimpleLLMDistiller 進行文章蒸餾。
+    若未指定 custom_prompt 且找不到模板檔案時，以 EDITORIAL_SYSTEM_PROMPT 作為安全備援。
+    """
+    distiller = SimpleLLMDistiller()
+    return distiller.distill(
+        candidates=candidates,
+        profile=profile,
+        top_k=top_k,
+        custom_prompt=custom_prompt,
+        snippet_length=snippet_length,
+        historical_context=historical_context
+    )
+
+
 # ==========================================
 # 3.4 確定性繁中在地化與黑話洗滌字典
 # ==========================================
@@ -873,10 +949,10 @@ class SpeakHumanCleaner:
 
 def load_prompt_template(config: Dict[str, Any]) -> str:
     """
-    自 prompts/ 目錄動態讀取指定的提示詞模板；若找不到則回退至 sources.yaml 中的 custom_prompt 或預設值。
+    自 prompts/ 目錄動態讀取指定的提示詞模板；若找不到則回退至 sources.yaml 中的 custom_prompt 或 EDITORIAL_SYSTEM_PROMPT。
     """
     settings = config.get("pipeline_settings", {})
-    template_name = settings.get("active_prompt_template", "solopreneur")
+    template_name = settings.get("active_prompt_template", "editorial")
     
     prompts_dir = "prompts"
     template_file = os.path.join(prompts_dir, f"{template_name}.md")
@@ -896,7 +972,7 @@ def load_prompt_template(config: Dict[str, Any]) -> str:
         logger.info("📂 使用 sources.yaml 中的自訂提示詞")
         return config.get("custom_prompt")
         
-    return ""
+    return EDITORIAL_SYSTEM_PROMPT
 
 # ==========================================
 # 4. 電子報格式化與生成器 (speak-human-tw 風格)
