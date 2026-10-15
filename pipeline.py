@@ -1524,13 +1524,13 @@ class SimpleBarkNotifier:
 
         # 1. 取得由 GUI 輸出結構框架 (output_template) 定義的各段推播標題模板
         tpl = template or {}
-        header_raw = tpl.get("header", "# ⚡ QuietRadar | 每日素材\n")
+        header_raw = tpl.get("header", "# QuietRadar 商業科技晨訊\n")
         header_first_line = re.sub(r'^[#>\s]+', '', header_raw.strip().split("\n")[0]).strip()
-        default_title = header_first_line or "⚡ QuietRadar | 每日素材"
+        default_title = header_first_line if (header_first_line and not header_first_line.startswith("出刊時間")) else "QuietRadar 商業科技晨訊"
 
-        bark_title_fmt = (tpl.get("bark_title") or "").strip()
-        bark_continue_fmt = (tpl.get("bark_continuation_title") or "").strip()
-        bark_sources_fmt = (tpl.get("bark_sources_title") or "").strip()
+        bark_title_fmt = (tpl.get("bark_title") or "QuietRadar 商業科技晨訊 ({page}/{total})").strip()
+        bark_continue_fmt = (tpl.get("bark_continuation_title") or "QuietRadar 商業科技晨訊 (續 {page}/{total})").strip()
+        bark_sources_fmt = (tpl.get("bark_sources_title") or "QuietRadar 原始文獻與參考出處 ({page}/{total})").strip()
 
         def render_bark_title(fmt: str, p: int, tot: int) -> str:
             if not fmt:
@@ -1570,8 +1570,19 @@ class SimpleBarkNotifier:
                 else:
                     title = render_bark_title(bark_continue_fmt, page, total)
 
+                # 行動端排版呼吸感優化：確保段落、標題、引用與分隔線間具備適當雙換行，避免 iOS 通知文字擠壓
+                c_md_payload = c_md.strip()
+                c_md_payload = re.sub(r'([^\n])\n(#{1,6}\s)', r'\1\n\n\2', c_md_payload)
+                c_md_payload = re.sub(r'(#{1,6}\s[^\n]+)\n([^\n])', r'\1\n\n\2', c_md_payload)
+                c_md_payload = re.sub(r'([^\n>])\n(>)', r'\1\n\n\2', c_md_payload)
+                c_md_payload = re.sub(r'(>[^\n]+)\n([^>\n])', r'\1\n\n\2', c_md_payload)
+                c_md_payload = re.sub(r'([^\n])\n(---|\*\*\*)', r'\1\n\n\2', c_md_payload)
+                c_md_payload = re.sub(r'(---|\*\*\*)\n([^\n])', r'\1\n\n\2', c_md_payload)
+                c_md_payload = re.sub(r'([。！？])\n([^\n\s\-*#>\d])', r'\1\n\n\2', c_md_payload)
+                c_md_payload = re.sub(r'\n{3,}', '\n\n', c_md_payload).strip()
+
                 payload = {
-                    "markdown": c_md.strip(),
+                    "markdown": c_md_payload,
                     "group": "QuietRadar",
                     "icon": "https://cdn-icons-png.flaticon.com/512/3208/3208726.png",
                     "sound": "calypso",
@@ -1582,7 +1593,7 @@ class SimpleBarkNotifier:
                 if title:
                     payload["title"] = title
                     if chunk_info["is_first"]:
-                        payload["body"] = f"出刊時間：{now_str} | 本期精選 {len(items)} 則情報"
+                        payload["body"] = f"出刊時間：{now_str} ｜ 本期精選 {len(items)} 則情報"
                     elif c_type == "sources":
                         payload["body"] = f"共 {len(items)} 則精選引用來源"
                     else:
