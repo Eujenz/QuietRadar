@@ -15,6 +15,7 @@ from pipeline import (
     build_further_reading,
     format_newsletter_markdown,
     sanitize_taiwan_terms,
+    rate_limit_wait_seconds,
 )
 
 CANDIDATES = {
@@ -82,6 +83,21 @@ class TestOpenCCFixes(unittest.TestCase):
         self.assertIn("參數", sanitize_taiwan_terms("模型参数"))
         self.assertIn("刷新紀錄", sanitize_taiwan_terms("跑分可以刷新纪录"))
         self.assertIn("清楚明瞭", sanitize_taiwan_terms("清楚明瞭"))
+        self.assertEqual(sanitize_taiwan_terms("是為了解決維護問題"), "是為了解決維護問題")
+        self.assertIn("為了瞭解", sanitize_taiwan_terms("為了瞭解市場"))
+        self.assertIn("痛點", sanitize_taiwan_terms("長期的痛點"))
+        self.assertNotIn("實質困擾", sanitize_taiwan_terms("長期的痛點"))
+
+
+class TestRateLimitWait(unittest.TestCase):
+    def test_waits(self):
+        self.assertEqual(rate_limit_wait_seconds(1), 30)
+        self.assertEqual(rate_limit_wait_seconds(2), 60)
+        self.assertEqual(rate_limit_wait_seconds(3), 90)
+        self.assertEqual(rate_limit_wait_seconds(9), 90)
+        self.assertEqual(rate_limit_wait_seconds(1, "75"), 75)
+        self.assertEqual(rate_limit_wait_seconds(1, "600"), 120)
+        self.assertEqual(rate_limit_wait_seconds(1, "abc"), 30)
 
 
 if __name__ == "__main__":

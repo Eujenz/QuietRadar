@@ -514,6 +514,22 @@ EDITORIAL_SYSTEM_PROMPT = """# QuietRadar｜每日商業科技專欄主筆
 
 
 MIN_OVERVIEW_CHARS = 600
+
+# 免費模型被限速（429）時通常要等數十秒才恢復；主模型多給幾次機會，盡量由同一個模型出刊
+PRIMARY_MODEL_MAX_ATTEMPTS = 4
+FALLBACK_MODEL_MAX_ATTEMPTS = 2
+RATE_LIMIT_WAITS = [30, 60, 90]
+RATE_LIMIT_MAX_WAIT = 120
+
+
+def rate_limit_wait_seconds(attempt: int, retry_after: Optional[str] = None) -> int:
+    """第 attempt 次遇到 429 後應等待的秒數；若伺服器給 Retry-After 且更長，就照它（上限 120 秒）。"""
+    base = RATE_LIMIT_WAITS[min(attempt, len(RATE_LIMIT_WAITS)) - 1]
+    try:
+        hinted = int(float(retry_after)) if retry_after else 0
+    except (TypeError, ValueError):
+        hinted = 0
+    return min(max(base, hinted), RATE_LIMIT_MAX_WAIT)
 # 專欄正文目標上限（不含角注連結）；超過只記警告，不重試，避免免費模型額度被重試耗盡
 TARGET_OVERVIEW_MAX_CHARS = 1800
 MAX_FURTHER_READING = 3
@@ -786,7 +802,7 @@ class SimpleLLMDistiller:
 
             payload = build_llm_payload(current_model, messages_list)
 
-            max_retries = 2
+            max_retries = PRIMARY_MODEL_MAX_ATTEMPTS if current_model == models_to_try[0] else FALLBACK_MODEL_MAX_ATTEMPTS
             backoff_base = 5
 
             for attempt in range(1, max_retries + 1):
@@ -796,8 +812,14 @@ class SimpleLLMDistiller:
                     with httpx.Client(timeout=client_timeout) as client:
                         with client.stream("POST", f"{self.base_url}/chat/completions", headers=headers, json=payload) as resp:
                             if resp.status_code in [429, 502, 503, 504]:
-                                wait_sec = backoff_base * attempt
-                                logger.warning(f"⚠️ 收到 HTTP {resp.status_code} 限速/逾時，觸發指數退避：等待 {wait_sec} 秒後重試...")
+                                if attempt >= max_retries:
+                                    logger.warning(f"⚠️ 模型 [{current_model}] 收到 HTTP {resp.status_code}，已用完 {max_retries} 次嘗試，改用下一個模型")
+                                    break
+                                if resp.status_code == 429:
+                                    wait_sec = rate_limit_wait_seconds(attempt, resp.headers.get("retry-after"))
+                                else:
+                                    wait_sec = backoff_base * attempt
+                                logger.warning(f"⚠️ 收到 HTTP {resp.status_code} 限速/逾時，等待 {wait_sec} 秒後重試...")
                                 time.sleep(wait_sec)
                                 continue
                             elif resp.status_code == 400 and "response_format" in payload:
@@ -996,7 +1018,6 @@ BUZZWORD_REPLACEMENTS = [
     (r"複盤", "檢討"),
     (r"佈局", "規劃"),
     (r"賽道", "領域"),
-    (r"痛點", "實質困擾"),
     (r"一人操盤手", "獨立開發者"),
     (r"單人操盤手", "獨立開發者"),
     (r"操盤手", "獨立開發者"),
@@ -1033,6 +1054,7 @@ BUZZWORD_REPLACEMENTS = [
     # OpenCC s2twp 的過度轉換修正（了→瞭、扩展→擴充套件、参数→引數、刷新→重新整理）
     (r"(說明|表明|證明|闡明|指明|點明|講明|寫明|標明)瞭", r"\1了"),
     (r"擴充套件", "擴展"),
+    (r"為瞭解(?=決|除|開|套|鎖|脫|圍|釋|放)", "為了解"),
     (r"引數", "參數"),
     (r"重新整理(?=[^，。、\s]{0,4}(紀錄|記錄|新高|新低))", "刷新"),
 ]
