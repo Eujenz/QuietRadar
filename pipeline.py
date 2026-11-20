@@ -564,17 +564,54 @@ def strip_structure_labels(overview: str) -> str:
     return re.sub(r'\n{3,}', "\n\n", cleaned)
 
 
+DEFAULT_LLM_MODEL = "baidu/ernie-5.5-flash-preview:free"
+
+# 主模型失敗時依序嘗試（皆為 OpenRouter 免費模型；nemotron-3-super:free 已於 2026-11 下架）
 FALLBACK_LLM_MODELS = [
+    "baidu/ernie-5.5-flash-preview:free",
     "nvidia/nemotron-3-ultra-550b-a55b:free",
-    "nvidia/nemotron-3-super-120b-a12b:free",
 ]
+
+# 依模型前綴附加的 OpenRouter 路由與推理設定
+#   provider.only + allow_fallbacks=False：固定由原廠提供推論，避免被路由到其他供應商造成文風漂移
+#   reasoning.enabled：先推理再寫稿；推理內容走 delta.reasoning，不會混進正文
+MODEL_REQUEST_OVERRIDES: Dict[str, Dict[str, Any]] = {
+    "baidu/": {
+        "provider": {"only": ["baidu"], "allow_fallbacks": False},
+        "reasoning": {"enabled": True},
+    },
+}
+
+# 開啟推理的模型，推理 token 也算在 max_tokens 內，需要更大的額度
+DEFAULT_MAX_TOKENS = 16384
+REASONING_MAX_TOKENS = 32768
+
+
+def build_llm_payload(model: str, messages: List[Dict[str, Any]], temperature: float = 0.2) -> Dict[str, Any]:
+    """組出 OpenRouter chat/completions 請求內容，依模型套用路由、推理與取樣參數。"""
+    payload: Dict[str, Any] = {
+        "model": model,
+        "messages": messages,
+        "max_tokens": DEFAULT_MAX_TOKENS,
+        "response_format": {"type": "json_object"},
+        "stream": True,  # 啟用串流維持連線活躍
+    }
+    # Claude Opus 5.5 / Sonnet 5.5 等新模型拒收 temperature（回 400），只對其他模型送出
+    if not model.startswith("anthropic/"):
+        payload["temperature"] = temperature
+    for prefix, extra in MODEL_REQUEST_OVERRIDES.items():
+        if model.startswith(prefix):
+            payload.update(json.loads(json.dumps(extra)))
+    if payload.get("reasoning", {}).get("enabled"):
+        payload["max_tokens"] = REASONING_MAX_TOKENS
+    return payload
 
 
 class SimpleLLMDistiller:
     def __init__(self):
         self.api_key = os.getenv("LLM_API_KEY", "")
         self.base_url = os.getenv("LLM_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/")
-        self.model = os.getenv("LLM_MODEL", "nvidia/nemotron-3-ultra-550b-a55b:free")
+        self.model = os.getenv("LLM_MODEL", "").strip() or DEFAULT_LLM_MODEL
 
     def distill(
         self,
@@ -669,7 +706,6 @@ class SimpleLLMDistiller:
         client_timeout = httpx.Timeout(240.0, connect=30.0, read=240.0, write=30.0)
 
         for current_model in models_to_try:
-            temperature = 0.2
             messages_list = [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": f"請依照系統指示，以台灣繁體中文撰寫今天的專欄，並只輸出 JSON 物件。\n\n候選文章列表：\n{json.dumps(articles_payload, ensure_ascii=False)}"}
@@ -680,14 +716,7 @@ class SimpleLLMDistiller:
                 if isinstance(msg, dict) and "content" in msg:
                     msg["content"] = scrub_urls(msg["content"])
 
-            payload = {
-                "model": current_model,
-                "messages": messages_list,
-                "temperature": temperature,
-                "max_tokens": 16384,
-                "response_format": {"type": "json_object"},
-                "stream": True  # 啟用串流維持連線活躍
-            }
+            payload = build_llm_payload(current_model, messages_list)
 
             max_retries = 2
             backoff_base = 5
@@ -1996,7 +2025,7 @@ def run_doctor() -> bool:
     # 4. 檢查 LLM 金鑰與 OpenRouter API 連通性
     llm_key = os.getenv("LLM_API_KEY", "")
     llm_url = os.getenv("LLM_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/")
-    llm_model = os.getenv("LLM_MODEL", "nvidia/nemotron-3-ultra-550b-a55b:free")
+    llm_model = os.getenv("LLM_MODEL", "").strip() or DEFAULT_LLM_MODEL
 
     if not llm_key or llm_key.startswith("your_"):
         _check("LLM API 金鑰", False, "尚未在 .env 中設定有效的 LLM_API_KEY")

@@ -58,7 +58,7 @@ DATABASE_URL=sqlite:///./quietradar.db
 
 # LLM 端點與模型設定（支援 OpenRouter、NVIDIA NIM、OpenAI 相容端點）
 LLM_BASE_URL=https://openrouter.ai/api/v1
-LLM_MODEL=minimax/minimax-m3:free
+LLM_MODEL=baidu/ernie-5.5-flash-preview:free
 LLM_API_KEY=your_openrouter_or_openai_api_key
 
 # Bark 推播設定（選填，支援以逗號分隔多組 Device Key）

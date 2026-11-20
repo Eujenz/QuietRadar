@@ -111,11 +111,10 @@ flowchart TD
 
 ### 4.3 認知引擎與免費高容錯備援鏈 (Cognitive Engine & Failover Chain)
 - **接口標準**：OpenAI-Compatible Chat Completions API（啟用 SSE 串流以避免連線掛起）。
-- **免費備援優先級（自動容錯遞補）**：
-  1. `minimax/minimax-m3:free`（主力：繁體中文文筆極佳，邏輯縝密）
-  2. `minimax/minimax-m2.7:free`（一級備援：極高可用性）
-  3. `google/gemma-4-31b-it:free`（二級備援：Google 開源頂級模型）
-  4. `nvidia/nemotron-3.5-lightning:free`（三級備援：極速回應兜底）
+- **模型選擇**：主模型由 `LLM_MODEL` 指定（未設定時為 `baidu/ernie-5.5-flash-preview:free`），失敗時依序退回備援：
+  1. `baidu/ernie-5.5-flash-preview:free`（中文母語模型；固定由 baidu 提供推論、開啟 reasoning）
+  2. `nvidia/nemotron-3-ultra-550b-a55b:free`（備援）
+  - 改用 `anthropic/` 模型（如 `anthropic/claude-sonnet-5.5`）時自動不送 `temperature`。
 - **閘道防禦標頭**：注入 `HTTP-Referer` 與 `X-Title`，確保 OpenRouter 閘道無延遲路由。
 - **降噪鐵律 (`speak-human-tw`)**：
   - 嚴格消除 AI 套話贅字（如賦能、閉環、抓手、顆粒度、拉開序幕、不可否認、總的來說）。
