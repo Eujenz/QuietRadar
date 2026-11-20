@@ -8,20 +8,20 @@ pipeline_settings:
   max_output_items: 10
   active_prompt_template: editorial
 profile:
+  # 讀者關注：同時供 LLM 選定主線，也會被拆成關鍵詞做標題相關性排序
   interests:
-  - 產業利潤池轉移（Profit Pool Shifts）與既有利潤空間被侵蝕之商業結構重組
-  - 技術商業化與落地摩擦力（Commercialization Friction）、真實制度與合規成本、數據主權
-  - 第二層效應（Second-Order Effects）：新技術熱潮背後承擔外部成本之受害者與實質獲利方
-  - 基礎設施大宗商品化（Commoditization of Infrastructure）與垂直利基護城河（Niche Moats）
-  - 跨生態中立性（Platform Agnostic）與巨頭搭售免疫力（Bundling Resistance）
+  - 產業利潤池轉移、商業模式重組、定價權
+  - AI 商業化、落地成本、合規、資料主權
+  - 基礎設施商品化、雲端、晶片、算力、開源模型
+  - 平台權力、生態系競爭、標準之爭、監管
+  - 跨領域科學與技術突破對產業的影響
+  # 不感興趣：會被拆成關鍵詞，標題命中即在讀取正文前淘汰
   negative_topics:
-  - 實體庫存、物流出貨、代購代銷、C2C 撮合市集爭議
-  - 客製化專案外包、接案地獄、以時間換金錢的高級自僱勞動
-  - 巨頭免費隨附即可抹殺的淺層包裝套殼工具、無防禦力的通用摘要器
-  - 缺乏數據支持的公關吹捧稿、大廠例行融資新聞稿、企業買榜自吹通稿
-  - 純新手語法教學、LeetCode 刷題、薪資行情、名人八卦、政治口水
-  - 極易被封鎖的脆弱非授權爬蟲、黑客灰產、投機炒幣空投
-
+  - 公關通稿、買榜、例行融資新聞稿
+  - LeetCode、刷題、面試題、薪資行情、求職
+  - 名人八卦、政治口水
+  - 炒幣、空投、灰產
+  - 代購、團購、物流出貨
 output_template:
   header: "> 出刊時間：{time} ｜ 本期精選：{count} 則\n---\n"
   overview: "{overview}\n\n---\n"

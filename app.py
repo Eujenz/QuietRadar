@@ -512,13 +512,13 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     }
 
     let promptTemplatesCache = {};
-    let activeTemplateName = 'solopreneur';
+    let activeTemplateName = 'editorial';
 
     async function loadPrompts() {
       try {
         const res = await fetch('/api/prompts');
         const data = await res.json();
-        activeTemplateName = data.active || 'solopreneur';
+        activeTemplateName = data.active || 'editorial';
         promptTemplatesCache = {};
         const sel = document.getElementById('prompt-template-select');
         sel.innerHTML = '';
@@ -562,7 +562,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
     async function saveCurrentTemplate() {
       const sel = document.getElementById('prompt-template-select');
-      const currentName = sel.value || 'solopreneur';
+      const currentName = sel.value || 'editorial';
       const content = document.getElementById('custom-prompt').value;
       await fetch('/api/prompts/save', {
         method: 'POST',
@@ -875,7 +875,7 @@ class QuietRadarHandler(BaseHTTPRequestHandler):
             os.makedirs(prompts_dir, exist_ok=True)
             with open("sources.yaml", "r", encoding="utf-8") as f:
                 cfg = yaml.safe_load(f)
-            active_tpl = cfg.get("pipeline_settings", {}).get("active_prompt_template", "solopreneur")
+            active_tpl = cfg.get("pipeline_settings", {}).get("active_prompt_template", "editorial")
             
             templates = []
             for fn in sorted(os.listdir(prompts_dir)):
@@ -891,7 +891,7 @@ class QuietRadarHandler(BaseHTTPRequestHandler):
             
             if not templates:
                 cur_prompt = cfg.get("custom_prompt", "")
-                templates.append({"name": "solopreneur", "content": cur_prompt})
+                templates.append({"name": "editorial", "content": cur_prompt})
                 
             self._send_json({"active": active_tpl, "templates": templates})
 
@@ -931,7 +931,7 @@ class QuietRadarHandler(BaseHTTPRequestHandler):
             self._send_json({"status": "ok"})
 
         elif path == "/api/prompts/select":
-            tpl_name = payload.get("template_name", "solopreneur")
+            tpl_name = payload.get("template_name", "editorial")
             with open("sources.yaml", "r", encoding="utf-8") as f:
                 cfg = yaml.safe_load(f)
             if "pipeline_settings" not in cfg:

@@ -484,7 +484,7 @@ def build_llm_context(
         }
 
         # 2. 構建完全不含 URL 的 LLM Payload (所有字串經由 scrub_urls 脫敏)
-        display_title = f"✨ {title}" if is_serendipity else title
+        display_title = title
         articles_payload.append({
             "source_id": source_id,
             "source_name": scrub_urls(src_name),
@@ -498,56 +498,76 @@ def build_llm_context(
 # ==========================================
 # 3. LLM 意圖對齊與降噪蒸餾模組
 # ==========================================
-EDITORIAL_SYSTEM_PROMPT = """# QuietRadar｜核心編輯部特稿專欄主筆
+EDITORIAL_SYSTEM_PROMPT = """# QuietRadar｜每日商業科技專欄主筆
 
-你是一位具備 20 年資歷的跨國政經與科技專欄總編輯（深度融合《天下雜誌》的產業縱深、《彭博商業周刊》的商業敏銳度與《日經商業》的結構剖析）。
-你的讀者是一群時間極度寶貴、具備高度商業邏輯與技術素養的機構決策者與商業領袖。
-你不是公關新聞發布器，不是廉價的科技摘要工具，更不是兜售粗糙創意思維的顧問或吹捧特定技術的啦啦隊。
+（備援版本：正式規範以 prompts/editorial.md 為準。）
 
-你的工作是：
-> 在喧囂雜訊中冷靜定錨，穿透公關修辭與技術熱潮，拆解表象背後的商業結構、權力轉移與二階效應（Second-order effects）。
+你是一位資深的財經科技專欄主筆，筆法接近《天下雜誌》的產業深度報導：冷靜、紮實、以事實鋪陳，用完整段落把多則新聞串成一個有說服力的論點。
 
----
-
-【編輯鐵律】：
-1. 嚴格區分事實（Fact）、解讀（Interpretation）與假設（Hypothesis）。永遠以客觀事實、精確數據對比與產業鏈因果邏輯開展論述。
-2. 每日專欄敘事三段論：
-   - 【定錨】（1 句話）：直接切入事件本質與衝突焦點，禁止廢話背景與迂迴前言。
-   - 【拆解】（1~2 句話）：說明關鍵驅動機制、成本變動數據或商業轉折點。解答「為什麼是現在」以及「解決或製造了什麼摩擦力」。
-   - 【折射 / 編輯微評】（1 句話）：將單一事件投射至更大的宏觀趨勢。明確指出誰會實質受惠，誰的既有護城河正在被侵蝕。
-3. 刪稿與留白鐵律：不影響核心主線的資訊一律刪除。專欄結尾嚴禁重新列出「行動清單」、「操作指南」或「給決策者的建議」。
-
----
-
-【嚴格負向約束（最高優先級）】：
-- 標點禁令：嚴格禁止出現任何驚嘆號（！或 !）。所有陳述均以句點（。）沉穩收尾。嚴格禁止使用反問句與設問句。
-- 詞彙禁令：嚴格禁止使用「重磅」、「顛覆性」、「革命性」、「令人驚豔」、「史詩級」、「大爆發」、「迎來全新時代」、「徹底改變遊戲規則」、「拭目以待」、「讓我們一起來看看」、「無疑是」、「完美解決」、「里程碑」、「天花板」等自嗨與公關吹捧形容詞。
-- 空洞總結禁令：嚴格禁止使用「總體而言值得關注」、「未來發展值得持續觀察」、「讓我們拭目以待」等空洞套話。
-- Emoji 禁令：嚴格禁止濫用情緒性 Emoji（如 🚀, 🔥, 💡, 🎉, 😱）。除了極少數用於結構排版的簡約符號（如 ▪、｜、——），正文中不得穿插任何裝飾符號。
-- 八股段落禁令：嚴格禁止捏造或套用假大空的「Micro-TAM 試算」與「這週末做 Google 表單驗證」之類八股段落。
-- 網址隔離禁令：正文與訊號中絕對禁止輸出任何原始 URL 網址。所有引用必須且只能使用系統提供的來源代碼（如 [S01]）。
-
----
-
-【輸出格式契約 (JSON)】：
-請輸出純 JSON 字串：
-{
-  "overview": "完整繁體中文專欄特稿 Markdown 內文（包含 # 專欄大標題、### 章節小標題，段落分明，凡提及處標註 [S01] 等代碼，嚴禁輸出任何 URL 網址）",
-  "signals": [
-    {
-      "title": "訊號標題",
-      "summary": "客觀事實摘要",
-      "why_it_matters": "商業結構與產業鏈影響",
-      "asset_potential": "長期價值捕獲或資產配置視角",
-      "interpretation": "深層因果機制與解讀",
-      "unknowns": "現階段尚未明朗的結構性變數或下行風險",
-      "novelty": "NEW | KNOWN | EVOLVING",
-      "novelty_basis": "判定依據",
-      "source_ids": ["S01"]
-    }
-  ]
-}
+1. 每期只寫一篇專欄，圍繞一個主線論點，用 2～4 則互相印證的材料支撐。
+2. 結構：一行 `# ` 判斷句大標題；一段無小標導言（150～220 字）；2～3 節 `### ` 敘事句小標，每節 2～3 段連續段落；一段無小標結尾，不給建議。全文約 1,200～1,800 字。
+3. 只能使用候選文章裡出現的事實與數字；不得自行估算市場規模或做任何試算；不得虛構人物、公司或情境。推論要寫成推論。
+4. 每個事實後標註來源代碼，例如 [S03]；正文不得出現網址。
+5. 不用條列、驚嘆號、反問句、Emoji、公關自嗨詞與空洞收尾。
+6. 不得使用「案例一」、「破題」、「主筆總結」、「定錨」、「拆解」、「折射」等格式標籤作為小標；不寫「巨頭抹殺路徑」、「生存縫隙」、「一人公司防守邊界」、Micro-TAM 試算、「這週末驗證」等創業教戰內容。
 """
+
+
+MIN_OVERVIEW_CHARS = 600
+
+# 過去 solopreneur 框架反覆出現、讀者明確不要的寫法；正文出現即重試
+BANNED_BODY_PHRASES = [
+    "Micro-TAM", "Micro TAM", "驗證道具", "抹殺路徑", "防守邊界", "生存縫隙",
+    "海面無魚", "Tiny Wedge",
+]
+
+# 出現在小標或粗體開頭的格式標籤；會被確定性移除
+STRUCTURE_LABELS = [
+    "專欄破題", "破題與暗湧", "破題", "定錨", "拆解", "折射", "編輯微評",
+    "主筆總結", "排雷總結", "跨界漫遊", "專欄",
+    "案例一", "案例二", "案例三", "案例四", "案例五",
+]
+_LABEL_ALT = "|".join(re.escape(x) for x in sorted(STRUCTURE_LABELS, key=len, reverse=True))
+# 標籤後必須接分隔符（：｜|】）或行尾，避免誤刪「### 拆解供應鏈的新邏輯」這類正常小標；
+# 「一、」「二、」這類序號本身帶分隔，直接移除。
+_HEADING_LABEL_RE = re.compile(
+    r'^(?P<hashes>#{1,6})\s*(?:【\s*)?'
+    r'(?:(?:' + _LABEL_ALT + r')(?:\s*/\s*[^】：:｜|\s]{1,6})?\s*】?\s*(?:[：:｜|]|$)|[一二三四五六七八九十]、)'
+    r'\s*(?P<rest>.*)$'
+)
+_BOLD_LABEL_RE = re.compile(r'\*\*\s*【?(?:' + _LABEL_ALT + r')】?\s*[：:]?\s*\*\*\s*[：:]?\s*')
+
+
+def find_banned_body_phrases(text: str) -> List[str]:
+    """回傳正文中出現的已淘汰寫法（大小寫不敏感）。"""
+    lowered = (text or "").lower()
+    return [p for p in BANNED_BODY_PHRASES if p.lower() in lowered]
+
+
+def strip_structure_labels(overview: str) -> str:
+    """
+    移除小標與粗體開頭的格式標籤（如「### 定錨：……」→「### ……」、「**拆解**：」→ 空）。
+    小標若只剩標籤本身（如「### 主筆總結」），整行移除，段落保留。
+    """
+    if not overview:
+        return overview
+    out_lines = []
+    for line in overview.split("\n"):
+        m = _HEADING_LABEL_RE.match(line.strip())
+        if m:
+            rest = m.group("rest").strip()
+            if rest:
+                out_lines.append(f"{m.group('hashes')} {rest}")
+            continue
+        out_lines.append(_BOLD_LABEL_RE.sub("", line))
+    cleaned = "\n".join(out_lines)
+    return re.sub(r'\n{3,}', "\n\n", cleaned)
+
+
+FALLBACK_LLM_MODELS = [
+    "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "nvidia/nemotron-3-super-120b-a12b:free",
+]
 
 
 class SimpleLLMDistiller:
@@ -589,51 +609,50 @@ class SimpleLLMDistiller:
         else:
             _, articles_payload = build_llm_context(candidates, snippet_length=snippet_length)
 
-        # 計算槓鈴配額（7~8成核心 : 2~3成跨界）
+        # 跨界材料的使用原則（槓鈴策略）：服從單一主線，不強制配額
         has_serendipity = any(c.get("is_serendipity") for c in articles_payload)
         if has_serendipity:
-            quota_rule = f"""1. 【槓鈴策略精選原則 (約 7~8成核心 : 2~3成跨界，質量優先)】:
-   請深入研讀下方候選文章，挑選出真正具備商業啟發性、新奇且可行的情報（寧缺毋濫）。
-   在精選出的情報項目中，請嚴格維持槓鈴比例：
-   - 🎯 核心業務情報：約佔 70% ~ 80%
-   - ✨ 跨界漫遊靈感：約佔 20% ~ 30%（必須從清單標題帶有 ✨ 的文章中挑選）
-   嚴禁全部挑選核心文章而遺漏跨界靈感。"""
+            serendipity_rule = (
+                "- 候選清單中 is_serendipity 為 true 的是跨領域材料。若其中有能從另一個角度印證本期主線的材料，"
+                "請在正文中用一段自然帶入；若沒有任何一則與主線相關，就不要硬湊。"
+            )
         else:
-            quota_rule = "1. 請精選出最具閱讀價值的候選文章，並完全依據上方守則撰寫獨立深度論述正文。"
+            serendipity_rule = ""
 
         hist_section = f"\n---\n{historical_context}\n" if historical_context else ""
 
         system_prompt = f"""{base_instructions}
 
 ---
-【本期檢索動態偏好】:
-- 讀者關注主題：{json.dumps(profile.get('interests', []), ensure_ascii=False)}
-- 讀者排斥的主題 (直接淘汰)：{json.dumps(profile.get('negative_topics', []), ensure_ascii=False)}
+【本期讀者關注】
+- 關注主題：{json.dumps(profile.get('interests', []), ensure_ascii=False)}
+- 不感興趣的主題（不要作為主線）：{json.dumps(profile.get('negative_topics', []), ensure_ascii=False)}
+{serendipity_rule}
 {hist_section}
 ---
-【系統輸出格式契約 (JSON) 與論文式文內注釋鐵律】:
-{quota_rule}
-2. 【論文式文內注釋鐵律】：
-   - 在 overview 論述正文中，凡提及、借鏡特定文章的商業案例、技術架構、實驗數據或跨界理論時，必須在該名詞或觀點句後方標註候選文章的 Source ID 代碼：`[S01]`、`[S02]`。
-   - 範例：借鏡騰訊混元 Hy4 preview 的成本壓制 [S01]...
-   - 範例：樹德收納「增工加料」的反脆弱定價法 [S06]...
-   - 只能引用候選文章列表中提供給你的 Source ID 代碼，嚴禁自造 ID。若無合適來源則不得引用。
-   - 【絕對禁止】：正文與 JSON 中嚴禁輸出任何真實 URL 網址（如 http://、https://、www.）或舊式角注（如 [[1]](url)）。違者將導致整份報告直接作廢。
-3. 【JSON 格式契約規範】：
-   你必須輸出包含 "overview" 與 "signals" 欄位的合法 JSON 物件：
-   - "overview" (字串)：根據上方指示撰寫的【專欄特稿】完整 Markdown 內文（採用跨國科技商業專欄特稿風格，深入剖析最具結構性影響的關鍵情報與二階效應，自擬生動具體的章節小標題，凡引用處標註 [S01] 等代碼，嚴禁輸出任何網址）。
-   - "signals" (陣列，0~6 條)：從本期情報中萃取出的關鍵結構性訊號（核心目標為 1~3 條最具結構性影響的關鍵訊號，寧缺毋濫；描述跨來源共同模式、行為/技術/市場變革，非單文摘要）。每條物件結構如下：
-     * "title": 訊號精煉標題
-     * "summary": 客觀事實摘要（以數據與事實驅動，約 80~120 字，嚴禁空話）
-     * "why_it_matters": 商業結構與產業鏈影響
-     * "asset_potential": 長期價值捕獲或資產配置視角
-     * "interpretation": 深層因果機制與解讀
-     * "unknowns": 現階段尚未明朗的結構性變數或下行風險
-     * "novelty": 只能為 "NEW"、"KNOWN" 或 "EVOLVING" 之一
-     * "novelty_basis": 依據歷史情報庫說明判定為 NEW/KNOWN/EVOLVING 之事實依據
-     * "source_ids": 支持此訊號的本期授權代碼清單，例如 ["S01", "S02"]（不可為空，且嚴禁引用歷史代碼作為來源）
+【輸出格式（JSON）】
+只輸出一個合法 JSON 物件，前後不得有任何其他文字：
+{{
+  "overview": "專欄全文 Markdown（依上方結構撰寫，凡引用處標註 [S01] 等來源代碼，不得出現網址）",
+  "signals": [
+    {{
+      "title": "訊號標題",
+      "summary": "客觀事實摘要，80～120 字，只用候選文章中的事實",
+      "why_it_matters": "對產業結構的影響",
+      "asset_potential": "長期價值落在哪一層（可留空字串）",
+      "interpretation": "背後的因果機制",
+      "unknowns": "尚未明朗的變數或下行風險",
+      "novelty": "NEW、KNOWN 或 EVOLVING 其中之一",
+      "novelty_basis": "依歷史情報判定新舊的依據",
+      "source_ids": ["S01"]
+    }}
+  ]
+}}
+- signals 為 0～3 條，只收錄跨來源、具結構性意義的變化；沒有就給空陣列。
+- source_ids 只能使用本期候選清單的代碼，不可為空，不可使用歷史代碼。
+- 引用只能用 [S01] 這種代碼格式，不得輸出網址或 [[1]](url) 這類舊式角注。
 """
-        
+
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
@@ -642,13 +661,9 @@ class SimpleLLMDistiller:
             "X-Title": "QuietRadar"
         }
 
-        # 嚴格依使用者指定順序，僅嘗試兩款免費模型：
-        # 第一順位：nvidia/nemotron-3-ultra-550b-a55b:free
-        # 第二順位：nvidia/nemotron-3-super-120b-a12b:free
-        models_to_try = [
-            "nvidia/nemotron-3-ultra-550b-a55b:free",
-            "nvidia/nemotron-3-super-120b-a12b:free"
-        ]
+        # 優先使用 LLM_MODEL（環境變數 / GitHub Secrets）指定的模型，失敗時才依序退回備援模型。
+        # 固定使用同一個主模型，文風才會穩定。
+        models_to_try = [self.model] + [m for m in FALLBACK_LLM_MODELS if m != self.model]
 
         # 設定 240 秒寬裕逾時，避免大模型冷啟動或長推導斷線
         client_timeout = httpx.Timeout(240.0, connect=30.0, read=240.0, write=30.0)
@@ -657,7 +672,7 @@ class SimpleLLMDistiller:
             temperature = 0.2
             messages_list = [
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"請直接以繁體中文進行專欄特稿深度剖析與降噪蒸餾，直接輸出包含 overview 與 signals 的合法 JSON 物件，凡引用處僅能標註候選文章的 Source ID 代碼 (例如 [S01])，嚴禁輸出任何 URL 網址或舊式角注格式，嚴禁在 JSON 前後輸出任何草稿或非 JSON 文字：\n\n候選文章列表：\n{json.dumps(articles_payload, ensure_ascii=False)}"}
+                {"role": "user", "content": f"請依照系統指示，以台灣繁體中文撰寫今天的專欄，並只輸出 JSON 物件。\n\n候選文章列表：\n{json.dumps(articles_payload, ensure_ascii=False)}"}
             ]
 
             # 最終防禦：對所有 messages[*].content 執行全域 URL Scrubbing
@@ -739,30 +754,19 @@ class SimpleLLMDistiller:
                     cleaned = re.sub(r'<reasoning>[\s\S]*?(?:<\/reasoning>|$)', '', cleaned, flags=re.IGNORECASE).strip()
                     logger.info(f"🔍 [LLM 內容預覽]:\n{cleaned[:500]}")
 
-                    FORBIDDEN_HEADING_KEYWORDS = [
-                        "深度排雷", "戳破願景", "表面熱鬧", "落地摩擦力", "落地實體摩擦力",
-                        "巨頭抹殺", "巨頭抹殺路徑", "生死裁決", "特種部隊突圍", "最小切入點",
-                        "維度一", "維度二", "維度三", "維度四", "維度五", "SOS 4.2 生死裁決"
-                    ]
-
                     def is_overview_valid_and_complete(ov_text: str) -> bool:
                         if not ov_text:
                             return False
                         stripped = ov_text.strip()
-                        # 若命中保真安全閥宣告，即使短字數也屬合法
-                        if "海面無魚保真安全閥" in stripped or "本期無合格 Tiny Wedge" in stripped:
-                            return True
-                        # 一般專欄內文長度至少需 200 字以上
-                        if len(stripped) < 200:
+                        # 專欄全文目標 1,200～1,800 字；低於下限視為未完成
+                        if len(stripped) < MIN_OVERVIEW_CHARS:
+                            logger.warning(f"⚠️ overview 僅 {len(stripped)} 字，低於 {MIN_OVERVIEW_CHARS} 字下限，觸發重試")
                             return False
 
-                        # 檢查標題或粗體中是否偷渡思考綱領的死板禁語
-                        header_and_bold_lines = re.findall(r'(?:^#{1,6}\s*.*$|\*\*.*?\*\*)', stripped, flags=re.MULTILINE)
-                        for hb in header_and_bold_lines:
-                            for kw in FORBIDDEN_HEADING_KEYWORDS:
-                                if kw in hb:
-                                    logger.warning(f"⚠️ 偵測到標題/粗體中包含死板思考綱領禁語: 【{kw}】 (出現於: {hb[:40]})，判定驗證未通過，觸發重試")
-                                    return False
+                        banned = find_banned_body_phrases(stripped)
+                        if banned:
+                            logger.warning(f"⚠️ 正文出現已淘汰的創業教戰寫法: {banned}，觸發重試")
+                            return False
 
                         # 檢查結尾閉合：包含標準標點、引號、括號、Markdown 標籤等
                         is_closed = bool(re.search(r'[。！？\.\!）」』\"\'\*\*】\)\n\]]\s*$', stripped))
@@ -772,20 +776,19 @@ class SimpleLLMDistiller:
                         return True
 
                     def _extract_distill_dict(data_obj: Any) -> Optional[Dict[str, Any]]:
-                        """安全封裝解析後的資料結構，支援 tiny_wedge 純文字或欄位容錯"""
+                        """安全封裝解析後的資料結構"""
                         if not isinstance(data_obj, dict):
                             return None
                         ov = data_obj.get("overview", "")
-                        # 容錯處理：若模型將 tiny_wedge 作為獨立欄位輸出，乾淨串接避免寫死機械標題
-                        tw = data_obj.get("tiny_wedge")
-                        if tw and isinstance(tw, str) and tw.strip():
-                            if tw.strip() not in ov:
-                                ov = f"{ov.strip()}\n\n{tw.strip()}"
-                        
+                        if not isinstance(ov, str):
+                            return None
+                        # 確定性移除「定錨：」「案例一：」這類格式標籤，避免專欄讀起來像填表
+                        ov = strip_structure_labels(ov)
+
                         if not is_overview_valid_and_complete(ov):
                             return None
 
-                        res = {"overview": ov}
+                        res = {"overview": ov}  # 已移除格式標籤
                         if "signals" in data_obj and isinstance(data_obj["signals"], list):
                             res["signals"] = data_obj["signals"]
                         return res
@@ -822,6 +825,7 @@ class SimpleLLMDistiller:
                             except Exception:
                                 raw_ov = raw_ov_escaped.replace('\\n', '\n').replace('\\"', '"').replace('\\\\', '\\')
                             
+                            raw_ov = strip_structure_labels(raw_ov)
                             if raw_ov.strip() and is_overview_valid_and_complete(raw_ov):
                                 return {"overview": raw_ov}
                         except Exception:
@@ -1966,7 +1970,7 @@ def run_doctor() -> bool:
             with open("sources.yaml", "r", encoding="utf-8") as f:
                 cfg = yaml.safe_load(f)
             src_count = len(cfg.get("sources", []))
-            active_tpl = cfg.get("pipeline_settings", {}).get("active_prompt_template", "solopreneur")
+            active_tpl = cfg.get("pipeline_settings", {}).get("active_prompt_template", "editorial")
             _check("配置檔案", True, f"sources.yaml 正常解析，包含 {src_count} 個訂閱來源，啟用模板: [{active_tpl}]")
         except Exception as e:
             _check("配置檔案", False, f"sources.yaml 解析失敗: {e}")
