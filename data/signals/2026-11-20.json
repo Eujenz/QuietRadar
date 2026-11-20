@@ -1,0 +1,144 @@
+{
+  "date": "2026-11-20",
+  "generated_at": "2026-11-20T11:51:11+08:00",
+  "signal_count": 3,
+  "signals": [
+    {
+      "signal_id": "SIG-20261120-001",
+      "date": "2026-11-20",
+      "title": "頂級模型分數差距收斂，單任務成本改寫採購順序",
+      "summary": "OpenAI 11 月 18 日發表 GPT-6.2 Astra 與 Sol，Astra 單價砍兩成、快取輸入降至每百萬 0.40 美元，在 Artificial Analysis v5.0.1 榜上以 62 分居次，單任務平均 4 美元，領先的 Claude Fable 5.2 為 26 美元。同日 Google 推出 Gemini 4 Neon，high 檔與旗艦 Carbon 同為 60 分，任務時間由 34 分鐘縮至 15 分鐘。",
+      "why_it_matters": "第一梯隊的分數差落在個位數，模型採購的判準從能力高低轉向單位任務成本與延遲，靠能力溢價支撐的定價結構被壓縮，中間價格帶成為高頻工作負載的預設選項。",
+      "interpretation": "當能力差距小到客戶難以分辨，模型就從差異化產品變成可比價的投入要素，定價權由訓練模型的一方移向掌握算力與客戶關係的一方，廠商只能靠降價與提高用量來維持營收。",
+      "unknowns": "跑分與實測落差有多大、企業實際 workloads 的完成率是否穩定，以及降價後的單位經濟能否支撐現有估值，都還沒有答案。",
+      "novelty": "NEW",
+      "novelty_basis": "冷啟動階段，歷史情報庫尚無近 30 天追蹤紀錄，本期首次收錄。",
+      "source_ids": [
+        "S11",
+        "S06",
+        "S12"
+      ],
+      "evidence_keys": [
+        "57439c3a28f8eeaf5149284361528e10f4cb131c2fa841fd1b3cabb676acc0f1",
+        "3f3a2bf37ae46a39d0b2fa60da2f5adc9b423e519ba57e8a200b50ad80674b3f",
+        "3c3ab8dbea58c99aec9274bfc617fe0fca068caebecc18dfb900746b216aadfd"
+      ],
+      "sources": [
+        {
+          "source_id": "S11",
+          "article_key": "57439c3a28f8eeaf5149284361528e10f4cb131c2fa841fd1b3cabb676acc0f1",
+          "title": "跑分狂飆，實測翻車，剛發的 GPT-6.2 暴露了 OpenAI 的軟肋",
+          "canonical_url": "http://www.geekpark.net/news/374175",
+          "source_name": "極客公園",
+          "is_serendipity": false
+        },
+        {
+          "source_id": "S06",
+          "article_key": "3f3a2bf37ae46a39d0b2fa60da2f5adc9b423e519ba57e8a200b50ad80674b3f",
+          "title": "「北美大豆包」谷歌，終於殺回 AI 牌桌中央",
+          "canonical_url": "http://www.geekpark.net/news/374196",
+          "source_name": "極客公園",
+          "is_serendipity": false
+        },
+        {
+          "source_id": "S12",
+          "article_key": "3c3ab8dbea58c99aec9274bfc617fe0fca068caebecc18dfb900746b216aadfd",
+          "title": "谷歌的 Gemini 4 Neon，綜合能力到底強不強？",
+          "canonical_url": "https://www.woshipm.com/ai/6497132.html",
+          "source_name": "人人都是產品經理",
+          "is_serendipity": true
+        }
+      ],
+      "created_at": "2026-11-20T11:51:11+08:00",
+      "asset_potential": "價值落在掌握算力、通路與計量方式的一層，以及能把模型接進既有流程並驗收可靠度的一層；單純訓練模型的溢價空間被壓縮。"
+    },
+    {
+      "signal_id": "SIG-20261120-002",
+      "date": "2026-11-20",
+      "title": "Agent 的瓶頸從生成移到結帳、編排與帳號治理",
+      "summary": "AgentMall 為九家零售電商建立自動化結帳，目前成功率約七成，需處理反爬蟲、登入、OTP 與變動中的結帳結構。Purple Flow 以 Elixir 與 Beam 重寫工作流編排，一萬個併發工作流三秒內完成、耗用約 330MB，n8n 跑一百個需 2GB。ChatPRD 則遭遇免費試用被濫用、token 被轉售。",
+      "why_it_matters": "模型能力可以外採之後，產品能否收費取決於執行可靠性、憑證隔離與用量計價這些非模型環節，價值池往 agent 產品與基礎設施的中間層沉積。",
+      "interpretation": "生成能力普及讓差異化來源外移，誰能處理真實世界的摩擦（反爬蟲、OTP、變動的結帳流程）與免費額度被套利的漏洞，誰就掌握可計價的環節。",
+      "unknowns": "七成結帳成功率能否拉到九成以上、平臺方的反制力道，以及 token 濫用是否會迫使廠商取消免費試用並改變計價模型。",
+      "novelty": "NEW",
+      "novelty_basis": "冷啟動階段，歷史情報庫尚無近 30 天追蹤紀錄，本期首次收錄。",
+      "source_ids": [
+        "S03",
+        "S08",
+        "S09"
+      ],
+      "evidence_keys": [
+        "829888e1e6863e5218feff3ec4649a8d999418a91af32ac0f6ac9403ebe27e1d",
+        "6564b67fe708d306a0e00905054f872622bd792fcd3b3b55e4ada9240061f15e",
+        "478ea25aeed3c99796b0356a483dc4ee65f76b1400b1dd90fccb02ce51d76d03"
+      ],
+      "sources": [
+        {
+          "source_id": "S03",
+          "article_key": "829888e1e6863e5218feff3ec4649a8d999418a91af32ac0f6ac9403ebe27e1d",
+          "title": "Show HN: AgentMall – Let your AI agent buy groceries",
+          "canonical_url": "https://getagentmall.com",
+          "source_name": "Hacker News (Show HN)",
+          "is_serendipity": false
+        },
+        {
+          "source_id": "S08",
+          "article_key": "6564b67fe708d306a0e00905054f872622bd792fcd3b3b55e4ada9240061f15e",
+          "title": "Show HN: Purple Flow – AI-first n8n alternative, 10k+ workflows on 512MB",
+          "canonical_url": "https://github.com/leetheguy/purple_flow",
+          "source_name": "Hacker News (Show HN)",
+          "is_serendipity": false
+        },
+        {
+          "source_id": "S09",
+          "article_key": "478ea25aeed3c99796b0356a483dc4ee65f76b1400b1dd90fccb02ce51d76d03",
+          "title": "Token fraud is here and it’s BAD (YouTube)",
+          "canonical_url": "https://simonwillison.net/2026/Nov/20/token-fraud-is-here-and-its-bad/",
+          "source_name": "Simon Willison (AI實戰筆記)",
+          "is_serendipity": false
+        }
+      ],
+      "created_at": "2026-11-20T11:51:11+08:00",
+      "asset_potential": "價值落在帳號與憑證治理、流程編排、可靠度驗證與用量控管這類執行層工具，而非模型本身。"
+    },
+    {
+      "signal_id": "SIG-20261120-003",
+      "date": "2026-11-20",
+      "title": "負每股收益的基礎模型公司完成史上最大規模掛牌",
+      "summary": "Anthropic 11 月 19 日以每股 83 美元在納斯達克掛牌，開盤 111.5 美元，收盤 97.17 美元、漲 17.07%，市值約 1.27 兆美元，募資 813 億美元，超過 SpaceX 6 月的 750 億美元。其每股收益為負 59.62 美元，市場定價的是基礎模型、企業級應用與未來商業化能力。",
+      "why_it_matters": "資本市場在模型單價持續下探的同一週，為尚未穩定獲利的模型公司給出兆元級估值，等於把獲利寄託在能力商品化之後的整合與企業級變現，而不是模型本身的價差。",
+      "interpretation": "當推理價格成為公開可比的數字，模型公司的獲利模式被迫從賣能力轉向賣整合，資本市場提前為這個轉折定價，也同時承擔轉折失敗的風險。",
+      "unknowns": "高投入何時轉為穩定獲利、企業級應用的實際續約與毛利結構，以及定價權移轉過程中模型公司與雲端及通路方的分潤比例。",
+      "novelty": "NEW",
+      "novelty_basis": "冷啟動階段，歷史情報庫尚無近 30 天追蹤紀錄，本期首次收錄。",
+      "source_ids": [
+        "S01",
+        "S05"
+      ],
+      "evidence_keys": [
+        "ccee71e2effd812f8eec1402141d7caedd0fb8c9771fb5381dff4fe14ea8d692",
+        "a913764b1be35e0fc8d73e7e95d72534487b286679126dfc43a1f67f603187da"
+      ],
+      "sources": [
+        {
+          "source_id": "S01",
+          "article_key": "ccee71e2effd812f8eec1402141d7caedd0fb8c9771fb5381dff4fe14ea8d692",
+          "title": "1.27 萬億美元，Anthropic 掛牌上市；吳泳銘：千問已在平頭哥晶片訓練下一代模型；蘋果被曝自研 AI 智慧體｜極客早知道",
+          "canonical_url": "http://www.geekpark.net/news/374235",
+          "source_name": "極客公園",
+          "is_serendipity": false
+        },
+        {
+          "source_id": "S05",
+          "article_key": "a913764b1be35e0fc8d73e7e95d72534487b286679126dfc43a1f67f603187da",
+          "title": "[AINews] Gemini 4 Neon: GDMs Opus/Sol Contender",
+          "canonical_url": "https://latent.space/p/ainews-gemini-4-neon-gdm-s-opus-sol-contender/",
+          "source_name": "Latent Space (AI產品落地)",
+          "is_serendipity": false
+        }
+      ],
+      "created_at": "2026-11-20T11:51:11+08:00",
+      "asset_potential": "價值落在能把模型能力整合進企業流程並持續計價的一層；純模型層必須以規模與成本領先換取生存空間。"
+    }
+  ]
+}
