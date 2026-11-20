@@ -68,5 +68,6 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add latest_newsletter.md latest_distilled.json data/archive data/signals data/signal_reviews
-          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: archive newsletter and update latest at $(date +'%Y-%m-%d %H:%M') (Asia/Taipei) [skip ci]" && git push)
+          # 只加入實際存在的路徑；不存在的資料夾（例如尚未產生的 data/signal_reviews）不可讓 git add 失敗
+          git add -A -- latest_newsletter.md latest_distilled.json data
+          git diff --staged --quiet || (git commit -m "chore: archive newsletter and update latest at $(date +'%Y-%m-%d %H:%M') (Asia/Taipei) [skip ci]" && git pull --rebase && git push)
