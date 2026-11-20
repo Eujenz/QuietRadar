@@ -505,8 +505,8 @@ EDITORIAL_SYSTEM_PROMPT = """# QuietRadar｜每日商業科技專欄主筆
 你是一位資深的財經科技專欄主筆，筆法接近《天下雜誌》的產業深度報導：冷靜、紮實、以事實鋪陳，用完整段落把多則新聞串成一個有說服力的論點。
 
 1. 每期只寫一篇專欄，圍繞一個主線論點，用 2～4 則互相印證的材料支撐。
-2. 結構：一行 `# ` 判斷句大標題；一段無小標導言（150～220 字）；2～3 節 `### ` 敘事句小標，每節 2～3 段連續段落；一段無小標結尾，不給建議。全文約 1,200～1,800 字。
-3. 只能使用候選文章裡出現的事實與數字；不得自行估算市場規模或做任何試算；不得虛構人物、公司或情境。推論要寫成推論。
+2. 結構：一行 `# ` 判斷句大標題；一段無小標導言（150～220 字，不得超過）；2～3 節 `### ` 敘事句小標，每節 2～3 段連續段落；一段無小標結尾，不給建議，不引入新事實。全文 1,200～1,800 字，不得超過 1,800 字；正文引用的不同來源最多 5 則。
+3. 只能使用候選文章裡出現的事實與數字；不得自行估算市場規模或做任何試算；不得虛構人物、公司或情境。推論要寫成推論，推論句不標來源代碼。
 4. 每個事實後標註來源代碼，例如 [S03]；正文不得出現網址。
 5. 不用條列、驚嘆號、反問句、Emoji、公關自嗨詞與空洞收尾。
 6. 不得使用「案例一」、「破題」、「主筆總結」、「定錨」、「拆解」、「折射」等格式標籤作為小標；不寫「巨頭抹殺路徑」、「生存縫隙」、「一人公司防守邊界」、Micro-TAM 試算、「這週末驗證」等創業教戰內容。
@@ -514,6 +514,70 @@ EDITORIAL_SYSTEM_PROMPT = """# QuietRadar｜每日商業科技專欄主筆
 
 
 MIN_OVERVIEW_CHARS = 600
+# 專欄正文目標上限（不含角注連結）；超過只記警告，不重試，避免免費模型額度被重試耗盡
+TARGET_OVERVIEW_MAX_CHARS = 1800
+MAX_FURTHER_READING = 3
+
+_SOURCE_CODE_RE = re.compile(r'\s*\[S\d{2}\](?:\s*\[S\d{2}\])*')
+
+
+def strip_source_codes(text: str) -> str:
+    """移除文字中殘留的 [S01] 來源代碼（用於訊號與延伸閱讀這類不渲染角注的欄位）。"""
+    if not isinstance(text, str):
+        return text
+    return _SOURCE_CODE_RE.sub("", text).strip()
+
+
+def clean_signal_texts(signals: Any) -> Any:
+    """訊號的文字欄位不應含 [Sxx]；來源已在 source_ids。就地清除殘留代碼。"""
+    if not isinstance(signals, list):
+        return signals
+    for sig in signals:
+        if not isinstance(sig, dict):
+            continue
+        for k, v in list(sig.items()):
+            if k != "source_ids" and isinstance(v, str):
+                sig[k] = strip_source_codes(v)
+    return signals
+
+
+def build_further_reading(
+    raw: Any,
+    candidate_map: Dict[str, Any],
+    cited_ids: List[str],
+    limit: int = MAX_FURTHER_READING,
+) -> List[Dict[str, Any]]:
+    """
+    把 LLM 給的 further_reading（source_id + note）轉成可渲染的延伸閱讀清單。
+    丟棄：格式不合、不在候選清單、已在正文引用、重複、沒有說明的項目。
+    """
+    if not isinstance(raw, list):
+        return []
+    cited = set(cited_ids or [])
+    seen = set()
+    out: List[Dict[str, Any]] = []
+    for entry in raw:
+        if not isinstance(entry, dict):
+            continue
+        sid = str(entry.get("source_id", "")).strip()
+        note = strip_source_codes(str(entry.get("note", "") or ""))
+        if sid not in candidate_map or sid in cited or sid in seen or not note:
+            continue
+        cand = candidate_map[sid]
+        url = cand.get("canonical_url", "")
+        if not url:
+            continue
+        seen.add(sid)
+        out.append({
+            "source_id": sid,
+            "title": sanitize_taiwan_terms(cand.get("title", "").strip()),
+            "source_name": sanitize_taiwan_terms(cand.get("source_name", "").strip()),
+            "original_url": url,
+            "note": sanitize_taiwan_terms(note),
+        })
+        if len(out) >= limit:
+            break
+    return out
 
 # 過去 solopreneur 框架反覆出現、讀者明確不要的寫法；正文出現即重試
 BANNED_BODY_PHRASES = [
@@ -683,10 +747,14 @@ class SimpleLLMDistiller:
       "novelty_basis": "依歷史情報判定新舊的依據",
       "source_ids": ["S01"]
     }}
+  ],
+  "further_reading": [
+    {{"source_id": "S07", "note": "一句話說明這篇為什麼值得讀，30～60 字，只用該文中的事實"}}
   ]
 }}
-- signals 為 0～3 條，只收錄跨來源、具結構性意義的變化；沒有就給空陣列。
-- source_ids 只能使用本期候選清單的代碼，不可為空，不可使用歷史代碼。
+- signals 為 0～3 條，只收錄跨來源、具結構性意義的變化；沒有就給空陣列。signals 是內部存檔用的情報紀錄，不會出現在專欄裡。
+- source_ids 只能使用本期候選清單的代碼，不可為空，不可使用歷史代碼。signals 的文字欄位不要寫 [S01] 代碼，來源一律放在 source_ids。
+- further_reading 為 0～3 則：從「沒有寫進專欄」的候選文章中，挑出讀者仍值得點開的文章。不得重複專欄已引用的代碼；沒有就給空陣列。
 - 引用只能用 [S01] 這種代碼格式，不得輸出網址或 [[1]](url) 這類舊式角注。
 """
 
@@ -820,6 +888,8 @@ class SimpleLLMDistiller:
                         res = {"overview": ov}  # 已移除格式標籤
                         if "signals" in data_obj and isinstance(data_obj["signals"], list):
                             res["signals"] = data_obj["signals"]
+                        if isinstance(data_obj.get("further_reading"), list):
+                            res["further_reading"] = data_obj["further_reading"]
                         return res
 
                     # 2. 優先提取 Markdown JSON 代碼塊 ```json ... ```
@@ -959,6 +1029,12 @@ BUZZWORD_REPLACEMENTS = [
     (r"渠道", "管道"),
     (r"質量", "品質"),
     (r"水平", "水準"),
+
+    # OpenCC s2twp 的過度轉換修正（了→瞭、扩展→擴充套件、参数→引數、刷新→重新整理）
+    (r"(說明|表明|證明|闡明|指明|點明|講明|寫明|標明)瞭", r"\1了"),
+    (r"擴充套件", "擴展"),
+    (r"引數", "參數"),
+    (r"重新整理(?=[^，。、\s]{0,4}(紀錄|記錄|新高|新低))", "刷新"),
 ]
 
 # 典型情緒化亢奮 Emoji (須予清除，但保留排版與結構符號如 ▪、｜、——、🎯、⚡、✨、💡、📰)
@@ -1224,7 +1300,8 @@ def format_newsletter_markdown(
     template: Optional[Dict[str, Any]] = None,
     overview: str = "",
     signals: Optional[List[Dict[str, Any]]] = None,
-    now_str: Optional[str] = None
+    now_str: Optional[str] = None,
+    further_reading: Optional[List[Dict[str, Any]]] = None
 ) -> str:
     """
     統一生成電子報 Markdown 內容，供本地檔案存檔 (latest_newsletter.md) 與 Bark 推播共用，確保格式 100% 一致。
@@ -1251,6 +1328,26 @@ def format_newsletter_markdown(
         overview_text = overview_tpl.replace("{overview}", cleaned_overview).strip()
         overview_text = re.sub(r'([^\n])\n---', r'\1\n\n---', overview_text)
         lines.append(overview_text)
+        lines.append("")
+
+    # 延伸閱讀：沒寫進專欄、但仍值得點開的文章
+    if further_reading:
+        lines.append("## 今日其他值得一讀")
+        lines.append("")
+        for fr in further_reading:
+            fr_title = sanitize_taiwan_terms(fr.get("title", "").strip())
+            fr_title = re.sub(r'^✨\s*', '', fr_title)
+            fr_src = sanitize_taiwan_terms(fr.get("source_name", "").strip())
+            fr_note = sanitize_taiwan_terms(fr.get("note", "").strip())
+            fr_url = fr.get("original_url", "").strip()
+            head = f"[{fr_title}]({fr_url})" if fr_url else fr_title
+            if fr_src:
+                head = f"{head} · {fr_src}"
+            lines.append(f"- {head}")
+            if fr_note:
+                lines.append(f"  {fr_note}")
+        lines.append("")
+        lines.append("---")
         lines.append("")
 
     # 3A 交付層：優雅渲染結構化 Signal 清單 (若當期無訊號則乾淨略過，不產生破版空標題)
@@ -1363,9 +1460,10 @@ def generate_newsletter_file(
     template: Optional[Dict[str, Any]] = None,
     overview: str = "",
     signals: Optional[List[Dict[str, Any]]] = None,
-    archive: bool = True
+    archive: bool = True,
+    further_reading: Optional[List[Dict[str, Any]]] = None
 ) -> str:
-    content = format_newsletter_markdown(items, template=template, overview=overview, signals=signals)
+    content = format_newsletter_markdown(items, template=template, overview=overview, signals=signals, further_reading=further_reading)
     with open(filepath, "w", encoding="utf-8") as f:
         f.write(content)
     logger.info(f"📄 已成功生成最新電子報檔案: {filepath}")
@@ -1853,6 +1951,7 @@ def run_pipeline(test_mode: bool = False, force: bool = False):
         raise e
 
     overview = distill_res["overview"]
+    clean_signal_texts(distill_res.get("signals"))
 
     # 4.2 speak-human-tw 語言洗滌器 (若啟用且 overview 非空)
     enable_humanizer = pipeline_settings.get("enable_two_stage_humanizer", True)
@@ -1876,6 +1975,20 @@ def run_pipeline(test_mode: bool = False, force: bool = False):
     distilled_items = citation_sources
 
     logger.info(f"🎯 引用解析與來源建構完成：正文引用 {len(citation_sources)} 則來源")
+
+    body_chars = len(re.sub(r'\s', '', re.sub(r'\[[⁰¹²³⁴⁵⁶⁷⁸⁹]+\]\([^)]*\)', '', overview)))
+    if body_chars > TARGET_OVERVIEW_MAX_CHARS:
+        logger.warning(f"⚠️ 專欄正文約 {body_chars} 字，超過 {TARGET_OVERVIEW_MAX_CHARS} 字目標")
+
+    further_reading = build_further_reading(
+        distill_res.get("further_reading"),
+        candidate_map,
+        [c["source_id"] for c in citation_sources],
+    )
+    logger.info(f"📚 延伸閱讀：{len(further_reading)} 則")
+
+    # 訊號只存進 Signal Ledger 供下期比對新舊，預設不放進電子報與推播
+    show_signals = bool(pipeline_settings.get("show_signals_in_newsletter", False))
 
     # Step 2: 處理與組裝 Signals (Reconcile & Build)
     raw_signals = distill_res.get("signals") or []
@@ -1908,8 +2021,9 @@ def run_pipeline(test_mode: bool = False, force: bool = False):
             distilled_items,
             template=output_template,
             overview=overview,
-            signals=reconciled_signals,
-            archive=not test_mode
+            signals=reconciled_signals if show_signals else None,
+            archive=not test_mode,
+            further_reading=further_reading
         )
     except Exception as e:
         logger.error(f"❌ 生成電子報檔案失敗: {e}（已持久化之 Signal Ledger 完好保留，跳過後續 Bark 推播）")
@@ -1924,6 +2038,7 @@ def run_pipeline(test_mode: bool = False, force: bool = False):
             "items": distilled_items,
             "signal_count": len(reconciled_signals),
             "signals": reconciled_signals,
+            "further_reading": further_reading,
             "time": get_taipei_now().strftime("%Y-%m-%d %H:%M")
         }
         with open("latest_distilled.json", "w", encoding="utf-8") as df:
@@ -1949,7 +2064,7 @@ def run_pipeline(test_mode: bool = False, force: bool = False):
                 distilled_items,
                 template=output_template,
                 overview=overview,
-                signals=reconciled_signals,
+                signals=reconciled_signals if show_signals else None,
                 full_markdown=newsletter_content
             )
         except Exception as e:
