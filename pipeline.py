@@ -124,6 +124,29 @@ def normalize_url(url: str) -> str:
     except Exception:
         return url.strip()
 
+TRANSIENT_STATUS_CODES = {408, 425, 429, 500, 502, 503, 504}
+FETCH_RETRY_DELAY_SECONDS = 2.0
+
+def get_with_transient_retry(client, url: str, retries: int = 1, delay: float = FETCH_RETRY_DELAY_SECONDS):
+    """
+    發送 GET 請求，遇到暫時性失敗（連線/逾時例外、408/425/429/5xx）時再重試 retries 次。
+    404、403 等永久性錯誤不重試，直接回傳回應交由呼叫端處理。
+    最後一次嘗試仍拋例外時，原樣拋出。
+    """
+    attempt = 0
+    while True:
+        try:
+            resp = client.get(url)
+        except Exception:
+            if attempt >= retries:
+                raise
+        else:
+            if resp.status_code not in TRANSIENT_STATUS_CODES or attempt >= retries:
+                return resp
+        attempt += 1
+        if delay > 0:
+            time.sleep(delay)
+
 def is_article_processed(session, sha256_hash: str) -> bool:
     return session.query(ProcessedArticle).filter(ProcessedArticle.sha256_hash == sha256_hash).first() is not None
 
@@ -211,7 +234,7 @@ def fetch_sources(
             for target_url in urls_to_try:
                 try:
                     with httpx.Client(headers=headers, timeout=15.0, follow_redirects=True, verify=False) as client:
-                        resp = client.get(target_url)
+                        resp = get_with_transient_retry(client, target_url)
                         if resp.status_code == 200:
                             resp_content = resp.content
                             if target_url != url:
@@ -231,7 +254,7 @@ def fetch_sources(
                 try:
                     feedly_url = f"https://cloud.feedly.com/v3/streams/contents?streamId=feed/{url}&count=25"
                     with httpx.Client(headers=headers, timeout=12.0) as client:
-                        f_resp = client.get(feedly_url)
+                        f_resp = get_with_transient_retry(client, feedly_url)
                         if f_resp.status_code == 200:
                             f_json = f_resp.json()
                             if f_json.get("items"):
