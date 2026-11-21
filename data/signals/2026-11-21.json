@@ -1,0 +1,114 @@
+{
+  "date": "2026-11-21",
+  "generated_at": "2026-11-21T12:09:10+08:00",
+  "signal_count": 3,
+  "signals": [
+    {
+      "signal_id": "SIG-20261121-001",
+      "date": "2026-11-21",
+      "title": "AI 參與的黎曼假設宣稱與全人工草稿同期進入社群審閱",
+      "summary": "Levent Alpöge 撰文稱與 Claude 合作找到黎曼假設證明，方法可推廣至廣義黎曼假設，論證已不帶假設地形式化。同期 Ravi Vakil 轉述 Alessandro Masullo 的廣義黎曼假設草稿，由 Brian Conrad 看了數個月並給出大量回饋，目前看起來不錯，且明確標註全程沒有使用 AI。兩者都尚未經社群確認。",
+      "why_it_matters": "在驗證成本高的領域，AI 先改變的是候選結果的產量，判定期仍由社群審閱決定。可檢查的形式物件比宣稱更接近價值，這是模型能力之外的另一層稀缺。",
+      "interpretation": "生成與形式化的成本下降，審閱成本沒有同步下降，瓶頸因此從提出移到確認，價值也隨之往驗證端沉積。",
+      "unknowns": "Alpöge 的宣稱尚未經社群確認，Masullo 的草稿仍在修改中，兩者最終結論都可能改變，目前不宜視為已成立。",
+      "novelty": "NEW",
+      "novelty_basis": "近 30 天已追蹤訊號集中於企業軟體採購收縮、AI 代理大規模重寫程式碼、SaaS 工單由代理驅動，全屬軟體生產環節；數學社群出現 AI 參與宣稱與全人工草稿並行進入審閱，是未出現過的層面。",
+      "source_ids": [
+        "S10",
+        "S05"
+      ],
+      "evidence_keys": [
+        "f27b1f34ce20932cc3d093afc75aaeb677b7c4a6451c5b6c222be88f40fbc74d",
+        "cf3b0c6c1cbc2369e530af20c1396a54e8598305dfd2e39b52c4892d56ff1203"
+      ],
+      "sources": [
+        {
+          "source_id": "S10",
+          "article_key": "f27b1f34ce20932cc3d093afc75aaeb677b7c4a6451c5b6c222be88f40fbc74d",
+          "title": "Quoting Levent Alpöge",
+          "canonical_url": "https://simonwillison.net/2026/Nov/20/levent-alpoge/",
+          "source_name": "Simon Willison (AI實戰筆記)",
+          "is_serendipity": false
+        },
+        {
+          "source_id": "S05",
+          "article_key": "cf3b0c6c1cbc2369e530af20c1396a54e8598305dfd2e39b52c4892d56ff1203",
+          "title": "Quoting Ravi Vakil",
+          "canonical_url": "https://simonwillison.net/2026/Nov/20/ravi-vakil/",
+          "source_name": "Simon Willison (AI實戰筆記)",
+          "is_serendipity": false
+        }
+      ],
+      "created_at": "2026-11-21T12:09:10+08:00",
+      "asset_potential": "形式化工具與可驗證的證明資產，以及承擔審閱職能的研究社群與基礎設施。"
+    },
+    {
+      "signal_id": "SIG-20261121-002",
+      "date": "2026-11-21",
+      "title": "形式驗證被當成對抗 AI 生成程式碼缺陷的產品化武器",
+      "summary": "Latent Space 指出，以數學證明軟體正確過去需要專門人才，現在 AI 與 Lean 正在把流程自動化，並被定位為對抗 AI 生成低品質程式碼的新手段。同期一位開發者記錄，AI 生成的 3D 視覺大屏在上線三天後卡崩。",
+      "why_it_matters": "生成成本下降後，審查與擔保成為主要成本項，工具鏈的價值從產出速度移往合併前的正確性條件，計價點跟著移動。",
+      "interpretation": "缺陷供給隨生成量同步上升，正確性從上線後修補變成交付前置條件，定價權移向承擔風險的一方。",
+      "unknowns": "形式驗證自動化的覆蓋範圍與實際成本仍不明，能否普及到一般商業軟體而非關鍵系統，尚待觀察。",
+      "novelty": "NEW",
+      "novelty_basis": "已追蹤的 AI 重寫程式碼訊號屬生成與修補環節，此處為正確性的可檢驗化，是工具鏈上尚未出現過的新環節。",
+      "source_ids": [
+        "S03",
+        "S11"
+      ],
+      "evidence_keys": [
+        "a45c88c92cca72434d4d8e13d822b675ecb4a32a8667b081442a85485de3b5b9",
+        "597d5c022153884185858263d37b3172216935b0584732ed82b622fc3231c271"
+      ],
+      "sources": [
+        {
+          "source_id": "S03",
+          "article_key": "a45c88c92cca72434d4d8e13d822b675ecb4a32a8667b081442a85485de3b5b9",
+          "title": "The War Against Slop and an Emerging Weapon to Fight it: Formal Verification",
+          "canonical_url": "https://latent.space/p/formal-verification/",
+          "source_name": "Latent Space (AI產品落地)",
+          "is_serendipity": false
+        },
+        {
+          "source_id": "S11",
+          "article_key": "597d5c022153884185858263d37b3172216935b0584732ed82b622fc3231c271",
+          "title": "AI幫我生成了一個炫酷的3D大屏，上線3天就卡崩了 AI幫我生成了一個炫酷的3D大屏，上線3天就卡崩了 <div data-v-012280ec= class=abstract",
+          "canonical_url": "https://juejin.cn/post/7708639137272102966",
+          "source_name": "掘金熱門",
+          "is_serendipity": false
+        }
+      ],
+      "created_at": "2026-11-21T12:09:10+08:00",
+      "asset_potential": "驗證工具鏈、證明語言與相關人才，以及願意為正確性保證的服務層。"
+    },
+    {
+      "signal_id": "SIG-20261121-003",
+      "date": "2026-11-21",
+      "title": "驗證環境虛擬化：代理在無硬體條件下測試藍牙程式碼",
+      "summary": "社群專案 BSWorld 讓 AI 代理在沒有實體硬體的情況下測試藍牙程式碼，登上 Hacker News 但關注有限，分數與留言僅個位數。此舉把軟體驗證中長期依賴實體裝置的環境條件，改以模擬方式提供。",
+      "why_it_matters": "若測試條件可被模擬並交給代理反覆執行，交付節奏與責任分配會改變，模擬層與可重現環境從成本項變成能力項。",
+      "interpretation": "驗證瓶頸有一半在環境取得，虛擬化把這一半變成可規模化的運算，削弱以實測經驗建立的護城河。",
+      "unknowns": "專案成熟度與模擬覆蓋度不明，無線電雜訊等實體條件能否被完整重現仍待驗證。",
+      "novelty": "NEW",
+      "novelty_basis": "近 30 天訊號未出現測試環境虛擬化主題，屬驗證基礎設施層的新發現。",
+      "source_ids": [
+        "S07"
+      ],
+      "evidence_keys": [
+        "51b614c082ddf4194f913cf82eae949bb82ec02d0b59d798c65c968793a32d3f"
+      ],
+      "sources": [
+        {
+          "source_id": "S07",
+          "article_key": "51b614c082ddf4194f913cf82eae949bb82ec02d0b59d798c65c968793a32d3f",
+          "title": "Show HN: BSWorld – AI agents can now test Bluetooth code without hardware",
+          "canonical_url": "https://github.com/XiaoMi/bsworld",
+          "source_name": "Hacker News (Show HN)",
+          "is_serendipity": false
+        }
+      ],
+      "created_at": "2026-11-21T12:09:10+08:00",
+      "asset_potential": "裝置模擬與可重現測試環境的基礎設施層。"
+    }
+  ]
+}
