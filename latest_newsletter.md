@@ -1,58 +1,58 @@
-> 出刊時間：2026-11-21 12:09 ｜ 本期精選：5 則
+> 出刊時間：2026-11-22 11:23 ｜ 本期精選：6 則
 
 ---
 
-# 生成已經不是瓶頸，計價點正移往驗證那一端
+同一週內，模型、工具與財報各自出現一個訊號。Gemini 4 新增 xhigh 推理檔位，同一個模型把輸出從 5,311 個 token 拉到 31,477 個，單次成本從 3.99 美分升到 23.61 美分[¹](https://simonwillison.net/2026/Nov/20/llm-gemini/)；一份系統性回顧為 AI 代理的漏洞研究能力建立分級，並指出開放權重模型已追平受限前沿模型[²](https://arxiv.org/abs/2611.26601v1)；騰訊第三季資本開支 814 億元、同比增長 527%，新 AI 業務對 Non-IFRS 經營利潤造成約 152 億元淨影響[³](http://www.geekpark.net/news/374302)。三者指向同一個變化：**AI 的能力正在被切成可反覆定價的量，利潤則往掌握資料與算力的一端沉積。**
 
-同一段時間裡，數學圈出現兩份指向黎曼假設的文本。一份出自 Levent Alpöge，他寫道自己與 Claude 合作找到了黎曼假設的證明，方法還能推到廣義黎曼假設，論證也已不帶假設地形式化[¹](https://simonwillison.net/2026/Nov/20/levent-alpoge/)。另一份是 Alessandro Masullo 的廣義黎曼假設草稿，Ravi Vakil 轉述 Brian Conrad 已看了數個月並給出大量回饋，目前看起來不錯，並註明這一切都是人類完成，沒有用到 AI[²](https://simonwillison.net/2026/Nov/20/ravi-vakil/)。兩份文本的可信度都不由作者決定，而取決於能不能被檢查。生成已不是稀缺資源，稀缺的是驗證，價值正沿這條線往後移。
+### 同一個模型，六倍價格的思考量
 
-### 一份宣稱與一份草稿，被送進同一道閘門
+Simon Willison 在記錄 llm-gemini 0.38.1 的更新時補上一個先前漏掉的細節：Gemini 4 Carbon 只支援 low、medium、high 三個推理檔位，Hydrogen 與 Neon 還多一檔 xhigh [¹](https://simonwillison.net/2026/Nov/20/llm-gemini/)。他更新比較表後寫下數字，Hydrogen 在 high 用掉 5,311 個輸出 token、花費 3.99 美分，切到 xhigh 則用掉 31,477 個 token、23.61 美分，而產出的結果已經可以與更高階的 Neon 相比 [¹](https://simonwillison.net/2026/Nov/20/llm-gemini/)。
 
-Alpöge 的文章寫得很有畫面。他說自己相信已找到黎曼假設的證明，方法可以輕易推得更遠，解決廣義黎曼假設，並預期給更多時間也能處理擴展黎曼假設；他說兩人已把論證不帶假設地形式化，又形容在抵達終線前 Claude 大幅超前，飛了起來、跳舞、閃閃發光[¹](https://simonwillison.net/2026/Nov/20/levent-alpoge/)。他也承認這對他像是失去一盞主要的導引燈，但過程中所見讓他相信那是橫跨科學的一道曙光[¹](https://simonwillison.net/2026/Nov/20/levent-alpoge/)。這些都是他的陳述，不是社群的結論。
+這看起來只是工具程式的修正，實際上說明了模型商品目前的賣法。同一組權重不再對應一個固定價格，而是對應一段可調量的思考，買方支付的差額買到的是推理深度，不是新能力。當最貴的檔位與自家更高階的型號產出相當，產品線內部就出現了自我侵蝕，模型之間的差異也從誰更聰明，退成你買了多少思考。
 
-對照組的姿態剛好相反。Vakil 為 Masullo 的草稿寫了一則他自己稱為倉促的公告，說明這份廣義黎曼假設的證明由 Conrad 仔細看了數個月、給出大量回饋，而回饋正在被納入修改，到目前為止看起來不錯；原本的路線是安排 Masullo 到史丹佛待一年潤飾寫作，等夠多人看過再對外發表，如今判斷先把現有草稿放出去更好[²](https://simonwillison.net/2026/Nov/20/ravi-vakil/)。他並在轉述中直接標了一句：這一切都是人類做的，沒有 AI[²](https://simonwillison.net/2026/Nov/20/ravi-vakil/)。
+能力一旦可以被切分與比較，就會被外部拿來排序。一份題為 SoK 的系統性回顧以類似自動駕駛的分級方式，為語言模型代理在軟體漏洞研究上的自主性建立等級，並要求每一項宣稱都標註正確性、可用性與證據強度；其結論是，代理早在 2026 年的受限前沿模型之前，就已在真實軟體中無人介入地發現、驗證並修補漏洞，開放權重模型其後達到相當的自主性 [²](https://arxiv.org/abs/2611.26601v1)。這意味著模型層最難防守的那部分價值，正被公開的權重與公開的評比同時稀釋。
 
-這兩件事放在一起，說明的是同一個機制。這類領域的瓶頸從來不是提出，而是確認。模型壓低的是提出與形式化的成本，沒有壓低審閱的成本，Conrad 那數個月不會因為工具變快而縮短。這意味著 AI 最先改變的是候選結果的產量，而不是判定期的長度；能被檢查的形式物件，因此比任何宣稱都更接近價值本身。
+### 180TB 過程資料換成一個控制層
 
-### slop 之後，正確性被寫進工具鏈
+生成式影片的商業化卡在兩個現實上：生成一條滿意的影片往往要反覆抽卡，算力與時間成本都不低，而進入專業影視管線後，今天的模型能承擔的工業級工作仍然有限 [⁴](http://www.geekpark.net/news/374303)。達瓦科技的解法不是把模型做大，而是把控制與渲染分開。這家 2023 年成立於重慶永川、從科技片場轉向 AI 模型的公司，自研控制層基座模型 Latent Stage，把對人物、動作、鏡頭、燈光與場景的理解和控制獨立成一層，再交給渲染層出畫面；對外產品一是面向專業團隊做離線生成的 FilmOS，一是能在單張消費級顯示卡上即時執行的世界模型 Scenes AI，公司今年連續完成 Pre-A 與 A 輪，累計融資約 5 億人民幣 [⁴](http://www.geekpark.net/news/374303)。
 
-軟體圈的同一場拉扯已經有了名字。Latent Space 把當前狀態稱為對抗 slop 的戰爭，並指出正在浮現的武器是形式驗證：用數學證明軟體正確，過去需要專門人才，現在 AI 與 Lean 正在幫忙把這個過程自動化[³](https://latent.space/p/formal-verification/)。這句話的重點不在 Lean，而在自動化三個字，因為它針對的正是專門人才供不應求這道舊天花板。
+支撐這條路線的是一項難以複製的存量。達瓦自 2014 年營運科技影視片場，累積約 180TB 結構化過程資料，記錄的不只是成片畫面，還包含從劇本、機位、燈光到動作捕捉的完整拍攝過程 [⁴](http://www.geekpark.net/news/374303)。通用模型可以生成無數段畫面，卻拿不到某個鏡頭為什麼這樣打光、這個動作如何被捕捉的過程紀錄。把控制層抽出來，等於把價值從畫面好不好看，移到指令能不能被重複下達、結果能不能被回溯。
 
-生成端的門檻已經低到不需要討論。一位開發者記錄，AI 幫他做了一個炫酷的 3D 大屏，上線三天就卡崩[⁴](https://juejin.cn/post/7708639137272102966)。生成只花了對話的時間，崩潰發生在真實流量進來之後，兩者之間隔著的正是驗證。
+同一條思路也出現在規模的另一端。Black Forest Labs 的 Andreas Blattmann 與 Dustin Podell 在受訪時的主張，是從畫素、運動與聲音去學習視覺智慧 [⁵](https://latent.space/p/bfl/)。兩者的參數規模與商業模式差距甚遠，卻都把生成能力的來源從模型大小，移向可驗證的結構化資料與可控的介面。如果這個判斷成立，產業鏈上能反覆收費的位置，會是靠近片場與工作流的那一層。
 
-**當生成便宜到一句指令，成本就從寫作移到擔保。** 產出量上升，缺陷供給同步上升，審查於是變成總成本裡最大的一項。把正確性寫成合併前必須通過的條件，等於把風險從上線之後挪到上線之前，這是工具鏈而非模型的生意。如果這個方向成立，能收錢的位置會落在願意為正確性保證的一方，而以行數、頁面數或交付速度計價的供給端會持續被壓縮。
+### 814 億資本開支換來的 152 億
 
-### 驗證的另一半是環境，而環境正在被虛擬化
+11 月 18 日，騰訊公佈 2026 年第三季財報，營收 2073.4 億元、同比增長 8%，Non-IFRS 經營利潤 681 億元、同比下降 6% [³](http://www.geekpark.net/news/374302)。資本開支 814 億元、同比增長 527%，單季支出已超過 2025 年全年；研發投入 323.6 億元、同比增長 42%；在巨額算力採購與預付款之下，自由現金流為負 691 億元，若剔除算力採購預付款則仍有 169 億元 [³](http://www.geekpark.net/news/374302)。
 
-驗證有兩半。一半是程式本身是否正確，另一半是它在真實條件下是否正確，而後者長期卡在需要實體裝置與實測環境。社群專案 BSWorld 的做法是讓 AI 代理在沒有硬體的情況下測試藍牙程式碼[⁵](https://github.com/XiaoMi/bsworld)。它在 Hacker News 上得到的注意相當有限，分數與留言都只有個位數[⁵](https://github.com/XiaoMi/bsworld)，但方向值得記下來。
+把口徑分開看，這份財報的性質就清楚了。若剔除混元、元寶、CodeBuddy、WorkBuddy、小微等新 AI 產品的收入、成本與開支，本季 Non-IFRS 經營利潤為 833 億元、同比增長 8%，經營利潤率 40%，與去年同期持平 [³](http://www.geekpark.net/news/374302)。老業務的盈利能力沒有出問題，是新 AI 業務在單季對 Non-IFRS 經營利潤造成約 152 億元的淨影響，上一季是 105 億元，整體利潤增速因此被拉進負值區間 [³](http://www.geekpark.net/news/374302)。騰訊把越來越多的當期現金，換成 GPU、模型、Agent 與下一代入口 [³](http://www.geekpark.net/news/374302)。
 
-把條件模擬出來之後，驗證就不再受裝置數量限制，可以交給代理反覆執行。這意味著測試從一次性關卡變成可規模化的運算，而模擬層、可重現的環境與能重複觸發條件的基礎設施，會從成本項變成能力項。相對之下，把實測過當作護城河的供應商，護城河會被搬走一段。
+這種交換能成立，靠的是既有業務仍在產出現金。第三季行銷服務收入 430 億元、同比增長 19%，是三大板塊中增速最快的一項，微信及 WeChat 合併月活 14.49 億 [³](http://www.geekpark.net/news/374302)。成本先發生、收入後到，中間的落差由誰吸收，取決於誰有存量現金流。而在全球尺度上，這筆帳的分佈並不平均：一篇跨國路徑的整理指出，歐洲掌握約 5% 的算力，沙烏地以買卡取得算力，日韓則把力氣放在場景 [⁶](https://juejin.cn/post/7708975511029760051)。承接算力需求與掌握場景的兩端各有收租位置，最難維持溢價的，是夾在中間、能力可被公開權重複製的模型層。
 
-### 產出接近免費之後
-
-三件事的方向是一致的。數學社群用數月的審閱守住判準，軟體圈開始把證明寫進工具鏈，測試則試著把真實世界搬進機器裡。生成能力正在變成公用事業，差異化回到能不能被檢查這個老問題上。**當產出的價格趨近於零，剩下能收費的是願意為正確性承擔後果的那一層。**
+推理檔位、控制層與資本開支出現在三則互不相干的報導裡，卻描述同一個過程：AI 的產出正從一項能力，變成一種可計量、可切分、可被替代的投入品。定價權因此往兩端移動，一端決定單位成本的算力，一端決定單位價值的場景與資料。**當能力不再稀缺，能持續收費的位置就只剩這兩端。**
 
 ---
 
 ## 今日其他值得一讀
 
-- [林俊暘新公司估值升至 50 億美元；丁磊：短劇爆發衝擊遊戲產業；華為新品牌星芒釋出首款闊直板手機](http://www.geekpark.net/news/374299) · 極客公園
-  DeepSeek 新一輪募資 1000 億至 1055 億元、投後估值約 6155 億元，梁文鋒持股仍約 67.42%，新增股東平臺橫跨上游算力與下游場景。
-- [WorkBuddy 日活超過 1000 萬；曝輝達未投企業責任險，或因黃仁勳事件遭鉅額索賠；DeepSeek 再調整 API 計費 | 極客早知道](http://www.geekpark.net/news/374177) · 極客公園
-  騰訊前三季毛利率 56.79%、經營現金流年減 33.76%；輝達為高管投保 9.5 億美元卻未投保企業責任險，面對兩起證券詐欺訴訟。
-- [Cloudflare Joins the Jevolution and Labels Itself a Neolab](https://latent.space/p/cloudflare/) · Latent Space (AI產品落地)
-  Cloudflare 從加速網路轉向自建 System One 模型，在毫秒級做決策與取資料，顯示基礎設施廠正往模型層延伸。
+- [Muru](https://simonwillison.net/2026/Nov/21/muru/) · Simon Willison (AI實戰筆記)
+  mod_wsgi 作者 Graham Dumpleton 以 AI 輔助打造 Rust 伺服器 Muru，三週內公開十餘篇實作記錄，可看資深維護者如何把代理放進生產級基礎設施。
+- [Teaching Vision-Language-Action Models to Stop Safely](https://arxiv.org/abs/2611.26239) · Hugging Face (社群精選論文)
+  VLA 模型研究指出，能從初始狀態抑制任務的策略在執行中途接手時仍可能完成任務，機器人安全驗證存在缺口。
+- [Show HN: ClawVet – Offline AST scanner and rug-pull diff for AI agent skills](https://clawvet.vercel.app/) · Hacker News (Show HN)
+  ClawVet 對 AI 代理技能做離線 AST 掃描與 rug-pull diff，反映代理生態開始需要供應鏈層的檢查工具。
 
 ---
 
-1. [Quoting Levent Alpöge](https://simonwillison.net/2026/Nov/20/levent-alpoge/) · Simon Willison (AI實戰筆記)
+1. [llm-gemini 0.38.1](https://simonwillison.net/2026/Nov/20/llm-gemini/) · Simon Willison (AI實戰筆記)
 
-2. [Quoting Ravi Vakil](https://simonwillison.net/2026/Nov/20/ravi-vakil/) · Simon Willison (AI實戰筆記)
+2. [✨ SoK: Assessing the Evolution of LLM Capability in Software Vulnerability Research](https://arxiv.org/abs/2611.26601v1) · arXiv (跨界前沿論文)
 
-3. [The War Against Slop and an Emerging Weapon to Fight it: Formal Verification](https://latent.space/p/formal-verification/) · Latent Space (AI產品落地)
+3. [資本開支猛增 226%，AI 吞噬百億利潤：騰訊的 AI 故事，進入更重的階段](http://www.geekpark.net/news/374302) · 極客公園
 
-4. [AI幫我生成了一個炫酷的3D大屏，上線3天就卡崩了 AI幫我生成了一個炫酷的3D大屏，上線3天就卡崩了 <div data-v-012280ec= class=abstract](https://juejin.cn/post/7708639137272102966) · 掘金熱門
+4. [重控制、輕渲染，達瓦科技的 AI 影片工業路線](http://www.geekpark.net/news/374303) · 極客公園
 
-5. [Show HN: BSWorld – AI agents can now test Bluetooth code without hardware](https://github.com/XiaoMi/bsworld) · Hacker News (Show HN)
+5. [Building Visual Intelligence — Andreas Blattmann & Dustin Podell, Black Forest Labs](https://latent.space/p/bfl/) · Latent Space (AI產品落地)
+
+6. [中美AI競賽之外其他國家在幹什麼：算力5%的歐洲、買卡的沙特與做場景的日韓中美AI競賽之外其他國家在幹什麼：算力5%的歐洲、買卡的沙特與做場景的日韓 <div data-v-012280ec= class=abstract](https://juejin.cn/post/7708975511029760051) · 掘金熱門
 
 ---

@@ -1,0 +1,114 @@
+{
+  "date": "2026-11-22",
+  "generated_at": "2026-11-22T11:23:44+08:00",
+  "signal_count": 3,
+  "signals": [
+    {
+      "signal_id": "SIG-20261122-001",
+      "date": "2026-11-22",
+      "title": "推理檔位成為模型計價維度，開放權重在漏洞研究自主性上追平受限前沿",
+      "summary": "llm-gemini 0.38.1 補上 Gemini 4 Hydrogen 與 Neon 的 xhigh 推理檔位；同一模型在 high 用 5,311 個輸出 token、3.99 美分，xhigh 用 31,477 個 token、23.61 美分，產出可與更高階的 Neon 相比。另一份系統性回顧以類駕駛分級評估代理的漏洞研究自主性，指開放權重模型已達到與受限前沿模型相當的程度。",
+      "why_it_matters": "模型能力被切成可調量的價格帶，差異化從能力高低轉向推理預算，定價權往上游算力與下游整合移動。",
+      "interpretation": "同一組權重能靠推理預算切出多個價格帶，且開放權重可複製前沿自主性，能力溢價被壓縮，收租點移向稀缺資源與驗證機制。",
+      "unknowns": "高推理檔位的成本效益在真實工作流是否成立；分級框架能否被企業買方當作採購依據；開放權重追平的範圍是否涵蓋更廣任務。",
+      "novelty": "EVOLVING",
+      "novelty_basis": "既有訊號已記錄 AI 代理大規模重寫程式碼與修補漏洞，本期新增的是跨來源可比的自主性分級、開放權重對等，以及推理檔位成為明確計價維度。",
+      "source_ids": [
+        "S10",
+        "S14"
+      ],
+      "evidence_keys": [
+        "8b57b72566ad3c58d871696b811099d6a8b3b22d8b9fe59666fcb5336c23e771",
+        "6100a45d00808ec6887489005ffc0de784680231632db02f6c016835b74f216d"
+      ],
+      "sources": [
+        {
+          "source_id": "S10",
+          "article_key": "8b57b72566ad3c58d871696b811099d6a8b3b22d8b9fe59666fcb5336c23e771",
+          "title": "llm-gemini 0.38.1",
+          "canonical_url": "https://simonwillison.net/2026/Nov/20/llm-gemini/",
+          "source_name": "Simon Willison (AI實戰筆記)",
+          "is_serendipity": false
+        },
+        {
+          "source_id": "S14",
+          "article_key": "6100a45d00808ec6887489005ffc0de784680231632db02f6c016835b74f216d",
+          "title": "SoK: Assessing the Evolution of LLM Capability in Software Vulnerability Research",
+          "canonical_url": "https://arxiv.org/abs/2611.26601v1",
+          "source_name": "arXiv (跨界前沿論文)",
+          "is_serendipity": true
+        }
+      ],
+      "created_at": "2026-11-22T11:23:44+08:00",
+      "asset_potential": "算力與推理服務層；可驗證的能力分級與評比方法本身。"
+    },
+    {
+      "signal_id": "SIG-20261122-002",
+      "date": "2026-11-22",
+      "title": "生成式影片把控制層從渲染層剝離，拍攝過程資料成為資產",
+      "summary": "達瓦科技以重控制、輕渲染為路線，自研控制層基座模型 Latent Stage，把人物、動作、鏡頭、燈光與場景的控制獨立成層，再交渲染層出畫面，產品為離線生成的 FilmOS 與單張消費級顯示卡可即時執行的 Scenes AI，並以片場累積約 180TB 結構化過程資料為底。Black Forest Labs 則主張從畫素、運動與聲音學習視覺智慧。",
+      "why_it_matters": "生成式內容的價值從畫面品質移到可重複下達的控制指令與可回溯的過程資料，靠近片場與工作流的一層取得定價權。",
+      "interpretation": "通用模型抽卡成本高、工業級可用度有限，把控制與渲染分層可讓片場經驗累積為可重複授權的資產，而非一次性生成結果。",
+      "unknowns": "過程資料能否跨客戶遷移；控制層是否會被通用模型內建能力吞併；即時世界模型的畫質與可控性上限。",
+      "novelty": "NEW",
+      "novelty_basis": "近 30 天訊號集中於程式碼生成、重寫與驗證，未出現生成式影像產業鏈的分層與過程資料資產化。",
+      "source_ids": [
+        "S02",
+        "S09"
+      ],
+      "evidence_keys": [
+        "ee2ca44a33f52fb6e79145660865ed7924fd8754b4c45d7091e1db5215af8574",
+        "daab8049af8f93301427dba6443a3d5b67c5031f2d3781b20e202eaf109d8f15"
+      ],
+      "sources": [
+        {
+          "source_id": "S02",
+          "article_key": "ee2ca44a33f52fb6e79145660865ed7924fd8754b4c45d7091e1db5215af8574",
+          "title": "重控制、輕渲染，達瓦科技的 AI 影片工業路線",
+          "canonical_url": "http://www.geekpark.net/news/374303",
+          "source_name": "極客公園",
+          "is_serendipity": false
+        },
+        {
+          "source_id": "S09",
+          "article_key": "daab8049af8f93301427dba6443a3d5b67c5031f2d3781b20e202eaf109d8f15",
+          "title": "Building Visual Intelligence — Andreas Blattmann & Dustin Podell, Black Forest Labs",
+          "canonical_url": "https://latent.space/p/bfl/",
+          "source_name": "Latent Space (AI產品落地)",
+          "is_serendipity": false
+        }
+      ],
+      "created_at": "2026-11-22T11:23:44+08:00",
+      "asset_potential": "結構化過程資料與控制介面；工業級離線管線與端側即時世界模型。"
+    },
+    {
+      "signal_id": "SIG-20261122-003",
+      "date": "2026-11-22",
+      "title": "平臺把當期現金換成算力，AI 成為財報上的主動折價項",
+      "summary": "騰訊 2026 年第三季營收 2073.4 億元、同比增 8%，Non-IFRS 經營利潤 681 億元、同比降 6%；資本開支 814 億元、同比增 527%，單季超過 2025 年全年，自由現金流為負 691 億元。剔除混元、元寶、CodeBuddy 等新 AI 產品後，Non-IFRS 經營利潤為 833 億元、同比增 8%，新業務對利潤的淨影響約負 152 億元。",
+      "why_it_matters": "能承擔這種折價的是現金流穩定的平臺，算力採購與預付款成為決定產業利潤分配的前置變數。",
+      "interpretation": "老業務盈利能力未惡化，利潤下滑來自把現金換成 GPU、模型與入口的選擇，成本先發生、收入後到，落差由存量現金流吸收。",
+      "unknowns": "算力預付款的折舊節奏與新 AI 產品的變現時點；若收入落後於資本開支，折價期可能延長。",
+      "novelty": "NEW",
+      "novelty_basis": "既有訊號記錄企業因 AI 停止採購軟體、代理驅動 SaaS 工單，未涵蓋平臺層以財報口徑承擔算力前置成本的規模。",
+      "source_ids": [
+        "S07"
+      ],
+      "evidence_keys": [
+        "cdd6678258940bfde5014b47d0a95d69a55e2c150cb7358acbb0fd901ec89fe5"
+      ],
+      "sources": [
+        {
+          "source_id": "S07",
+          "article_key": "cdd6678258940bfde5014b47d0a95d69a55e2c150cb7358acbb0fd901ec89fe5",
+          "title": "資本開支猛增 226%，AI 吞噬百億利潤：騰訊的 AI 故事，進入更重的階段",
+          "canonical_url": "http://www.geekpark.net/news/374302",
+          "source_name": "極客公園",
+          "is_serendipity": false
+        }
+      ],
+      "created_at": "2026-11-22T11:23:44+08:00",
+      "asset_potential": "算力與雲端供給層；既有流量入口與支付、廣告等現金業務。"
+    }
+  ]
+}
