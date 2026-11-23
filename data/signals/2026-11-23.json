@@ -1,0 +1,114 @@
+{
+  "date": "2026-11-23",
+  "generated_at": "2026-11-23T11:54:55+08:00",
+  "signal_count": 3,
+  "signals": [
+    {
+      "signal_id": "SIG-20261123-001",
+      "date": "2026-11-23",
+      "title": "困惑度被提議為跨企業的開發門檻與安全刻度",
+      "summary": "OpenAI 首席科學家帕霍茨基 11 月 22 日提出以困惑度作為跨企業可追蹤的統一指標，主張在安全監控里程碑達成前設定共同開發門檻。他公佈 GPT-3.5 對數困惑度約 0.99、GPT-4 約 0.91，低於 0.8 時出現網路安全與數學新能力。奧爾特曼公開支援。",
+      "why_it_matters": "計量標準的定義權決定誰能宣佈進展、誰必須停手。一旦刻度跨企業通用，模型競爭的座標就從榜單分數轉向可被外部追蹤的單一指標，安全承諾也才具備可驗收的形式。",
+      "interpretation": "傳統基準隨技術進步迅速過時，無法支撐跨企業承諾；連續且可跨公司追蹤的數值才能寫進門檻。提出刻度的一方同時取得議程設定權，而在資本必須交代用途的環境裡，公用刻度比各自表述的排行榜更容易被接受。",
+      "unknowns": "困惑度與實際風險之間的因果尚未被證實，0.68 至 0.7 區間會出現什麼能力連提出者都無法確定；各家企業是否接受同一把尺、門檻由誰裁定，目前都沒有答案。",
+      "novelty": "NEW",
+      "novelty_basis": "近 30 天已追蹤的是推理檔位成為計價維度、開放權重自主性提升等訊號，未出現以單一可跨企業追蹤指標設定開發門檻的提案。",
+      "source_ids": [
+        "S01"
+      ],
+      "evidence_keys": [
+        "d03e988424f7ed1e629d6419758dd48fd72d1cb9cb85195d164b41ab0d75e9e4"
+      ],
+      "sources": [
+        {
+          "source_id": "S01",
+          "article_key": "d03e988424f7ed1e629d6419758dd48fd72d1cb9cb85195d164b41ab0d75e9e4",
+          "title": "OpenAI 首席科學家：AI 最早明年加速進化；B 站開始清理「大肥魚」氾濫；癱瘓患者用腦機打 GTA6｜極客早知道",
+          "canonical_url": "http://www.geekpark.net/news/374304",
+          "source_name": "極客公園",
+          "is_serendipity": false
+        }
+      ],
+      "created_at": "2026-11-23T11:54:55+08:00",
+      "asset_potential": "價值落在評測方法、監控與紅隊工具，以及能解釋指標與能力對應關係的基礎研究。"
+    },
+    {
+      "signal_id": "SIG-20261123-002",
+      "date": "2026-11-23",
+      "title": "開放權重把高階 agent 能力壓到十億級啟動參數與單卡吞吐",
+      "summary": "騰訊混元 11 月 4 日推出 Hy4 後，一週內讓單任務成本僅為其namen二十分之一的 Hy4 flash 上線，首日 Token 呼叫量突破 50 萬億。社群的 Clover-35B-A3B-Preview 是總參數 350 億、啟動參數 30 億的 MoE 擴散語言模型，七項 agent 指標領先，單張 GB300 上達每秒 680 Token。",
+      "why_it_matters": "能力與價格的對應鬆脫後，模型服務的溢價難以再靠跑分維持，報價基礎移向單位成本、部署效率與交付確定性，掌握算力與通路的一方取得定價主導。",
+      "interpretation": "當啟動參數降到十億級即可在 agent 任務領先，能力不再是稀缺層。混元把決策依據放在實驗結果、硬體適配與部署效率而非參數規模，顯示成本工程已取代規模競賽成為主要競爭變數。",
+      "unknowns": "公佈的成績多為單方資料，長上下文與真實業務下的穩定度未明；混元自承過度思考、創意寫作與遞迴自我改進仍是短板，而價格下探壓縮的首先是模型服務自身的毛利空間。",
+      "novelty": "NEW",
+      "novelty_basis": "既有訊號記錄的是推理檔位成為計價維度與開放權重自主性提升；本輪新增的是啟動參數降到 30 億仍在 agent 指標領先，且旗艦單任務成本在一週內被壓到二十分之一。",
+      "source_ids": [
+        "S06",
+        "S14"
+      ],
+      "evidence_keys": [
+        "a4d981be663114f3a5e3d8a6645cb07524025895b38e0390f13e4cbdbe8f1ec3",
+        "37716e0078dfdada24667bb86f03727bfcd7cb156d7b08bfdc93d6bd7eac430a"
+      ],
+      "sources": [
+        {
+          "source_id": "S06",
+          "article_key": "a4d981be663114f3a5e3d8a6645cb07524025895b38e0390f13e4cbdbe8f1ec3",
+          "title": "關於混元 4 模型、算力、刷榜與 RSI，姚順雨回應一切",
+          "canonical_url": "http://www.geekpark.net/news/374301",
+          "source_name": "極客公園",
+          "is_serendipity": false
+        },
+        {
+          "source_id": "S14",
+          "article_key": "37716e0078dfdada24667bb86f03727bfcd7cb156d7b08bfdc93d6bd7eac430a",
+          "title": "Clover-35B-A3B-Preview Technical Report",
+          "canonical_url": "https://arxiv.org/abs/2611.24636",
+          "source_name": "Hugging Face (社群精選論文)",
+          "is_serendipity": true
+        }
+      ],
+      "created_at": "2026-11-23T11:54:55+08:00",
+      "asset_potential": "價值落在推理效率、量化與部署工具鏈，以及能把模型塞進既有工作負載的整合層。"
+    },
+    {
+      "signal_id": "SIG-20261123-003",
+      "date": "2026-11-23",
+      "title": "驗證外移：形式化證明與外部沙箱把信任變成可重跑的工程",
+      "summary": "一份由 Claude 協助完成、約 1,700 萬行 Lean 程式碼的形式化證明交給社群複核：175,187 個模組重建成功，8,322 個 Mathlib 編譯檔案逐位元組比對，並以獨立對照檔案確認命題與標準黎曼猜想表述一致。Simon Willison 與 Prime Radiant 則提出外部沙箱模式，讓 agent 執行的程式碼在專用沙箱內執行。",
+      "why_it_matters": "當正確性可以交給社群重跑與隔離環境確認，模型輸出的可信度不再取決於品牌，而取決於能否被獨立重建；提供檢查器與沙箱環境的一方取得新的議價位置。",
+      "interpretation": "AI 大量產出程式碼與宣稱之後，瓶頸從生成轉向核實。把宣稱寫成可編譯的檔案、把執行關進沙箱，是把信任成本從人事組織移到期基礎設施，與以單一指標設定門檻屬於同一種治理邏輯。",
+      "unknowns": "社群宣告不等於數學界已理解整套證明，千禧年大獎規則仍要求發表後兩年與普遍接受；沙箱實作多為社群專案、關注有限，能否成為標準部署方式尚未明朗。",
+      "novelty": "EVOLVING",
+      "novelty_basis": "近 30 天已記錄形式驗證被產品化為對抗 AI 生成程式碼缺陷的手段，以及驗證環境虛擬化的社群嘗試；本輪進展是把規模推到 1,700 萬行級別並完成社群逐檔複核，同時外部沙箱模式成形。",
+      "source_ids": [
+        "S12",
+        "S10"
+      ],
+      "evidence_keys": [
+        "31e363b105784aa089f8068023f224d1e12450047885ca012665d6066718e736",
+        "b4439a7527ca175b45e558714e0c076936f57c7b83f7c3dca55c2d93f6736ea5"
+      ],
+      "sources": [
+        {
+          "source_id": "S12",
+          "article_key": "31e363b105784aa089f8068023f224d1e12450047885ca012665d6066718e736",
+          "title": "Claude 形式化證明黎曼猜想，AI 科研先把程式碼變成可獨立核驗的數學",
+          "canonical_url": "https://www.woshipm.com/ai/6498280.html",
+          "source_name": "人人都是產品經理",
+          "is_serendipity": true
+        },
+        {
+          "source_id": "S10",
+          "article_key": "b4439a7527ca175b45e558714e0c076936f57c7b83f7c3dca55c2d93f6736ea5",
+          "title": "External sandboxes for coding agents",
+          "canonical_url": "https://simonwillison.net/2026/Nov/17/external-sandboxes-for-coding-agents/",
+          "source_name": "Simon Willison (AI實戰筆記)",
+          "is_serendipity": false
+        }
+      ],
+      "created_at": "2026-11-23T11:54:55+08:00",
+      "asset_potential": "價值落在可重跑的驗證基礎設施、沙箱與隔離執行環境，以及形式化方法與工具鏈。"
+    }
+  ]
+}
