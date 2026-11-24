@@ -1,0 +1,114 @@
+{
+  "date": "2026-11-24",
+  "generated_at": "2026-11-24T15:03:13+08:00",
+  "signal_count": 3,
+  "signals": [
+    {
+      "signal_id": "SIG-20261124-001",
+      "date": "2026-11-24",
+      "title": "算力從成本項翻面成收入項，出租被判定比自研模型更賺錢",
+      "summary": "SpaceX 執行長馬斯克向員工表示公司 AI 研發落後 Anthropic 與 OpenAI，與其把資料中心算力全投入自研產品，不如出租給對手。三名知情人士稱 SpaceX 自 5 月起向 Anthropic、Google 等出租算力，每月帶來數十億美元收入。同期輝達迎回創辦人黃仁勳，市值約 3.978 兆美元。",
+      "why_it_matters": "利潤池從模型能力轉向算力供給，模型廠在訓練需求與對手需求之間失去議價空間，定價權往可計量的實體資產集中。",
+      "interpretation": "當訓練規模的邊界被公開討論、能力差距被壓縮，自研模型的差異化溢價下降，稀缺性回到能計量、能預付、能出租的算力本身。",
+      "unknowns": "出租收入能否在對手自建產能後延續、超大額資本支出的折舊節奏、自研模型是否重新追上第一梯隊。",
+      "novelty": "EVOLVING",
+      "novelty_basis": "近 30 天已追蹤平臺把當期現金換成算力、AI 成為財報主動折價項的訊號（資本開支年增 527%、Non-IFRS 經營利潤年減 6%）；本期出現反向推進，算力由成本項翻面為對外出租的收入項，且出租被明確判定比自研模型更有商業回報。",
+      "source_ids": [
+        "S01",
+        "S03"
+      ],
+      "evidence_keys": [
+        "a5e662c1a5164e08288394955386477dd4026d88d0318e83b5e3d175c5e265a9",
+        "89be47622d1f215519f33c46b84767cac4723ba5ab9ae1f21ab693edd47fa03f"
+      ],
+      "sources": [
+        {
+          "source_id": "S01",
+          "article_key": "a5e662c1a5164e08288394955386477dd4026d88d0318e83b5e3d175c5e265a9",
+          "title": "黃仁勳重返輝達，市值漲31.48%；馬斯克：AI 研發落後對手，出租算力比自研更賺錢；新一代 AI 模型更愛「爆粗口」",
+          "canonical_url": "http://www.geekpark.net/news/374375",
+          "source_name": "極客公園",
+          "is_serendipity": false
+        },
+        {
+          "source_id": "S03",
+          "article_key": "89be47622d1f215519f33c46b84767cac4723ba5ab9ae1f21ab693edd47fa03f",
+          "title": "[AINews] Jensen Is Back。 and OpenAI Shows Its Pretraining Curve, joined by Microsoft",
+          "canonical_url": "https://latent.space/p/ainews-jensen-is-back-and-openai-shows-its-pretraining-curve-joined-by-microsoft/",
+          "source_name": "Latent Space (AI產品落地)",
+          "is_serendipity": false
+        }
+      ],
+      "created_at": "2026-11-24T15:03:13+08:00",
+      "asset_potential": "資料中心與算力供給、加速運算的系統與網路層，以及長期可出租的長約現金流。"
+    },
+    {
+      "signal_id": "SIG-20261124-002",
+      "date": "2026-11-24",
+      "title": "系統級許可權與 App 代操作清單成為 AI 助手的實際邊界",
+      "summary": "位元組的豆包手機助手在努比亞 M153 上取得 INJECT_EVENTS 系統級許可權，可模擬點按與滑動。10 月 14 日公佈的清單列出超過 150 款不允許代操作的 App，微信、淘寶、美團在列，曹操出行則直接接入服務。兩代機型均由努比亞出貨，售價分別為 3499 元與 5999 元起。",
+      "why_it_matters": "AI 入口的可用範圍由生態許可權而非模型能力決定，缺乏自有出貨規模的模型廠難以累積跨應用談判籌碼，入口價值被切在系統層與高頻應用層。",
+      "interpretation": "高頻平臺把代操作視為流量中介風險而不開放，助手只能停在單一服務的介接層；出貨量不足使模型廠無法把使用者規模兌換成平臺讓步。",
+      "unknowns": "代操作許可權是否面臨監管介入、OpenAI 手機由富智康組裝後的生態開放程度、其他手機廠願意開放哪些許可權。",
+      "novelty": "NEW",
+      "novelty_basis": "近 30 天訊號集中於推理檔位計價、開放權重能力與形式化驗證，未出現以系統級許可權與 App 代操作清單界定 AI 助手邊界的訊號。",
+      "source_ids": [
+        "S10"
+      ],
+      "evidence_keys": [
+        "0cdd238abceede2e7a87134a6e7f218f4edd2e40cab5d2b21bbe1be7c3a3e9b3"
+      ],
+      "sources": [
+        {
+          "source_id": "S10",
+          "article_key": "0cdd238abceede2e7a87134a6e7f218f4edd2e40cab5d2b21bbe1be7c3a3e9b3",
+          "title": "位元組，該造手機了",
+          "canonical_url": "http://www.geekpark.net/news/374374",
+          "source_name": "極客公園",
+          "is_serendipity": false
+        }
+      ],
+      "created_at": "2026-11-24T15:03:13+08:00",
+      "asset_potential": "作業系統許可權與高頻應用的生態談判籌碼，以及能決定出貨規模的自有硬體或深度繫結的合作關係。"
+    },
+    {
+      "signal_id": "SIG-20261124-003",
+      "date": "2026-11-24",
+      "title": "評估基準從答案正確性移向決策所創造的價值",
+      "summary": "TrialAgentBench 公開近 3,500 個任務，涵蓋分析單一試驗到在預算與時間限制下管理多階段臨床計畫，任務嵌入虛構藥廠贊助商的資料記錄並以真值已知的模擬試驗進行。分析以在新試驗上重跑程式碼評分，計畫以決策達成的價值評分，共評估 24 個開放與閉源模型。",
+      "why_it_matters": "當模型能力可外購，採購與定價依據從能力清單轉為可重跑的驗證與決策結果，中間層的價值必須重新證明，溢價被壓向真正完成工作的環節。",
+      "interpretation": "真實試驗昂貴、涉及受試者且無法取得反事實，模擬環境讓長週期決策第一次可被量化比較；企業內部的管理尺子斷裂則是同一位移在組織端的寫照。",
+      "unknowns": "模擬環境與真實試驗之間的落差、評分是否被針對性最佳化、企業是否採信外部基準作為採購依據。",
+      "novelty": "NEW",
+      "novelty_basis": "近 30 天已追蹤形式化證明與外部沙箱把程式碼驗證變成可重跑的工程，但物件是程式正確性；本期把同一邏輯推到臨床試驗與跨期研發決策的價值評估，屬新軸線。",
+      "source_ids": [
+        "S15",
+        "S12"
+      ],
+      "evidence_keys": [
+        "2415c87bfd4dd4da20dee4964fa26feff41d38fd6a8e960e87ac06664ece7b97",
+        "8e245fd95ce8472a2ea987c8959da64e1bc401caca22741f94182ee699e13698"
+      ],
+      "sources": [
+        {
+          "source_id": "S15",
+          "article_key": "2415c87bfd4dd4da20dee4964fa26feff41d38fd6a8e960e87ac06664ece7b97",
+          "title": "TrialAgentBench: Evaluating AI Agents for Clinical-Trial Analysis and Long-Horizon Drug-Development Decisions",
+          "canonical_url": "https://arxiv.org/abs/2611.30916v1",
+          "source_name": "arXiv (跨界前沿論文)",
+          "is_serendipity": true
+        },
+        {
+          "source_id": "S12",
+          "article_key": "8e245fd95ce8472a2ea987c8959da64e1bc401caca22741f94182ee699e13698",
+          "title": "軟體時代的馬車伕可以去當AI時代的司機嗎？",
+          "canonical_url": "https://www.woshipm.com/ai/6499099.html",
+          "source_name": "人人都是產品經理",
+          "is_serendipity": true
+        }
+      ],
+      "created_at": "2026-11-24T15:03:13+08:00",
+      "asset_potential": "驗證與評估基礎設施，以及產業別可重跑的決策基準與模擬環境資料。"
+    }
+  ]
+}
