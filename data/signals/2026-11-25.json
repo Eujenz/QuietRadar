@@ -1,0 +1,95 @@
+{
+  "date": "2026-11-25",
+  "generated_at": "2026-11-25T13:35:54+08:00",
+  "signal_count": 2,
+  "signals": [
+    {
+      "signal_id": "SIG-20261125-001",
+      "date": "2026-11-25",
+      "title": "手機 AI 助手的入口被壓在淺層，系統操作權不隨模型一起外放",
+      "summary": "榮耀 700 系列把助手改名為 AI 手機助手 YOYO 豆包，成為第二款搭載豆包的手機，但公開材料未提及代使用者操作第三方 App 的 GUI 能力，AI 集中於背屏與對話；華為星芒 O1 Pro 以 AI Launcher 承載，豆包小豆公測則限定在明確指令與授權範圍內辦事。",
+      "why_it_matters": "入口與授權成為 AI 助手價值分配的位置，模型供應商取得分發位置而非使用者關係樞紐，定價權傾向掌握系統層的一方。",
+      "interpretation": "硬體廠在不交出系統控制權的前提下取得可展示的差異化，因此只開放不觸及操作權的淺入口；能力可替換，邊界不可替換。",
+      "unknowns": "平臺與監管是否要求開放代操作、使用者是否接受淺入口、挑戰者能否再找到系統層的突破口，都尚未明朗。",
+      "novelty": "EVOLVING",
+      "novelty_basis": "既有訊號 SIG-20261124-002 已標記系統級許可權與 App 代操作清單成為助手實際邊界；本期新增榮耀第二款搭載豆包卻只開背屏淺入口、華為 AI Launcher 與小豆的授權範圍定位，邊界從許可權清單擴大到入口層級的產品設計。",
+      "source_ids": [
+        "S01",
+        "S06",
+        "S10"
+      ],
+      "evidence_keys": [
+        "e173583b0b23260177e370d8d821d8eae80f5f492220114c87e2be15399f6214",
+        "b57d8794e4c74714aab8c9124a4d0ff11524da9b549c0535358e624b9bb206fd",
+        "2a7b9fc469b7f02d0feb9ebde2b8adf49eebf380bdc9cc4026b16eff61b55189"
+      ],
+      "sources": [
+        {
+          "source_id": "S01",
+          "article_key": "e173583b0b23260177e370d8d821d8eae80f5f492220114c87e2be15399f6214",
+          "title": "榮耀眼裡的 AI 手機：前沿模型可以進來，但入口不能拿走",
+          "canonical_url": "http://www.geekpark.net/news/374462",
+          "source_name": "極客公園",
+          "is_serendipity": false
+        },
+        {
+          "source_id": "S06",
+          "article_key": "b57d8794e4c74714aab8c9124a4d0ff11524da9b549c0535358e624b9bb206fd",
+          "title": "豆包個人 AI 助理「小豆」開啟公測；儲存承壓，小米三季度經調整淨利潤下滑近六成；紅果短劇上線時間管理功能 | 極客早知道",
+          "canonical_url": "http://www.geekpark.net/news/374438",
+          "source_name": "極客公園",
+          "is_serendipity": false
+        },
+        {
+          "source_id": "S10",
+          "article_key": "2a7b9fc469b7f02d0feb9ebde2b8adf49eebf380bdc9cc4026b16eff61b55189",
+          "title": "華為星芒O1 Pro，如何把手機 AI 再往前努一小步",
+          "canonical_url": "http://www.geekpark.net/news/374417",
+          "source_name": "極客公園",
+          "is_serendipity": false
+        }
+      ],
+      "created_at": "2026-11-25T13:35:54+08:00",
+      "asset_potential": "系統層入口與授權清單，而不是模型能力本身。"
+    },
+    {
+      "signal_id": "SIG-20261125-002",
+      "date": "2026-11-25",
+      "title": "前沿能力一年三個拐點，差異化外移到入口與授權",
+      "summary": "Simon Willison 指出過去十二個月 LLM 與 coding agent 出現三個能力拐點，Claude Opus 4.5 發布滿一週年，Anthropic 稱其能處理模糊性與取捨；Gemini 4 Neon 在 LiveBench 勝過 Astra 與 Fable，並把 TS Rust benchmark 執行時間縮短 48.6%。",
+      "why_it_matters": "能力與執行效率同時改善，使模型層難以維持終端差異化，價值往掌握入口與授權的系統層移動。",
+      "interpretation": "能力供給密集且可替換，終端產品的分水嶺移到模型碰不到的系統排程與第三方服務操作權。",
+      "unknowns": "前沿實驗室是否自行補上入口能力、開放權重是否再壓低能力價格、企業客戶對可控性的要求走向，都還未確定。",
+      "novelty": "EVOLVING",
+      "novelty_basis": "歷史訊號 SIG-20261122-001 已記錄 Neon 的推理檔位與計價維度；本期 Neon 的 LiveBench 表現、Rust benchmark 執行時間下降與前沿實驗室回歸，加上十二個月三拐點的框架，屬既有訊號的新進展。",
+      "source_ids": [
+        "S04",
+        "S05"
+      ],
+      "evidence_keys": [
+        "bee434900b5ec6c4b9c61585d2e6e096d11437e749f8e57d6f5bc3baa66e9627",
+        "0b260d07579db8478ef4bb1835da65cfc9845725cc2b63f79ac4b8ced1dc2fde"
+      ],
+      "sources": [
+        {
+          "source_id": "S04",
+          "article_key": "bee434900b5ec6c4b9c61585d2e6e096d11437e749f8e57d6f5bc3baa66e9627",
+          "title": "[AINews] Gemini 4 Neon marks GDMs full return as a Frontier Lab",
+          "canonical_url": "https://latent.space/p/ainews-gemini-4-neon-marks-gdm-s-full-return-as-a-frontier-lab/",
+          "source_name": "Latent Space (AI產品落地)",
+          "is_serendipity": false
+        },
+        {
+          "source_id": "S05",
+          "article_key": "0b260d07579db8478ef4bb1835da65cfc9845725cc2b63f79ac4b8ced1dc2fde",
+          "title": "Three LLM inflection points in twelve months",
+          "canonical_url": "https://simonwillison.net/2026/Nov/24/llm-inflection-points/",
+          "source_name": "Simon Willison (AI實戰筆記)",
+          "is_serendipity": false
+        }
+      ],
+      "created_at": "2026-11-25T13:35:54+08:00",
+      "asset_potential": "系統層與授權層；模型層則退到推理檔位與成本競爭。"
+    }
+  ]
+}
