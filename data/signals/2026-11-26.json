@@ -1,0 +1,124 @@
+{
+  "date": "2026-11-26",
+  "generated_at": "2026-11-26T13:17:22+08:00",
+  "signal_count": 3,
+  "signals": [
+    {
+      "signal_id": "SIG-20261126-001",
+      "date": "2026-11-26",
+      "title": "證明產出速度超過複核速度，驗證成為知識生產的瓶頸",
+      "summary": "OpenAI 研究人員 11 月 24 日發布預印本，宣稱確立方陣乘法複雜度指數為四分之九，並在所有數域給出匹配的上界與下界。Latent Space 11 月 25 日以證明抵達速度快過閱讀速度為題，涵蓋 Erdős 問題、矩陣乘法與傅立葉變換新界限。Scott Aaronson 稱解析度提升如顯微鏡與望遠鏡。",
+      "why_it_matters": "當宣稱的產出速度超過社群消化速度，稀缺項從能否算出轉為能否確認，可重跑與可逐行檢查的工具取得定價位置。",
+      "interpretation": "生成成本下降使宣稱數量激增，而確認成本由人力與形式化工程量決定，瓶頸因此外移到驗證環節。",
+      "unknowns": "預印本宣稱仍待社群複核；驗證能力能否形成可計費的標準，以及嚴格規則的採用意願，尚未明朗。",
+      "novelty": "EVOLVING",
+      "novelty_basis": "歷史庫已有形式化證明與外部沙箱把信任變成可重跑工程（11/23）、形式驗證產品化（11/21）、AI 參與黎曼假設宣稱（11/21）；本期新增矩陣乘法指數被宣稱精確確定，以及證明抵達速度快過閱讀速度成為常態描述。",
+      "source_ids": [
+        "S02",
+        "S06",
+        "S10"
+      ],
+      "evidence_keys": [
+        "ad8d47675a77fb7c2fbfea7ef7f006eb6cfd69bcf0dd609e2386fa53c631be0e",
+        "2ada6bc927bcede3f5a7c48d3c5ce99e7c84f9d9c8b00926966de32180b7d8c4",
+        "24af4342e17d0d6d3f5ca1ba360c4da3db59e4f40d6b0a31f4891a291d45d5c4"
+      ],
+      "sources": [
+        {
+          "source_id": "S02",
+          "article_key": "ad8d47675a77fb7c2fbfea7ef7f006eb6cfd69bcf0dd609e2386fa53c631be0e",
+          "title": "OpenAI研究團隊宣稱確立方陣乘法精確計算複雜度",
+          "canonical_url": "https://www.pingwest.com/w/319911",
+          "source_name": "品玩",
+          "is_serendipity": false
+        },
+        {
+          "source_id": "S06",
+          "article_key": "2ada6bc927bcede3f5a7c48d3c5ce99e7c84f9d9c8b00926966de32180b7d8c4",
+          "title": "Quoting Scott Aaronson",
+          "canonical_url": "https://simonwillison.net/2026/Nov/25/scott-aaronson/",
+          "source_name": "Simon Willison (AI實戰筆記)",
+          "is_serendipity": false
+        },
+        {
+          "source_id": "S10",
+          "article_key": "24af4342e17d0d6d3f5ca1ba360c4da3db59e4f40d6b0a31f4891a291d45d5c4",
+          "title": "[AINews] Math Proofs Are Landing Faster Than We Can Read Them",
+          "canonical_url": "https://latent.space/p/ainews-math-proofs-are-landing-faster-than-we-can-read-them/",
+          "source_name": "Latent Space (AI產品落地)",
+          "is_serendipity": false
+        }
+      ],
+      "created_at": "2026-11-26T13:17:22+08:00",
+      "asset_potential": "價值落在可重跑的驗證層：形式化證明、編譯器與執行期、複核工具鏈。"
+    },
+    {
+      "signal_id": "SIG-20261126-002",
+      "date": "2026-11-26",
+      "title": "程式語言與編譯器為 AI 作者身分重新設計，賣點轉向擔保",
+      "summary": "Lightscale AI 共同創辦人 Luc 稱，團隊在瑞士楚格從零設計程式語言、編譯器與執行期系統，物件是 AI 作者而非人類可讀性；部分錯誤類別由抽象移除，其餘靠嚴格編譯器檢查與語言規則壓低，並以砍掉古典語言包袱減少 token。OpenAI 的 Thariq Shihipar 稱 AI 讓軟體便宜到可量產上千份。",
+      "why_it_matters": "審閱產能成為限制後，工具競爭點從生成速度移到正確性保證，價值落在語言與執行期這類難以被提示詞取代的層。",
+      "interpretation": "生成量上升而審閱人力固定，錯誤成本外移，於是把約束前移到語言與編譯器，由機器承擔檢查工作。",
+      "unknowns": "該語言的實際採用與生態尚未成形；嚴格規則對開發速度的代價，以及 token 效率能否兌現為客戶價值，仍待驗證。",
+      "novelty": "NEW",
+      "novelty_basis": "歷史庫近 30 天未出現為 AI 撰寫重新設計語言與編譯器、並以編譯器擔保與 token 效率為產品定位的訊號。",
+      "source_ids": [
+        "S03",
+        "S04"
+      ],
+      "evidence_keys": [
+        "eff9ac56aa4c464ef5221bb4e20dc528623f942f647fb9a8d69e3304798de4e7",
+        "b294701165e549f680daede1d85c63eaec3c0d8b5282ed41ee7db6834e4ca398"
+      ],
+      "sources": [
+        {
+          "source_id": "S03",
+          "article_key": "eff9ac56aa4c464ef5221bb4e20dc528623f942f647fb9a8d69e3304798de4e7",
+          "title": "Show HN: Lightscale AI – A language for LLMs to write business software",
+          "canonical_url": "https://lightscale.ai/",
+          "source_name": "Hacker News (Show HN)",
+          "is_serendipity": false
+        },
+        {
+          "source_id": "S04",
+          "article_key": "b294701165e549f680daede1d85c63eaec3c0d8b5282ed41ee7db6834e4ca398",
+          "title": "The Revolution vs The Renaissance — Thariq Shihipar, OpenAI",
+          "canonical_url": "https://latent.space/p/the_revolution_vs_the_renaissance_thariq_shihipar_openai/",
+          "source_name": "Latent Space (AI產品落地)",
+          "is_serendipity": false
+        }
+      ],
+      "created_at": "2026-11-26T13:17:22+08:00",
+      "asset_potential": "編譯器、執行期與語言設計等擔保型基礎設施。"
+    },
+    {
+      "signal_id": "SIG-20261126-003",
+      "date": "2026-11-26",
+      "title": "AI 原生通訊把適配成本寫成預算受限的層選擇問題",
+      "summary": "一篇 arXiv 論文研究 AI 原生通訊的自編碼器系統，量化訓練與測試通道模型不匹配的敏感度：僅在 AWGN 通道訓練時匹配條件下位元錯誤率低，遇到 Rayleigh 衰減與實際前端損害則嚴重退化。作者提出低延遲遷移學習，只微調部分發射與接收層並凍結其餘。",
+      "why_it_matters": "能力商品化之後，成本落在適配與確認，且被表述為有價格、可最佳化的工程專案，而不是一次性的訓練投入。",
+      "interpretation": "預訓練模型在分佈外條件退化，重訓成本高，於是把有限預算分配給少數關鍵層。",
+      "unknowns": "預算受限最佳化在真實硬體與前端損害下的成效，以及遷移所需時間與能量能否低於重訓，尚無實測結論。",
+      "novelty": "NEW",
+      "novelty_basis": "歷史庫未見 AI 原生物理層通訊、遷移學習與層選擇預算最佳化相關的訊號。",
+      "source_ids": [
+        "S15"
+      ],
+      "evidence_keys": [
+        "0f8bd73c026011a76cfc151da055a20ff2ab4de0b7de97fe7abb06e7e56d4f34"
+      ],
+      "sources": [
+        {
+          "source_id": "S15",
+          "article_key": "0f8bd73c026011a76cfc151da055a20ff2ab4de0b7de97fe7abb06e7e56d4f34",
+          "title": "Spectrum Adaptation of AI-Native Autoencoder Communications with Transfer Learning",
+          "canonical_url": "https://arxiv.org/abs/2611.34942v1",
+          "source_name": "arXiv (跨界前沿論文)",
+          "is_serendipity": true
+        }
+      ],
+      "created_at": "2026-11-26T13:17:22+08:00",
+      "asset_potential": "遷移學習與層選擇工具、通道適配服務。"
+    }
+  ]
+}

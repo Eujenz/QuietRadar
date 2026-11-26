@@ -1,56 +1,60 @@
-> 出刊時間：2026-11-25 13:35 ｜ 本期精選：5 則
+> 出刊時間：2026-11-26 13:17 ｜ 本期精選：6 則
 
 ---
 
-# 豆包進得了榮耀的背屏，進不了它的系統
+# 證明產出的速度快過閱讀速度之後，價值往複核層移動
 
-11 月 23 日，榮耀在武漢發表 700 系列，手機上的 AI 助手正式改名為「AI 手機助手 YOYO 豆包」，成為第二款搭載豆包的手機[¹](http://www.geekpark.net/news/374462)。華為新品牌星芒 OSTA 的首款手機則把 AI 做成一個獨立的 Launcher[²](http://www.geekpark.net/news/374417)；11 月 24 日，豆包個人助理「小豆」以邀請制開啟公測，定位是在使用者明確指令與授權範圍內協助處理日常事務[³](http://www.geekpark.net/news/374438)。三件事指向同一個方向：模型能力的供給已經不是稀缺品，稀缺的是能碰到使用者與第三方服務的那道入口。**能力可以外掛，入口的所有權不會外掛。**
+11 月 24 日，OpenAI 研究人員發布預印本，宣稱確立方陣乘法複雜度指數為四分之九，並在所有數域上給出匹配的上界與下界[¹](https://www.pingwest.com/w/319911)。Latent Space 隔天以證明抵達速度快過閱讀速度為題，從 Erdős 問題寫到矩陣乘法與傅立葉變換的新界限[²](https://latent.space/p/ainews-math-proofs-are-landing-faster-than-we-can-read-them/)。同日，瑞士楚格一個團隊公開了為 AI 撰寫重新設計的程式語言與編譯器[³](https://lightscale.ai/)。三件事分屬不同領域，卻指向同一個位移：生成已不是限制，能不能被複核與擔保才是。產業價值正從生成端移往驗證端。
 
-### 榮耀把助手放上背屏，而不是放進系統
+### 一個指數被寫死之後，複核工作才開始
 
-11 月 23 日下午，榮耀在武漢發布 700 系列，包含 700S、700 與 700 Pro，補貼後 2899 元起，11 月 27 日開售，發布會上佔去最多篇幅的是全系 2 億畫素主鏡、9000mAh 電池與背面那塊 1.72 英寸小屏[¹](http://www.geekpark.net/news/374462)。真正讓手機圈豎起耳朵的是官方通稿裡的新稱呼，原本叫 YOYO 的助手，這一代正式變成「AI 手機助手 YOYO 豆包」[¹](http://www.geekpark.net/news/374462)。此前市面上搭載豆包手機助手的只有努比亞兩代產品，榮耀 700 系列是第二款，差別在豆包於這臺手機上的位置，和在努比亞手機上並不一樣[¹](http://www.geekpark.net/news/374462)。
+這份名為《矩陣乘法指數為四分之九》的預印本，把方陣乘法計算複雜度的精確指數定在 2.25，並聲稱給出在所有數域上彼此匹配的上界與下界，若成立，等於收掉理論電腦科學延續數十年的核心問題[¹](https://www.pingwest.com/w/319911)。宣稱的形式比數字更值得注意。上界與下界同時到位，一個結果才可能被當成定論而不是候選，這意味著這類工作的價值已經有一部分落在「可被他人重跑與逐行確認」上。
 
-差別落在能力邊界。翻完整場發布會與公開材料，榮耀並沒有提到「YOYO 豆包」可以替使用者在第三方 App 裡操作，也沒有與之類似的 GUI 能力，能看到的 AI 主要圍繞背屏與模型對話能力展開，包括對助手說一句想要的畫面就把生成圖片貼上背屏、語音通話與英語陪練，以及航班、打車、快遞、外賣進度不點亮主屏就能在背面看到[¹](http://www.geekpark.net/news/374462)。產品線總裁方飛在會後採訪中把邏輯說得很直白，AI 只是技術，使用者買單的是真實場景和體驗，而「AI 很強大，但是普通老百姓找不到，不會用」，所以背屏被做成一個非常淺的入口[¹](http://www.geekpark.net/news/374462)。執行長李健則把產品價值定義在讓使用者有更多表達自己的方式，而不是功能數量[¹](http://www.geekpark.net/news/374462)。
+Scott Aaronson 的評論由 Simon Willison 引述。他說我們會得到的不是這題或那題的一次性解答，而是一整片新的數學真理大陸，過去只能隔著霧隱約看見；他把這一刻比作 van Leeuwenhoek 第一次把顯微鏡對準池水、Galileo 第一次把望遠鏡對準星空，我們對複雜度理論宇宙與更遠的數學真理宇宙的解析度就在此時提高[⁴](https://simonwillison.net/2026/Nov/25/scott-aaronson/)。解析度提高的直接後果是待讀的東西變多。
 
-淺入口的含義是助手不進入第三方服務的操作層，系統層的排程權留在硬體廠手裡。這意味著模型廠在這筆安排中拿到的是一個分發位置與一個對話介面，而不是使用者關係的樞紐。如果助手不能代操作，它的價值就回到回答與生成，而回答與生成正是最容易在多家供應商之間被替換的部分。對硬體廠而言，把 AI 放在背屏而不是主屏，等於在不交出系統控制權的前提下，取得一個可以對外展示的差異化賣點。
+Latent Space 在 11 月 25 日的整理裡，把 Erdős 問題、矩陣乘法與傅立葉變換的新界限放進同一份清單，並用抵達速度快過閱讀速度概括現狀[²](https://latent.space/p/ainews-math-proofs-are-landing-faster-than-we-can-read-them/)。瓶頸的位置因此換了。當宣稱的產出速度超過社群消化與複核的速度，稀缺項就從有沒有人能算出來，變成有沒有人能確認它對；如果確認必須靠可重跑的證明、可重現的建構與能交給社群複檢的模組，那麼提供這套能力的工具，會比再一個更強的生成器更難被取代。
 
-### 能力端一年三個拐點，推進的卻是別人的籌碼
+### 審閱者不夠用，堆疊開始為機器重寫
 
-能力供給這一年並沒有停下。Simon Willison 在 AI Engineer Code Summit 演講後撰文指出，過去十二個月裡 LLM 與 coding agent 出現三個顯著的能力拐點，而 2026 年 11 月 24 日正好是 Claude Opus 4.5 發布一週年[⁴](https://simonwillison.net/2026/Nov/24/llm-inflection-points/)。Anthropic 在當時的公告中引述測試者的說法，Opus 4.5 能處理模糊性、推理取捨而不需要手把手帶，指向複雜的多系統缺陷時能自己找出修法，幾週前 Sonnet 4.5 近乎不可能的任務現在已經可及[⁴](https://simonwillison.net/2026/Nov/24/llm-inflection-points/)。
+Lightscale AI 的共同創辦人 Luc 有 ETH Zurich 的程式語言背景，團隊規模很小，駐在瑞士楚格。他們的起點是一個實際觀察：越來越多程式碼由 LLM 寫出，而少數人還有時間審閱生成物[³](https://lightscale.ai/)。這不是模型能力的問題，是審閱產能的問題。
 
-同一天，Latent Space 的 AINews 報導 Gemini 4 Neon 讓 Google DeepMind 以完整姿態回到前沿實驗室行列，Neon 在 LiveBench 上勝過 Astra 與 Fable，並把 Theo 的 TS Rust benchmark 執行時間縮短 48.6%[⁵](https://latent.space/p/ainews-gemini-4-neon-marks-gdm-s-full-return-as-a-frontier-lab/)。能力與執行效率在同一個模型週期內同時被推高。
+他們的解法是把 LLM 底下的整層堆疊換掉。程式語言、編譯器與執行期系統全部從零設計，設計物件是 AI 的作者身分，而不是人類的可讀性；某些錯誤類別由抽象直接移除，因為 AI 永遠不會寫那段程式碼，改由編譯器與執行期完整實作，其餘則靠嚴格的編譯器檢查與嚴格語言規則壓低，代價是人類寫起來不好玩；速度來自砍掉古典語言的複雜度與歷史包袱，以減少 token 消耗[³](https://lightscale.ai/)。
 
-把這條曲線和入口的設計放在一起，順序就清楚了。當前沿模型既提升推理又壓低執行時間，能力本身很難再成為終端產品的分水嶺，差異化於是移到模型碰不到的地方，也就是系統層的排程與第三方服務的操作權。這裡的受益者是掌握入口的一方，承壓的是把價值全押在模型能力上的供應商，它們得接受自己是被選擇的零件。
+OpenAI 的 Thariq Shihipar 在 AI Engineer CODE 上把同一件事講成兩種未來可以並存：AI 讓軟體便宜到可以一次量產上千份，同時仍留給人時間把其中一件做到剛好[⁵](https://latent.space/p/the_revolution_vs_the_renaissance_thariq_shihipar_openai/)。**如果生成接近免費而複核仍然昂貴，工具供應商的競爭點就會從幫你寫得更快，移到幫你擔保它不會出事。** 擔保這種東西無法由更長的提示詞提供，只能由編譯器、執行期與可重跑的檢查保證，這也解釋了為什麼重新設計語言會在此刻被提出來。
 
-### 授權範圍被寫進產品定位
+### 不確定被寫進預算表
 
-11 月 24 日，豆包宣佈旗下 AI 個人助理「小豆」開啟公測，採邀請制，使用者憑邀請碼開啟體驗並獲贈一定量免費額度[³](http://www.geekpark.net/news/374438)。官方對它的描述是對話式互動，在使用者明確指令與授權範圍內協助處理日常事務，自稱「一個懂你，還能主動幫你辦事的豆包」，未來能力與體驗會逐步在豆包 App 上線[³](http://www.geekpark.net/news/374438)。
+通訊領域的 AI 原生研究提供了另一個角度。端到端的物理層學習以 jointly trained 的編碼器與解碼器對，取代調變、編碼與偵測這些分開的工序；論文量化了訓練與測試通道模型不匹配的敏感度，只在 AWGN 通道上訓練的系統在匹配條件下位元錯誤率低，換到 Rayleigh 衰減並帶有實際前端損害時則嚴重退化[⁶](https://arxiv.org/abs/2611.34942v1)。
 
-把明確指令與授權範圍寫進產品定位，說明自動化的邊界現在由授權界定，而不是由模型能力界定。手機端的分工也在往同一個方向收斂。極客公園在試用華為星芒 OSTA O1 Pro 後觀察，現在的手機 AI 相當割裂，大廠在一點點摸索，AI 散落在鍵盤、錄音、文字記錄、筆記等功能之中；來自位元組、階躍的挑戰者走 Rabbit R1 那條路，想用一個 AI 助手一竿子捅到底，結果被網際網路大廠的南牆撞得頭破血流[²](http://www.geekpark.net/news/374417)。同一篇報導也提到，隨 iOS 27.2 更新，中國大陸使用者期待已久的蘋果智慧仍然猶抱琵琶半遮面[²](http://www.geekpark.net/news/374417)。
+他們的回應不是重練一個更大的模型，而是從 AWGN 預訓練系統出發，只微調發射端與接收端的一小部分層、凍結其餘，並把選哪些層寫成預算受限的最佳化問題，以降低適配新通道所需的時間與能量[⁶](https://arxiv.org/abs/2611.34942v1)。這條路線與語言設計那條在結構上相似：能力已經現成，成本落在適配與確認，而適配被當成有價格、可最佳化的工程專案。
 
-這兩條線合起來，界定了下一階段競爭的標的。模型廠能把能力交出去，交不出去的是宿主環境裡的授權與清單；硬體與平臺廠願意開的，是背屏、Launcher 與功能點這種不觸及操作權的口子。如果這個分工固定下來，AI 助手市場的定價權會落在決定邊界的一方，而不是決定智慧水準的一方。
+兩件事放在一起，模型能力的商品化並沒有讓工程投入消失，只是把它從訓練端搬到複核端。受益的是能提供可重跑憑證、嚴格檢查與明確擔保的供應商；承壓的是仍以生成量為主要賣點，卻回答不出誰來確認的一方。
 
-手機與個人助理的競爭，正在從模型能力的比較，轉為入口與授權如何分配的問題。榮耀把豆包放在背屏，華為把 AI 做成 Launcher，豆包把授權範圍寫進產品描述，三個動作指向同一件事：**能力已經可以外購，邊界必須自持。** 這條界線往哪裡移，決定的是價值落在模型層還是系統層。
+從池水到星空的解析度提升，說的是同一件事：看得更多之後，能不能讀完、能不能確認，成了新的稀缺。當生成不再是門檻，價值會往願意為正確性保證的那一層沉積，而這一層目前握在把編譯器、執行期與複核流程做成產品的人手上。
 
 ---
 
 ## 今日其他值得一讀
 
-- [台積電德州設廠申請檔案曝光。鎖定2奈米及更先進製程，廠址、量產時程、拍板關鍵一次看](https://www.bnext.com.tw/article/93205/tsmc-texas-fab-application) · 數位時代
-  台積電子公司向德州遞交租稅優惠申請，擬投資 216.55 億美元建 2 奈米廠，2031 年商轉，稅優核准與否決定投資案。
-- [Show HN: Mole – research agent that traces claims to their sources](https://mole.so/) · Hacker News (Show HN)
-  開源研究代理 Mole 的 v0.3.0 把查核一路追到統計數字的最初出處，並標記來源之間的分歧，對照模型答案的可信度問題。
+- [紅果上線“時間鎖”：一個4億使用者平臺開始主動降速](https://www.woshipm.com/share/6500787.html) · 人人都是產品經理
+  紅果短劇 MAU 4.3 億、單日使用 151 分鐘卻上線時間鎖，廣告千次曝光成交價已從 30 元跌至不足 20 元。
+- [黃仁勳復職後首次主持全員大會：向員工道歉；iPhone Duo 零部件成本創歷代 iPhone 新高；Anthropic 跌破發行價｜極客早知道](http://www.geekpark.net/news/374500) · 極客公園
+  iPhone Duo 拆解顯示 2644 個零部件、成本率 64% 創歷代新高，鉸鏈成本 105 美元對三星 45 美元。
+- [Plaud、影石、小紅書、Looki......我們發起了一場 AI 硬體圈的年度聚會](http://www.geekpark.net/news/374487) · 極客公園
+  AI 硬體創業者告別超級入口敘事，轉進健康穿戴、錄音卡與墨水屏，並把模型視為變化極快的新供應鏈。
 
 ---
 
-1. [榮耀眼裡的 AI 手機：前沿模型可以進來，但入口不能拿走](http://www.geekpark.net/news/374462) · 極客公園
+1. [OpenAI研究團隊宣稱確立方陣乘法精確計算複雜度](https://www.pingwest.com/w/319911) · 品玩
 
-2. [華為星芒O1 Pro，如何把手機 AI 再往前努一小步](http://www.geekpark.net/news/374417) · 極客公園
+2. [[AINews] Math Proofs Are Landing Faster Than We Can Read Them](https://latent.space/p/ainews-math-proofs-are-landing-faster-than-we-can-read-them/) · Latent Space (AI產品落地)
 
-3. [豆包個人 AI 助理「小豆」開啟公測；儲存承壓，小米三季度經調整淨利潤下滑近六成；紅果短劇上線時間管理功能 | 極客早知道](http://www.geekpark.net/news/374438) · 極客公園
+3. [Show HN: Lightscale AI – A language for LLMs to write business software](https://lightscale.ai/) · Hacker News (Show HN)
 
-4. [Three LLM inflection points in twelve months](https://simonwillison.net/2026/Nov/24/llm-inflection-points/) · Simon Willison (AI實戰筆記)
+4. [Quoting Scott Aaronson](https://simonwillison.net/2026/Nov/25/scott-aaronson/) · Simon Willison (AI實戰筆記)
 
-5. [[AINews] Gemini 4 Neon marks GDMs full return as a Frontier Lab](https://latent.space/p/ainews-gemini-4-neon-marks-gdm-s-full-return-as-a-frontier-lab/) · Latent Space (AI產品落地)
+5. [The Revolution vs The Renaissance — Thariq Shihipar, OpenAI](https://latent.space/p/the_revolution_vs_the_renaissance_thariq_shihipar_openai/) · Latent Space (AI產品落地)
+
+6. [✨ Spectrum Adaptation of AI-Native Autoencoder Communications with Transfer Learning](https://arxiv.org/abs/2611.34942v1) · arXiv (跨界前沿論文)
 
 ---
