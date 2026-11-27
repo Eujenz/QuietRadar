@@ -1,59 +1,50 @@
 {
-  "date": "2026-11-26",
-  "generated_at": "2026-11-26T13:17:22+08:00",
-  "overview": "# 證明產出的速度快過閱讀速度之後，價值往複核層移動\n\n11 月 24 日，OpenAI 研究人員發布預印本，宣稱確立方陣乘法複雜度指數為四分之九，並在所有數域上給出匹配的上界與下界[¹](https://www.pingwest.com/w/319911)。Latent Space 隔天以證明抵達速度快過閱讀速度為題，從 Erdős 問題寫到矩陣乘法與傅立葉變換的新界限[²](https://latent.space/p/ainews-math-proofs-are-landing-faster-than-we-can-read-them/)。同日，瑞士楚格一個團隊公開了為 AI 撰寫重新設計的程式語言與編譯器[³](https://lightscale.ai/)。三件事分屬不同領域，卻指向同一個位移：生成已不是限制，能不能被複核與擔保才是。產業價值正從生成端移往驗證端。\n\n### 一個指數被寫死之後，複核工作才開始\n\n這份名為《矩陣乘法指數為四分之九》的預印本，把方陣乘法計算複雜度的精確指數定在 2.25，並聲稱給出在所有數域上彼此匹配的上界與下界，若成立，等於收掉理論電腦科學延續數十年的核心問題[¹](https://www.pingwest.com/w/319911)。宣稱的形式比數字更值得注意。上界與下界同時到位，一個結果才可能被當成定論而不是候選，這意味著這類工作的價值已經有一部分落在「可被他人重跑與逐行確認」上。\n\nScott Aaronson 的評論由 Simon Willison 引述。他說我們會得到的不是這題或那題的一次性解答，而是一整片新的數學真理大陸，過去只能隔著霧隱約看見；他把這一刻比作 van Leeuwenhoek 第一次把顯微鏡對準池水、Galileo 第一次把望遠鏡對準星空，我們對複雜度理論宇宙與更遠的數學真理宇宙的解析度就在此時提高[⁴](https://simonwillison.net/2026/Nov/25/scott-aaronson/)。解析度提高的直接後果是待讀的東西變多。\n\nLatent Space 在 11 月 25 日的整理裡，把 Erdős 問題、矩陣乘法與傅立葉變換的新界限放進同一份清單，並用抵達速度快過閱讀速度概括現狀[²](https://latent.space/p/ainews-math-proofs-are-landing-faster-than-we-can-read-them/)。瓶頸的位置因此換了。當宣稱的產出速度超過社群消化與複核的速度，稀缺項就從有沒有人能算出來，變成有沒有人能確認它對；如果確認必須靠可重跑的證明、可重現的建構與能交給社群複檢的模組，那麼提供這套能力的工具，會比再一個更強的生成器更難被取代。\n\n### 審閱者不夠用，堆疊開始為機器重寫\n\nLightscale AI 的共同創辦人 Luc 有 ETH Zurich 的程式語言背景，團隊規模很小，駐在瑞士楚格。他們的起點是一個實際觀察：越來越多程式碼由 LLM 寫出，而少數人還有時間審閱生成物[³](https://lightscale.ai/)。這不是模型能力的問題，是審閱產能的問題。\n\n他們的解法是把 LLM 底下的整層堆疊換掉。程式語言、編譯器與執行期系統全部從零設計，設計物件是 AI 的作者身分，而不是人類的可讀性；某些錯誤類別由抽象直接移除，因為 AI 永遠不會寫那段程式碼，改由編譯器與執行期完整實作，其餘則靠嚴格的編譯器檢查與嚴格語言規則壓低，代價是人類寫起來不好玩；速度來自砍掉古典語言的複雜度與歷史包袱，以減少 token 消耗[³](https://lightscale.ai/)。\n\nOpenAI 的 Thariq Shihipar 在 AI Engineer CODE 上把同一件事講成兩種未來可以並存：AI 讓軟體便宜到可以一次量產上千份，同時仍留給人時間把其中一件做到剛好[⁵](https://latent.space/p/the_revolution_vs_the_renaissance_thariq_shihipar_openai/)。**如果生成接近免費而複核仍然昂貴，工具供應商的競爭點就會從幫你寫得更快，移到幫你擔保它不會出事。** 擔保這種東西無法由更長的提示詞提供，只能由編譯器、執行期與可重跑的檢查保證，這也解釋了為什麼重新設計語言會在此刻被提出來。\n\n### 不確定被寫進預算表\n\n通訊領域的 AI 原生研究提供了另一個角度。端到端的物理層學習以 jointly trained 的編碼器與解碼器對，取代調變、編碼與偵測這些分開的工序；論文量化了訓練與測試通道模型不匹配的敏感度，只在 AWGN 通道上訓練的系統在匹配條件下位元錯誤率低，換到 Rayleigh 衰減並帶有實際前端損害時則嚴重退化[⁶](https://arxiv.org/abs/2611.34942v1)。\n\n他們的回應不是重練一個更大的模型，而是從 AWGN 預訓練系統出發，只微調發射端與接收端的一小部分層、凍結其餘，並把選哪些層寫成預算受限的最佳化問題，以降低適配新通道所需的時間與能量[⁶](https://arxiv.org/abs/2611.34942v1)。這條路線與語言設計那條在結構上相似：能力已經現成，成本落在適配與確認，而適配被當成有價格、可最佳化的工程專案。\n\n兩件事放在一起，模型能力的商品化並沒有讓工程投入消失，只是把它從訓練端搬到複核端。受益的是能提供可重跑憑證、嚴格檢查與明確擔保的供應商；承壓的是仍以生成量為主要賣點，卻回答不出誰來確認的一方。\n\n從池水到星空的解析度提升，說的是同一件事：看得更多之後，能不能讀完、能不能確認，成了新的稀缺。當生成不再是門檻，價值會往願意為正確性保證的那一層沉積，而這一層目前握在把編譯器、執行期與複核流程做成產品的人手上。",
+  "date": "2026-11-27",
+  "generated_at": "2026-11-27T13:14:42+08:00",
+  "overview": "# 當代理人握有手機的許可權，門檻就從模型能力移到授權與驗證\n\n十月，企業客服 AI 公司 Decagon 推出 Personal Agent Gateway，讓消費者的 AI 助理直接與企業客服系統對接，並把「永遠不會疲倦的客戶」寫成一個新的客戶型別[¹](http://www.geekpark.net/news/374536)。同一時間，國內的 Personal Agent 牌桌在兩個月內坐滿，螞蟻靈光 2.0 全量上線、位元組小豆開啟內測、騰訊官宣微信小微[²](https://www.woshipm.com/ai/6501354.html)。而在金融現場，偽冒追劇 App 騙取無障礙許可權後遠端操控手機、攔下 OTP，已造成 22 家銀行與電支機構使用者被盜轉 1,742 萬元[³](https://www.managertoday.com.tw/articles/view/73448)。三件事指向同一個位移：**代理人的價值不再由模型分數決定，而由它能取得多少授權、以及那些授權能否被驗證決定。**\n\n### 兩個 AI 在電話裡禮貌地交涉\n\n被層層轉接、找不到取消自動續費的入口、為幾十塊錢耗掉一個午休，這種不對稱來自一個簡單的事實：企業有一整套客服系統，消費者只有下班前的半小時[¹](http://www.geekpark.net/news/374536)。Decagon 的 Personal Agent Gateway 改寫的是這套對稱關係，它讓消費者的助理直接走進企業客服系統，查政策、整理證據、尋找替代方案，直到把事情辦成，或確定確實辦不了[¹](http://www.geekpark.net/news/374536)。同一個月在矽谷流傳的還有 Pine AI，它先發布一套專為 AI 設計的雲端計算環境，相關貼文當天取得約 240 萬次瀏覽，接著推出 Pine Phone，讓 AI 在操作網頁與處理檔案的過程中可以直接撥打真實世界的電話[¹](http://www.geekpark.net/news/374536)。\n\n這裡的變化不在模型能力，而在交涉的對手方換人了。真人被拒絕兩次通常就放棄，代理人不會疲倦，也不會因為時間不夠而妥協，企業過去用流程長度與人力排隊消耗消費者耐心的做法因此失效。這意味著企業端有理由把客服系統從「給人看的頁面」改造成「給機器讀的介面」，因為回應一個不疲倦的客戶，成本會隨回合數線性累積，而開放一條有規則、可稽核的通道反而可控。\n\n產業後果是客服這塊成本項開始資產化。誰掌握案件資料與政策條款的結構化表述，誰就掌握了代理人時代的接入點，而單純提供人力外包的客服供應商，會被壓在介面之下。\n\n### 兩個月坐滿的牌桌，差異化落在授權\n\n9 月，海外的 Muse 與 Grok Bot 開出 Personal Agent 這條 2.0 領域，10 月與 11 月，國內牌桌迅速坐滿，創業團隊密集轉舵，螞蟻、位元組、騰訊則帶著各自的生態入局[²](https://www.woshipm.com/ai/6501354.html)。這篇產業觀察把差異歸給一個公式：Agent 等於 Model 加 Harness，年初 Model 貴、Harness 糙，OpenClaw 這類產品的上手門檻與穩定性只夠讓極客湊熱鬧，這兩個月出現的產品才真正走進一般使用者的日常；作者並判斷這一波不會重蹈覆轍，最後牌桌上也不會只剩一個超級 PA[²](https://www.woshipm.com/ai/6501354.html)。\n\n把這段判斷放回成本結構，指向就清楚了。當模型這一層不再是稀缺項，能差異化的只剩兩件事：外層的 harness，以及代理人被允許動用什麼。授權是其中最硬的一項，因為它決定代理人能不能真的完成事情，而不是隻能給建議。\n\n問題是同一份許可權在另一個方向上已經被大量使用。刑事局統計，假冒紅果、黃果的追劇 App 誘騙使用者開啟無障礙許可權後，即可遠端操控手機並攔下 OTP 盜轉網銀，案件已逾百件[⁴](https://www.bnext.com.tw/article/93244/fake-short-drama-app-banking-fraud)。金管會披露的版本是 22 家銀行與電支機構使用者遭盜轉 1,742 萬元，並已就重大偶發通報與賠償認定訂出原則[³](https://www.managertoday.com.tw/articles/view/73448)。兩者用的是同一個技術前提：系統級操作權一旦交給程式，程式就能代替人做任何事。這意味著 PA 的競爭很快就不是功能清單的競爭，而是誰能讓授權可見、可撤、可追的競爭，而承壓的一方會是那些把代理人當成差異化賣點、卻沒有配套信任機制的平臺。\n\n### 監控器自己也要被驗證\n\n代理人越深入系統，外界就越依賴監控器，也就是用來標記代理人危險行為的分類器。一篇 arXiv 論文以一個 OpenAI 生產環境的監控器為案例，發現量測到的偽陰性率對兩件事高度敏感：攻擊策略用什麼方法生成，以及該方法被最佳化到什麼程度。單一方法（強化學習）在不同最佳化程度下，偽陰性率從 0.5% 擺到 20.8%；跨方法在各自最佳最佳化程度下，從 6.4% 擺到 23.0%。所有攻擊策略都只針對代理監控器開發，結果仍成功轉移到保留的 GPT-5.4 目標監控器[⁵](https://arxiv.org/abs/2611.34934v1)。\n\n**監控存在，與監控有效，是兩件不同的事。** 而後者不是模型的內建屬性，是評估設計的產物。當授權範圍成為產品能不能開放的決定因素，評估方法的選擇就等於產品路線圖：一份用弱攻擊策略做出來的漂亮報告，會讓平臺在錯誤的安全感下把許可權往外放。\n\n這也解釋了為什麼信任正在被拆成可重跑的工程量，而不是一次性的口頭保證。對平臺而言，能不能拿出在不同攻擊強度下都站得住的評估，會直接決定它能向監管者與企業客戶申請多深的系統許可權；對企業客戶而言，採購判準會從代理人能做多少事，轉為出事之後能否說清楚發生了什麼。\n\n### 結尾\n\n把這三件事放在一起，代理人商業化的瓶頸已經換了位置。模型能力仍在推進，但決定產品能走多遠的是授權的深度，決定授權能開多深的是驗證的可靠性。授權與驗證都不是模型公司擅長的層，這正是雲端平臺、系統廠商與金融基礎設施重新取得議價位置的原因，也是這一波 PA 競賽真正的分岔口。",
   "citation_sources": [
     {
       "citation_number": 1,
-      "source_id": "S02",
-      "article_key": "ad8d47675a77fb7c2fbfea7ef7f006eb6cfd69bcf0dd609e2386fa53c631be0e",
-      "title": "OpenAI研究團隊宣稱確立方陣乘法精確計算複雜度",
-      "original_url": "https://www.pingwest.com/w/319911",
-      "source_name": "品玩",
+      "source_id": "S01",
+      "article_key": "c0fa917c1f800a1bffe66b6e3614bb2dcb711296b9ea9c2a95989f5d25c1f1b0",
+      "title": "好訊息，AI 可以替你打客服電話了；壞訊息，電話那頭也是 AI",
+      "original_url": "http://www.geekpark.net/news/374536",
+      "source_name": "極客公園",
       "is_serendipity": false
     },
     {
       "citation_number": 2,
-      "source_id": "S10",
-      "article_key": "24af4342e17d0d6d3f5ca1ba360c4da3db59e4f40d6b0a31f4891a291d45d5c4",
-      "title": "[AINews] Math Proofs Are Landing Faster Than We Can Read Them",
-      "original_url": "https://latent.space/p/ainews-math-proofs-are-landing-faster-than-we-can-read-them/",
-      "source_name": "Latent Space (AI產品落地)",
-      "is_serendipity": false
+      "source_id": "S12",
+      "article_key": "0b516594837cd2c9c1a8672695008f1526354faf2c371d57702c5ee0fdf841fe",
+      "title": "關於國內 Personal Agent 的五大暴論",
+      "original_url": "https://www.woshipm.com/ai/6501354.html",
+      "source_name": "人人都是產品經理",
+      "is_serendipity": true
     },
     {
       "citation_number": 3,
-      "source_id": "S03",
-      "article_key": "eff9ac56aa4c464ef5221bb4e20dc528623f942f647fb9a8d69e3304798de4e7",
-      "title": "Show HN: Lightscale AI – A language for LLMs to write business software",
-      "original_url": "https://lightscale.ai/",
-      "source_name": "Hacker News (Show HN)",
-      "is_serendipity": false
+      "source_id": "S13",
+      "article_key": "5ca6888df95382a6ea706896c962505bcd64f5bed1e3222b5b501085044b4b9f",
+      "title": "帳戶遭遠端盜轉竟是「短劇 App」惹禍？22 家銀行、電支機構使用者遭盜轉 1742 萬",
+      "original_url": "https://www.managertoday.com.tw/articles/view/73448",
+      "source_name": "經理人月刊",
+      "is_serendipity": true
     },
     {
       "citation_number": 4,
-      "source_id": "S06",
-      "article_key": "2ada6bc927bcede3f5a7c48d3c5ce99e7c84f9d9c8b00926966de32180b7d8c4",
-      "title": "Quoting Scott Aaronson",
-      "original_url": "https://simonwillison.net/2026/Nov/25/scott-aaronson/",
-      "source_name": "Simon Willison (AI實戰筆記)",
-      "is_serendipity": false
+      "source_id": "S14",
+      "article_key": "555f2de1ef086b1cef921ddc7eeeb231e1e8f40411b9398feb5839dd1c3af4cb",
+      "title": "偽冒「紅果、黃果」追劇App如何偷走存款？刑事局揭盜轉手法，自保攻略一次看",
+      "original_url": "https://www.bnext.com.tw/article/93244/fake-short-drama-app-banking-fraud",
+      "source_name": "數位時代",
+      "is_serendipity": true
     },
     {
       "citation_number": 5,
-      "source_id": "S04",
-      "article_key": "b294701165e549f680daede1d85c63eaec3c0d8b5282ed41ee7db6834e4ca398",
-      "title": "The Revolution vs The Renaissance — Thariq Shihipar, OpenAI",
-      "original_url": "https://latent.space/p/the_revolution_vs_the_renaissance_thariq_shihipar_openai/",
-      "source_name": "Latent Space (AI產品落地)",
-      "is_serendipity": false
-    },
-    {
-      "citation_number": 6,
       "source_id": "S15",
-      "article_key": "0f8bd73c026011a76cfc151da055a20ff2ab4de0b7de97fe7abb06e7e56d4f34",
-      "title": "Spectrum Adaptation of AI-Native Autoencoder Communications with Transfer Learning",
-      "original_url": "https://arxiv.org/abs/2611.34942v1",
+      "article_key": "0c272f1d0957d70a05430abb040283cea82dfe5ab62c0a5ed3003720fc0d085d",
+      "title": "Attack Policy Selection can Mislead Monitor Evaluators",
+      "original_url": "https://arxiv.org/abs/2611.34934v1",
       "source_name": "arXiv (跨界前沿論文)",
       "is_serendipity": true
     }
@@ -61,55 +52,46 @@
   "items": [
     {
       "citation_number": 1,
-      "source_id": "S02",
-      "article_key": "ad8d47675a77fb7c2fbfea7ef7f006eb6cfd69bcf0dd609e2386fa53c631be0e",
-      "title": "OpenAI研究團隊宣稱確立方陣乘法精確計算複雜度",
-      "original_url": "https://www.pingwest.com/w/319911",
-      "source_name": "品玩",
+      "source_id": "S01",
+      "article_key": "c0fa917c1f800a1bffe66b6e3614bb2dcb711296b9ea9c2a95989f5d25c1f1b0",
+      "title": "好訊息，AI 可以替你打客服電話了；壞訊息，電話那頭也是 AI",
+      "original_url": "http://www.geekpark.net/news/374536",
+      "source_name": "極客公園",
       "is_serendipity": false
     },
     {
       "citation_number": 2,
-      "source_id": "S10",
-      "article_key": "24af4342e17d0d6d3f5ca1ba360c4da3db59e4f40d6b0a31f4891a291d45d5c4",
-      "title": "[AINews] Math Proofs Are Landing Faster Than We Can Read Them",
-      "original_url": "https://latent.space/p/ainews-math-proofs-are-landing-faster-than-we-can-read-them/",
-      "source_name": "Latent Space (AI產品落地)",
-      "is_serendipity": false
+      "source_id": "S12",
+      "article_key": "0b516594837cd2c9c1a8672695008f1526354faf2c371d57702c5ee0fdf841fe",
+      "title": "關於國內 Personal Agent 的五大暴論",
+      "original_url": "https://www.woshipm.com/ai/6501354.html",
+      "source_name": "人人都是產品經理",
+      "is_serendipity": true
     },
     {
       "citation_number": 3,
-      "source_id": "S03",
-      "article_key": "eff9ac56aa4c464ef5221bb4e20dc528623f942f647fb9a8d69e3304798de4e7",
-      "title": "Show HN: Lightscale AI – A language for LLMs to write business software",
-      "original_url": "https://lightscale.ai/",
-      "source_name": "Hacker News (Show HN)",
-      "is_serendipity": false
+      "source_id": "S13",
+      "article_key": "5ca6888df95382a6ea706896c962505bcd64f5bed1e3222b5b501085044b4b9f",
+      "title": "帳戶遭遠端盜轉竟是「短劇 App」惹禍？22 家銀行、電支機構使用者遭盜轉 1742 萬",
+      "original_url": "https://www.managertoday.com.tw/articles/view/73448",
+      "source_name": "經理人月刊",
+      "is_serendipity": true
     },
     {
       "citation_number": 4,
-      "source_id": "S06",
-      "article_key": "2ada6bc927bcede3f5a7c48d3c5ce99e7c84f9d9c8b00926966de32180b7d8c4",
-      "title": "Quoting Scott Aaronson",
-      "original_url": "https://simonwillison.net/2026/Nov/25/scott-aaronson/",
-      "source_name": "Simon Willison (AI實戰筆記)",
-      "is_serendipity": false
+      "source_id": "S14",
+      "article_key": "555f2de1ef086b1cef921ddc7eeeb231e1e8f40411b9398feb5839dd1c3af4cb",
+      "title": "偽冒「紅果、黃果」追劇App如何偷走存款？刑事局揭盜轉手法，自保攻略一次看",
+      "original_url": "https://www.bnext.com.tw/article/93244/fake-short-drama-app-banking-fraud",
+      "source_name": "數位時代",
+      "is_serendipity": true
     },
     {
       "citation_number": 5,
-      "source_id": "S04",
-      "article_key": "b294701165e549f680daede1d85c63eaec3c0d8b5282ed41ee7db6834e4ca398",
-      "title": "The Revolution vs The Renaissance — Thariq Shihipar, OpenAI",
-      "original_url": "https://latent.space/p/the_revolution_vs_the_renaissance_thariq_shihipar_openai/",
-      "source_name": "Latent Space (AI產品落地)",
-      "is_serendipity": false
-    },
-    {
-      "citation_number": 6,
       "source_id": "S15",
-      "article_key": "0f8bd73c026011a76cfc151da055a20ff2ab4de0b7de97fe7abb06e7e56d4f34",
-      "title": "Spectrum Adaptation of AI-Native Autoencoder Communications with Transfer Learning",
-      "original_url": "https://arxiv.org/abs/2611.34942v1",
+      "article_key": "0c272f1d0957d70a05430abb040283cea82dfe5ab62c0a5ed3003720fc0d085d",
+      "title": "Attack Policy Selection can Mislead Monitor Evaluators",
+      "original_url": "https://arxiv.org/abs/2611.34934v1",
       "source_name": "arXiv (跨界前沿論文)",
       "is_serendipity": true
     }
@@ -117,145 +99,135 @@
   "signal_count": 3,
   "signals": [
     {
-      "signal_id": "SIG-20261126-001",
-      "date": "2026-11-26",
-      "title": "證明產出速度超過複核速度，驗證成為知識生產的瓶頸",
-      "summary": "OpenAI 研究人員 11 月 24 日發布預印本，宣稱確立方陣乘法複雜度指數為四分之九，並在所有數域給出匹配的上界與下界。Latent Space 11 月 25 日以證明抵達速度快過閱讀速度為題，涵蓋 Erdős 問題、矩陣乘法與傅立葉變換新界限。Scott Aaronson 稱解析度提升如顯微鏡與望遠鏡。",
-      "why_it_matters": "當宣稱的產出速度超過社群消化速度，稀缺項從能否算出轉為能否確認，可重跑與可逐行檢查的工具取得定價位置。",
-      "interpretation": "生成成本下降使宣稱數量激增，而確認成本由人力與形式化工程量決定，瓶頸因此外移到驗證環節。",
-      "unknowns": "預印本宣稱仍待社群複核；驗證能力能否形成可計費的標準，以及嚴格規則的採用意願，尚未明朗。",
+      "signal_id": "SIG-20261127-001",
+      "date": "2026-11-27",
+      "title": "Personal Agent 的競爭點從模型能力移到系統授權與 harness",
+      "summary": "企業客服 AI 公司 Decagon 十月推出 Personal Agent Gateway，讓消費者助理直接接入企業客服系統；Pine AI 先發布為 AI 設計的雲端環境，再推出可撥打真實電話的 Pine Phone。國內則在兩個月內出現靈光 2.0 全量、小豆內測與微信小微官宣。",
+      "why_it_matters": "代理人要完成事情必須取得系統級操作權，價值因此從模型層外移到授權層與 harness 層，掌握介面與案件資料的一方取得接入點。",
+      "interpretation": "模型不再是稀缺項後，差異化只剩外層 harness 與可用許可權；不疲倦的代理人讓企業以流程長度消耗消費者耐心的做法失效，開放受控介面反而成本更低。",
+      "unknowns": "平臺是否願意下放系統級許可權、跨企業介面標準由誰定、以及一般使用者對代操作授權的接受度都尚未明朗。",
       "novelty": "EVOLVING",
-      "novelty_basis": "歷史庫已有形式化證明與外部沙箱把信任變成可重跑工程（11/23）、形式驗證產品化（11/21）、AI 參與黎曼假設宣稱（11/21）；本期新增矩陣乘法指數被宣稱精確確定，以及證明抵達速度快過閱讀速度成為常態描述。",
+      "novelty_basis": "既有訊號已指出手機 AI 助手入口被壓在淺層、系統級許可權與 App 代操作清單成為實際邊界；本期新增的是國內 PA 領域全面開臺與企業客服端反向開放介面，屬策略推進。",
       "source_ids": [
-        "S02",
-        "S06",
-        "S10"
+        "S01",
+        "S12"
       ],
       "evidence_keys": [
-        "ad8d47675a77fb7c2fbfea7ef7f006eb6cfd69bcf0dd609e2386fa53c631be0e",
-        "2ada6bc927bcede3f5a7c48d3c5ce99e7c84f9d9c8b00926966de32180b7d8c4",
-        "24af4342e17d0d6d3f5ca1ba360c4da3db59e4f40d6b0a31f4891a291d45d5c4"
+        "c0fa917c1f800a1bffe66b6e3614bb2dcb711296b9ea9c2a95989f5d25c1f1b0",
+        "0b516594837cd2c9c1a8672695008f1526354faf2c371d57702c5ee0fdf841fe"
       ],
       "sources": [
         {
-          "source_id": "S02",
-          "article_key": "ad8d47675a77fb7c2fbfea7ef7f006eb6cfd69bcf0dd609e2386fa53c631be0e",
-          "title": "OpenAI研究團隊宣稱確立方陣乘法精確計算複雜度",
-          "canonical_url": "https://www.pingwest.com/w/319911",
-          "source_name": "品玩",
+          "source_id": "S01",
+          "article_key": "c0fa917c1f800a1bffe66b6e3614bb2dcb711296b9ea9c2a95989f5d25c1f1b0",
+          "title": "好訊息，AI 可以替你打客服電話了；壞訊息，電話那頭也是 AI",
+          "canonical_url": "http://www.geekpark.net/news/374536",
+          "source_name": "極客公園",
           "is_serendipity": false
         },
         {
-          "source_id": "S06",
-          "article_key": "2ada6bc927bcede3f5a7c48d3c5ce99e7c84f9d9c8b00926966de32180b7d8c4",
-          "title": "Quoting Scott Aaronson",
-          "canonical_url": "https://simonwillison.net/2026/Nov/25/scott-aaronson/",
-          "source_name": "Simon Willison (AI實戰筆記)",
-          "is_serendipity": false
-        },
-        {
-          "source_id": "S10",
-          "article_key": "24af4342e17d0d6d3f5ca1ba360c4da3db59e4f40d6b0a31f4891a291d45d5c4",
-          "title": "[AINews] Math Proofs Are Landing Faster Than We Can Read Them",
-          "canonical_url": "https://latent.space/p/ainews-math-proofs-are-landing-faster-than-we-can-read-them/",
-          "source_name": "Latent Space (AI產品落地)",
-          "is_serendipity": false
+          "source_id": "S12",
+          "article_key": "0b516594837cd2c9c1a8672695008f1526354faf2c371d57702c5ee0fdf841fe",
+          "title": "關於國內 Personal Agent 的五大暴論",
+          "canonical_url": "https://www.woshipm.com/ai/6501354.html",
+          "source_name": "人人都是產品經理",
+          "is_serendipity": true
         }
       ],
-      "created_at": "2026-11-26T13:17:22+08:00",
-      "asset_potential": "價值落在可重跑的驗證層：形式化證明、編譯器與執行期、複核工具鏈。"
+      "created_at": "2026-11-27T13:14:42+08:00",
+      "asset_potential": "價值落在授權與稽核基礎設施，以及結構化的企業規則與案件資料，而非模型本身。"
     },
     {
-      "signal_id": "SIG-20261126-002",
-      "date": "2026-11-26",
-      "title": "程式語言與編譯器為 AI 作者身分重新設計，賣點轉向擔保",
-      "summary": "Lightscale AI 共同創辦人 Luc 稱，團隊在瑞士楚格從零設計程式語言、編譯器與執行期系統，物件是 AI 作者而非人類可讀性；部分錯誤類別由抽象移除，其餘靠嚴格編譯器檢查與語言規則壓低，並以砍掉古典語言包袱減少 token。OpenAI 的 Thariq Shihipar 稱 AI 讓軟體便宜到可量產上千份。",
-      "why_it_matters": "審閱產能成為限制後，工具競爭點從生成速度移到正確性保證，價值落在語言與執行期這類難以被提示詞取代的層。",
-      "interpretation": "生成量上升而審閱人力固定，錯誤成本外移，於是把約束前移到語言與編譯器，由機器承擔檢查工作。",
-      "unknowns": "該語言的實際採用與生態尚未成形；嚴格規則對開發速度的代價，以及 token 效率能否兌現為客戶價值，仍待驗證。",
+      "signal_id": "SIG-20261127-002",
+      "date": "2026-11-27",
+      "title": "代操作許可權同時成為金融盜轉的攻擊面",
+      "summary": "刑事局統計，假冒紅果、黃果的追劇 App 誘騙使用者開啟無障礙許可權後遠端操控手機、攔下 OTP 盜轉網銀，案件已逾百件。金管會披露 22 家銀行與電支機構使用者遭盜轉 1,742 萬元，並訂出重大偶發通報與賠償認定原則。",
+      "why_it_matters": "代理人落地所依賴的系統級許可權，與木馬濫用的無障礙許可權是同一技術前提，讓 PA 平臺的信任機製成為能否開放產品的前置條件。",
+      "interpretation": "許可權一旦交給程式，程式即可代替人執行任何操作，能力與風險共用同一條通道，因此授權治理而非模型能力成為普及速率的限制項。",
+      "unknowns": "賠償責任如何在平臺、App 與銀行之間分配，以及監理是否會要求代理人操作留下可稽核紀錄，目前仍未確定。",
       "novelty": "NEW",
-      "novelty_basis": "歷史庫近 30 天未出現為 AI 撰寫重新設計語言與編譯器、並以編譯器擔保與 token 效率為產品定位的訊號。",
+      "novelty_basis": "近 30 天訊號集中在助手入口與代操作清單的能力邊界，未出現把同一許可權前提連結到實際金融盜轉案件與監理回應的紀錄。",
       "source_ids": [
-        "S03",
-        "S04"
+        "S13",
+        "S14"
       ],
       "evidence_keys": [
-        "eff9ac56aa4c464ef5221bb4e20dc528623f942f647fb9a8d69e3304798de4e7",
-        "b294701165e549f680daede1d85c63eaec3c0d8b5282ed41ee7db6834e4ca398"
+        "5ca6888df95382a6ea706896c962505bcd64f5bed1e3222b5b501085044b4b9f",
+        "555f2de1ef086b1cef921ddc7eeeb231e1e8f40411b9398feb5839dd1c3af4cb"
       ],
       "sources": [
         {
-          "source_id": "S03",
-          "article_key": "eff9ac56aa4c464ef5221bb4e20dc528623f942f647fb9a8d69e3304798de4e7",
-          "title": "Show HN: Lightscale AI – A language for LLMs to write business software",
-          "canonical_url": "https://lightscale.ai/",
-          "source_name": "Hacker News (Show HN)",
-          "is_serendipity": false
+          "source_id": "S13",
+          "article_key": "5ca6888df95382a6ea706896c962505bcd64f5bed1e3222b5b501085044b4b9f",
+          "title": "帳戶遭遠端盜轉竟是「短劇 App」惹禍？22 家銀行、電支機構使用者遭盜轉 1742 萬",
+          "canonical_url": "https://www.managertoday.com.tw/articles/view/73448",
+          "source_name": "經理人月刊",
+          "is_serendipity": true
         },
         {
-          "source_id": "S04",
-          "article_key": "b294701165e549f680daede1d85c63eaec3c0d8b5282ed41ee7db6834e4ca398",
-          "title": "The Revolution vs The Renaissance — Thariq Shihipar, OpenAI",
-          "canonical_url": "https://latent.space/p/the_revolution_vs_the_renaissance_thariq_shihipar_openai/",
-          "source_name": "Latent Space (AI產品落地)",
-          "is_serendipity": false
+          "source_id": "S14",
+          "article_key": "555f2de1ef086b1cef921ddc7eeeb231e1e8f40411b9398feb5839dd1c3af4cb",
+          "title": "偽冒「紅果、黃果」追劇App如何偷走存款？刑事局揭盜轉手法，自保攻略一次看",
+          "canonical_url": "https://www.bnext.com.tw/article/93244/fake-short-drama-app-banking-fraud",
+          "source_name": "數位時代",
+          "is_serendipity": true
         }
       ],
-      "created_at": "2026-11-26T13:17:22+08:00",
-      "asset_potential": "編譯器、執行期與語言設計等擔保型基礎設施。"
+      "created_at": "2026-11-27T13:14:42+08:00",
+      "asset_potential": "價值落在許可權可見、可撤、可追的-device 層信任基礎設施與金融機構的異常交易攔截能力。"
     },
     {
-      "signal_id": "SIG-20261126-003",
-      "date": "2026-11-26",
-      "title": "AI 原生通訊把適配成本寫成預算受限的層選擇問題",
-      "summary": "一篇 arXiv 論文研究 AI 原生通訊的自編碼器系統，量化訓練與測試通道模型不匹配的敏感度：僅在 AWGN 通道訓練時匹配條件下位元錯誤率低，遇到 Rayleigh 衰減與實際前端損害則嚴重退化。作者提出低延遲遷移學習，只微調部分發射與接收層並凍結其餘。",
-      "why_it_matters": "能力商品化之後，成本落在適配與確認，且被表述為有價格、可最佳化的工程專案，而不是一次性的訓練投入。",
-      "interpretation": "預訓練模型在分佈外條件退化，重訓成本高，於是把有限預算分配給少數關鍵層。",
-      "unknowns": "預算受限最佳化在真實硬體與前端損害下的成效，以及遷移所需時間與能量能否低於重訓，尚無實測結論。",
+      "signal_id": "SIG-20261127-003",
+      "date": "2026-11-27",
+      "title": "監控器的偽陰性率隨攻擊策略設計大幅擺動",
+      "summary": "一篇 arXiv 論文以 OpenAI 生產環境監控器為案例，發現偽陰性率在單一強化學習方法的不同最佳化程度下從 0.5% 到 20.8%，跨方法在最佳最佳化程度下從 6.4% 到 23.0%，且攻擊策略僅針對代理監控器開發仍成功轉移到 GPT-5.4 目標監控器。",
+      "why_it_matters": "代理人安全評估的可信度取決於評估設計而非模型內建屬性，平臺能申請多深系統許可權，實質上由評估方法的嚴格程度決定。",
+      "interpretation": "以弱攻擊策略生成的對話稿充當部署代理，會系統性低估規避風險，使平臺在錯誤安全感下擴大授權範圍。",
+      "unknowns": "如何在企業間統一攻擊策略強度與最佳化程度、監控器更新後結果是否可延續，以及監理是否接受這類評估作為合規依據。",
       "novelty": "NEW",
-      "novelty_basis": "歷史庫未見 AI 原生物理層通訊、遷移學習與層選擇預算最佳化相關的訊號。",
+      "novelty_basis": "既有訊號處理的是以困惑度設開發門檻與驗證外移，未涵蓋監控器評估本身因攻擊策略選擇而失真的量化結果。",
       "source_ids": [
         "S15"
       ],
       "evidence_keys": [
-        "0f8bd73c026011a76cfc151da055a20ff2ab4de0b7de97fe7abb06e7e56d4f34"
+        "0c272f1d0957d70a05430abb040283cea82dfe5ab62c0a5ed3003720fc0d085d"
       ],
       "sources": [
         {
           "source_id": "S15",
-          "article_key": "0f8bd73c026011a76cfc151da055a20ff2ab4de0b7de97fe7abb06e7e56d4f34",
-          "title": "Spectrum Adaptation of AI-Native Autoencoder Communications with Transfer Learning",
-          "canonical_url": "https://arxiv.org/abs/2611.34942v1",
+          "article_key": "0c272f1d0957d70a05430abb040283cea82dfe5ab62c0a5ed3003720fc0d085d",
+          "title": "Attack Policy Selection can Mislead Monitor Evaluators",
+          "canonical_url": "https://arxiv.org/abs/2611.34934v1",
           "source_name": "arXiv (跨界前沿論文)",
           "is_serendipity": true
         }
       ],
-      "created_at": "2026-11-26T13:17:22+08:00",
-      "asset_potential": "遷移學習與層選擇工具、通道適配服務。"
+      "created_at": "2026-11-27T13:14:42+08:00",
+      "asset_potential": "價值落在可重跑、可跨企業比對的評估方法與監控器本身。"
     }
   ],
   "further_reading": [
     {
-      "source_id": "S12",
-      "title": "紅果上線“時間鎖”：一個4億使用者平臺開始主動降速",
-      "source_name": "人人都是產品經理",
-      "original_url": "https://www.woshipm.com/share/6500787.html",
-      "note": "紅果短劇 MAU 4.3 億、單日使用 151 分鐘卻上線時間鎖，廣告千次曝光成交價已從 30 元跌至不足 20 元。"
-    },
-    {
       "source_id": "S07",
-      "title": "黃仁勳復職後首次主持全員大會：向員工道歉；iPhone Duo 零部件成本創歷代 iPhone 新高；Anthropic 跌破發行價｜極客早知道",
+      "title": "智譜闢謠 GLM-5.5 延期；特斯拉和 SpaceX 衝刺年底合併；18 家平臺完成演演演算法協商，覆蓋 2500 萬新就業形態勞動者｜極客早知道",
       "source_name": "極客公園",
-      "original_url": "http://www.geekpark.net/news/374500",
-      "note": "iPhone Duo 拆解顯示 2644 個零部件、成本率 64% 創歷代新高，鉸鏈成本 105 美元對三星 45 美元。"
+      "original_url": "http://www.geekpark.net/news/374546",
+      "note": "騰訊 12 月起把非技術崗外部模型額度降至 10%，2027 年起全員預設混元 HY4，內部算力分配已成治理工具。"
     },
     {
-      "source_id": "S01",
-      "title": "Plaud、影石、小紅書、Looki......我們發起了一場 AI 硬體圈的年度聚會",
-      "source_name": "極客公園",
-      "original_url": "http://www.geekpark.net/news/374487",
-      "note": "AI 硬體創業者告別超級入口敘事，轉進健康穿戴、錄音卡與墨水屏，並把模型視為變化極快的新供應鏈。"
+      "source_id": "S08",
+      "title": "SpaceX獲美國監管首肯 太空資料中心星座Starmind獲批部署",
+      "source_name": "品玩",
+      "original_url": "https://www.pingwest.com/w/319934",
+      "note": "FCC 附條件批准 SpaceX 部署至多 100 萬顆衛星興建 Starmind 太空資料中心，算力擴張開始往太空延伸。"
+    },
+    {
+      "source_id": "S06",
+      "title": "How Clay Builds GTM Agents — Jeff Barg, Head of AI",
+      "source_name": "Latent Space (AI產品落地)",
+      "original_url": "https://latent.space/p/how-clay-builds-gtm-agents-jeff-barg-head-of-ai/",
+      "note": "Clay 的 AI 主管說明如何用 1,500 美元條件化全球企業，並指出客戶討厭模型選擇器，指向 agent 基礎設施的分工。"
     }
   ],
-  "time": "2026-11-26 13:17"
+  "time": "2026-11-27 13:14"
 }

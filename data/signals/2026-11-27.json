@@ -1,0 +1,114 @@
+{
+  "date": "2026-11-27",
+  "generated_at": "2026-11-27T13:14:42+08:00",
+  "signal_count": 3,
+  "signals": [
+    {
+      "signal_id": "SIG-20261127-001",
+      "date": "2026-11-27",
+      "title": "Personal Agent 的競爭點從模型能力移到系統授權與 harness",
+      "summary": "企業客服 AI 公司 Decagon 十月推出 Personal Agent Gateway，讓消費者助理直接接入企業客服系統；Pine AI 先發布為 AI 設計的雲端環境，再推出可撥打真實電話的 Pine Phone。國內則在兩個月內出現靈光 2.0 全量、小豆內測與微信小微官宣。",
+      "why_it_matters": "代理人要完成事情必須取得系統級操作權，價值因此從模型層外移到授權層與 harness 層，掌握介面與案件資料的一方取得接入點。",
+      "interpretation": "模型不再是稀缺項後，差異化只剩外層 harness 與可用許可權；不疲倦的代理人讓企業以流程長度消耗消費者耐心的做法失效，開放受控介面反而成本更低。",
+      "unknowns": "平臺是否願意下放系統級許可權、跨企業介面標準由誰定、以及一般使用者對代操作授權的接受度都尚未明朗。",
+      "novelty": "EVOLVING",
+      "novelty_basis": "既有訊號已指出手機 AI 助手入口被壓在淺層、系統級許可權與 App 代操作清單成為實際邊界；本期新增的是國內 PA 領域全面開臺與企業客服端反向開放介面，屬策略推進。",
+      "source_ids": [
+        "S01",
+        "S12"
+      ],
+      "evidence_keys": [
+        "c0fa917c1f800a1bffe66b6e3614bb2dcb711296b9ea9c2a95989f5d25c1f1b0",
+        "0b516594837cd2c9c1a8672695008f1526354faf2c371d57702c5ee0fdf841fe"
+      ],
+      "sources": [
+        {
+          "source_id": "S01",
+          "article_key": "c0fa917c1f800a1bffe66b6e3614bb2dcb711296b9ea9c2a95989f5d25c1f1b0",
+          "title": "好訊息，AI 可以替你打客服電話了；壞訊息，電話那頭也是 AI",
+          "canonical_url": "http://www.geekpark.net/news/374536",
+          "source_name": "極客公園",
+          "is_serendipity": false
+        },
+        {
+          "source_id": "S12",
+          "article_key": "0b516594837cd2c9c1a8672695008f1526354faf2c371d57702c5ee0fdf841fe",
+          "title": "關於國內 Personal Agent 的五大暴論",
+          "canonical_url": "https://www.woshipm.com/ai/6501354.html",
+          "source_name": "人人都是產品經理",
+          "is_serendipity": true
+        }
+      ],
+      "created_at": "2026-11-27T13:14:42+08:00",
+      "asset_potential": "價值落在授權與稽核基礎設施，以及結構化的企業規則與案件資料，而非模型本身。"
+    },
+    {
+      "signal_id": "SIG-20261127-002",
+      "date": "2026-11-27",
+      "title": "代操作許可權同時成為金融盜轉的攻擊面",
+      "summary": "刑事局統計，假冒紅果、黃果的追劇 App 誘騙使用者開啟無障礙許可權後遠端操控手機、攔下 OTP 盜轉網銀，案件已逾百件。金管會披露 22 家銀行與電支機構使用者遭盜轉 1,742 萬元，並訂出重大偶發通報與賠償認定原則。",
+      "why_it_matters": "代理人落地所依賴的系統級許可權，與木馬濫用的無障礙許可權是同一技術前提，讓 PA 平臺的信任機製成為能否開放產品的前置條件。",
+      "interpretation": "許可權一旦交給程式，程式即可代替人執行任何操作，能力與風險共用同一條通道，因此授權治理而非模型能力成為普及速率的限制項。",
+      "unknowns": "賠償責任如何在平臺、App 與銀行之間分配，以及監理是否會要求代理人操作留下可稽核紀錄，目前仍未確定。",
+      "novelty": "NEW",
+      "novelty_basis": "近 30 天訊號集中在助手入口與代操作清單的能力邊界，未出現把同一許可權前提連結到實際金融盜轉案件與監理回應的紀錄。",
+      "source_ids": [
+        "S13",
+        "S14"
+      ],
+      "evidence_keys": [
+        "5ca6888df95382a6ea706896c962505bcd64f5bed1e3222b5b501085044b4b9f",
+        "555f2de1ef086b1cef921ddc7eeeb231e1e8f40411b9398feb5839dd1c3af4cb"
+      ],
+      "sources": [
+        {
+          "source_id": "S13",
+          "article_key": "5ca6888df95382a6ea706896c962505bcd64f5bed1e3222b5b501085044b4b9f",
+          "title": "帳戶遭遠端盜轉竟是「短劇 App」惹禍？22 家銀行、電支機構使用者遭盜轉 1742 萬",
+          "canonical_url": "https://www.managertoday.com.tw/articles/view/73448",
+          "source_name": "經理人月刊",
+          "is_serendipity": true
+        },
+        {
+          "source_id": "S14",
+          "article_key": "555f2de1ef086b1cef921ddc7eeeb231e1e8f40411b9398feb5839dd1c3af4cb",
+          "title": "偽冒「紅果、黃果」追劇App如何偷走存款？刑事局揭盜轉手法，自保攻略一次看",
+          "canonical_url": "https://www.bnext.com.tw/article/93244/fake-short-drama-app-banking-fraud",
+          "source_name": "數位時代",
+          "is_serendipity": true
+        }
+      ],
+      "created_at": "2026-11-27T13:14:42+08:00",
+      "asset_potential": "價值落在許可權可見、可撤、可追的-device 層信任基礎設施與金融機構的異常交易攔截能力。"
+    },
+    {
+      "signal_id": "SIG-20261127-003",
+      "date": "2026-11-27",
+      "title": "監控器的偽陰性率隨攻擊策略設計大幅擺動",
+      "summary": "一篇 arXiv 論文以 OpenAI 生產環境監控器為案例，發現偽陰性率在單一強化學習方法的不同最佳化程度下從 0.5% 到 20.8%，跨方法在最佳最佳化程度下從 6.4% 到 23.0%，且攻擊策略僅針對代理監控器開發仍成功轉移到 GPT-5.4 目標監控器。",
+      "why_it_matters": "代理人安全評估的可信度取決於評估設計而非模型內建屬性，平臺能申請多深系統許可權，實質上由評估方法的嚴格程度決定。",
+      "interpretation": "以弱攻擊策略生成的對話稿充當部署代理，會系統性低估規避風險，使平臺在錯誤安全感下擴大授權範圍。",
+      "unknowns": "如何在企業間統一攻擊策略強度與最佳化程度、監控器更新後結果是否可延續，以及監理是否接受這類評估作為合規依據。",
+      "novelty": "NEW",
+      "novelty_basis": "既有訊號處理的是以困惑度設開發門檻與驗證外移，未涵蓋監控器評估本身因攻擊策略選擇而失真的量化結果。",
+      "source_ids": [
+        "S15"
+      ],
+      "evidence_keys": [
+        "0c272f1d0957d70a05430abb040283cea82dfe5ab62c0a5ed3003720fc0d085d"
+      ],
+      "sources": [
+        {
+          "source_id": "S15",
+          "article_key": "0c272f1d0957d70a05430abb040283cea82dfe5ab62c0a5ed3003720fc0d085d",
+          "title": "Attack Policy Selection can Mislead Monitor Evaluators",
+          "canonical_url": "https://arxiv.org/abs/2611.34934v1",
+          "source_name": "arXiv (跨界前沿論文)",
+          "is_serendipity": true
+        }
+      ],
+      "created_at": "2026-11-27T13:14:42+08:00",
+      "asset_potential": "價值落在可重跑、可跨企業比對的評估方法與監控器本身。"
+    }
+  ]
+}
