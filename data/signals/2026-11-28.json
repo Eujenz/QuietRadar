@@ -1,0 +1,114 @@
+{
+  "date": "2026-11-28",
+  "generated_at": "2026-11-28T12:51:07+08:00",
+  "signal_count": 3,
+  "signals": [
+    {
+      "signal_id": "SIG-20261128-001",
+      "date": "2026-11-28",
+      "title": "訓練資料的獨佔權成為前沿實驗室的採購維度",
+      "summary": "G2i 創辦人 Gabe Greenberg 在 AI Engineer CODE 說明，前沿實驗室可為獨佔保留的訓練資料付更高價，或對他廠也買得到的資料要求折扣，小額試單會轉為更大訂單；Latent Space 11 月 27 日 AINews 以前沿實驗室如何買訓練資料為題，報導程式碼資料市場。",
+      "why_it_matters": "資料價格由排他性而非數量決定，議價權移向能壟斷供給的一方，模型公司的資料支出從當期成本變成必須提前鎖定的資產。",
+      "interpretation": "能力差距縮小後，實驗室能買到的差異只剩獨佔語料，排他性因此被標價並寫進長期合約，試單成為驗證資料價值的前置程式。",
+      "unknowns": "獨佔溢價能否維持、試單轉大單的週期、以及資料品質在訓練後才驗證所帶來的採購風險，都尚未明朗。",
+      "novelty": "NEW",
+      "novelty_basis": "近 30 天訊號涵蓋算力折價、開放權重、驗證外移與入口授權，未出現訓練資料採購與排他性定價的紀錄。",
+      "source_ids": [
+        "S04",
+        "S09"
+      ],
+      "evidence_keys": [
+        "14f57ff759ec1ad1b4f47c33cb817a01781a049975602af972f3c0d87c57db26",
+        "63dc8adfd39e08f20f7b8d01b29e892c580f8a5a98bb6cda52a3e75830a1ddf5"
+      ],
+      "sources": [
+        {
+          "source_id": "S04",
+          "article_key": "14f57ff759ec1ad1b4f47c33cb817a01781a049975602af972f3c0d87c57db26",
+          "title": "[AINews] Inside the exploding Coding Data Market",
+          "canonical_url": "https://latent.space/p/ainews-inside-the-exploding-coding-data-market/",
+          "source_name": "Latent Space (AI產品落地)",
+          "is_serendipity": false
+        },
+        {
+          "source_id": "S09",
+          "article_key": "63dc8adfd39e08f20f7b8d01b29e892c580f8a5a98bb6cda52a3e75830a1ddf5",
+          "title": "Inside the AI Training Data Market — Gabe Greenberg, G2i",
+          "canonical_url": "https://latent.space/p/inside_the_ai_training_data_market_gabe_greenberg_g2i/",
+          "source_name": "Latent Space (AI產品落地)",
+          "is_serendipity": false
+        }
+      ],
+      "created_at": "2026-11-28T12:51:07+08:00",
+      "asset_potential": "排他性資料的供給與交付能力，而非一次性標註人力。"
+    },
+    {
+      "signal_id": "SIG-20261128-002",
+      "date": "2026-11-28",
+      "title": "大廠的 AI 預算排在人頭之前，研發人數連續兩年下降",
+      "summary": "納德拉在 The Pragmatic Engineer 播客承認微軟應屆生招聘放慢，主張先建立人與 AI 分工的軟體工廠模式，再把 AI 預算花滿；微軟全職員工約 22.3 萬人、一年少約 5000 人，同期營收成長 18%，產品研發從 8 萬人降到 7.7 萬人，連續第二年下降。",
+      "why_it_matters": "產出擴張不再按比例增加工程師，成本結構由人力轉向算力與資料，以人頭計價的初階技術職缺先承壓。",
+      "interpretation": "當 AI 承擔更多產出，企業先重寫人與 AI 的分工，再把預算投入算力，人頭成為成本結構中可被替換的項。",
+      "unknowns": "減員是否延續、軟體工廠模式的實際產出與品質尚無公開資料，十個月內說法反轉也讓外部難以判斷節奏。",
+      "novelty": "NEW",
+      "novelty_basis": "歷史訊號集中於模型能力拐點、算力從成本項翻面與入口授權，未涵蓋大廠人力結構與 AI 預算排序的變化。",
+      "source_ids": [
+        "S06"
+      ],
+      "evidence_keys": [
+        "df51c3c22de99e67783975fc86f7ed80257354ed65eea975c00adcab86822d90"
+      ],
+      "sources": [
+        {
+          "source_id": "S06",
+          "article_key": "df51c3c22de99e67783975fc86f7ed80257354ed65eea975c00adcab86822d90",
+          "title": "大廠的應屆生名額，正在先讓給 AI 預算",
+          "canonical_url": "http://www.geekpark.net/news/374601",
+          "source_name": "極客公園",
+          "is_serendipity": false
+        }
+      ],
+      "created_at": "2026-11-28T12:51:07+08:00",
+      "asset_potential": "算力與資料的採購量，以及人與 AI 分工的軟體工廠流程。"
+    },
+    {
+      "signal_id": "SIG-20261128-003",
+      "date": "2026-11-28",
+      "title": "自製晶片與既有內容資產被重新定價",
+      "summary": "平頭哥年化營收突破 100 億元、AI 晶片累計出貨 56 萬片，IDC 2026 年上半年中國資料中心 AI 加速晶片市場輝達 34%、華為 28%、平頭哥 7%；B 站第三季營收 83.2 億元、同比增 8%，AI 知識內容消費時長同比增 108%，日均使用時長達 121 分鐘。",
+      "why_it_matters": "上游自給算力與下游自有受眾同時被重估，中間單純出售模型能力的一層被壓薄。",
+      "interpretation": "阿里以自有雲、模型與企業客戶為晶片提供使用場景，B 站以社群承接模型實測與學習需求，兩者都把外部可得的能力變成自家資產的放大器。",
+      "unknowns": "平頭哥港股 IPO 的最終估值、真武 V900 明年第一季量產能否兌現，以及 AI 內容消費時長能否轉為收入，仍待觀察。",
+      "novelty": "EVOLVING",
+      "novelty_basis": "既有訊號已記錄平臺把當期現金換成算力、算力從成本項翻面成收入項，本期延伸到自製晶片出貨份額與內容資產的重估。",
+      "source_ids": [
+        "S12",
+        "S11"
+      ],
+      "evidence_keys": [
+        "8354f52c5d16587bd07bf2979d1c9e5a331f03966601493e455cd3179deb8e83",
+        "05dc127f0e69d4223d89ce2d90d81e0608696e3bb84779aad7a4e78d6619ca1e"
+      ],
+      "sources": [
+        {
+          "source_id": "S12",
+          "article_key": "8354f52c5d16587bd07bf2979d1c9e5a331f03966601493e455cd3179deb8e83",
+          "title": "馬雲又孵化出一家1500億估值的公司？",
+          "canonical_url": "https://www.woshipm.com/ai/6502037.html",
+          "source_name": "人人都是產品經理",
+          "is_serendipity": true
+        },
+        {
+          "source_id": "S11",
+          "article_key": "05dc127f0e69d4223d89ce2d90d81e0608696e3bb84779aad7a4e78d6619ca1e",
+          "title": "B 站十幾年的家底，在 AI 時代「升值」",
+          "canonical_url": "http://www.geekpark.net/news/374593",
+          "source_name": "極客公園",
+          "is_serendipity": false
+        }
+      ],
+      "created_at": "2026-11-28T12:51:07+08:00",
+      "asset_potential": "自有晶片與雲的工作流，以及社群內容庫與真實場景評測入口。"
+    }
+  ]
+}

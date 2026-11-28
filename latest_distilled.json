@@ -1,233 +1,233 @@
 {
-  "date": "2026-11-27",
-  "generated_at": "2026-11-27T13:14:42+08:00",
-  "overview": "# 當代理人握有手機的許可權，門檻就從模型能力移到授權與驗證\n\n十月，企業客服 AI 公司 Decagon 推出 Personal Agent Gateway，讓消費者的 AI 助理直接與企業客服系統對接，並把「永遠不會疲倦的客戶」寫成一個新的客戶型別[¹](http://www.geekpark.net/news/374536)。同一時間，國內的 Personal Agent 牌桌在兩個月內坐滿，螞蟻靈光 2.0 全量上線、位元組小豆開啟內測、騰訊官宣微信小微[²](https://www.woshipm.com/ai/6501354.html)。而在金融現場，偽冒追劇 App 騙取無障礙許可權後遠端操控手機、攔下 OTP，已造成 22 家銀行與電支機構使用者被盜轉 1,742 萬元[³](https://www.managertoday.com.tw/articles/view/73448)。三件事指向同一個位移：**代理人的價值不再由模型分數決定，而由它能取得多少授權、以及那些授權能否被驗證決定。**\n\n### 兩個 AI 在電話裡禮貌地交涉\n\n被層層轉接、找不到取消自動續費的入口、為幾十塊錢耗掉一個午休，這種不對稱來自一個簡單的事實：企業有一整套客服系統，消費者只有下班前的半小時[¹](http://www.geekpark.net/news/374536)。Decagon 的 Personal Agent Gateway 改寫的是這套對稱關係，它讓消費者的助理直接走進企業客服系統，查政策、整理證據、尋找替代方案，直到把事情辦成，或確定確實辦不了[¹](http://www.geekpark.net/news/374536)。同一個月在矽谷流傳的還有 Pine AI，它先發布一套專為 AI 設計的雲端計算環境，相關貼文當天取得約 240 萬次瀏覽，接著推出 Pine Phone，讓 AI 在操作網頁與處理檔案的過程中可以直接撥打真實世界的電話[¹](http://www.geekpark.net/news/374536)。\n\n這裡的變化不在模型能力，而在交涉的對手方換人了。真人被拒絕兩次通常就放棄，代理人不會疲倦，也不會因為時間不夠而妥協，企業過去用流程長度與人力排隊消耗消費者耐心的做法因此失效。這意味著企業端有理由把客服系統從「給人看的頁面」改造成「給機器讀的介面」，因為回應一個不疲倦的客戶，成本會隨回合數線性累積，而開放一條有規則、可稽核的通道反而可控。\n\n產業後果是客服這塊成本項開始資產化。誰掌握案件資料與政策條款的結構化表述，誰就掌握了代理人時代的接入點，而單純提供人力外包的客服供應商，會被壓在介面之下。\n\n### 兩個月坐滿的牌桌，差異化落在授權\n\n9 月，海外的 Muse 與 Grok Bot 開出 Personal Agent 這條 2.0 領域，10 月與 11 月，國內牌桌迅速坐滿，創業團隊密集轉舵，螞蟻、位元組、騰訊則帶著各自的生態入局[²](https://www.woshipm.com/ai/6501354.html)。這篇產業觀察把差異歸給一個公式：Agent 等於 Model 加 Harness，年初 Model 貴、Harness 糙，OpenClaw 這類產品的上手門檻與穩定性只夠讓極客湊熱鬧，這兩個月出現的產品才真正走進一般使用者的日常；作者並判斷這一波不會重蹈覆轍，最後牌桌上也不會只剩一個超級 PA[²](https://www.woshipm.com/ai/6501354.html)。\n\n把這段判斷放回成本結構，指向就清楚了。當模型這一層不再是稀缺項，能差異化的只剩兩件事：外層的 harness，以及代理人被允許動用什麼。授權是其中最硬的一項，因為它決定代理人能不能真的完成事情，而不是隻能給建議。\n\n問題是同一份許可權在另一個方向上已經被大量使用。刑事局統計，假冒紅果、黃果的追劇 App 誘騙使用者開啟無障礙許可權後，即可遠端操控手機並攔下 OTP 盜轉網銀，案件已逾百件[⁴](https://www.bnext.com.tw/article/93244/fake-short-drama-app-banking-fraud)。金管會披露的版本是 22 家銀行與電支機構使用者遭盜轉 1,742 萬元，並已就重大偶發通報與賠償認定訂出原則[³](https://www.managertoday.com.tw/articles/view/73448)。兩者用的是同一個技術前提：系統級操作權一旦交給程式，程式就能代替人做任何事。這意味著 PA 的競爭很快就不是功能清單的競爭，而是誰能讓授權可見、可撤、可追的競爭，而承壓的一方會是那些把代理人當成差異化賣點、卻沒有配套信任機制的平臺。\n\n### 監控器自己也要被驗證\n\n代理人越深入系統，外界就越依賴監控器，也就是用來標記代理人危險行為的分類器。一篇 arXiv 論文以一個 OpenAI 生產環境的監控器為案例，發現量測到的偽陰性率對兩件事高度敏感：攻擊策略用什麼方法生成，以及該方法被最佳化到什麼程度。單一方法（強化學習）在不同最佳化程度下，偽陰性率從 0.5% 擺到 20.8%；跨方法在各自最佳最佳化程度下，從 6.4% 擺到 23.0%。所有攻擊策略都只針對代理監控器開發，結果仍成功轉移到保留的 GPT-5.4 目標監控器[⁵](https://arxiv.org/abs/2611.34934v1)。\n\n**監控存在，與監控有效，是兩件不同的事。** 而後者不是模型的內建屬性，是評估設計的產物。當授權範圍成為產品能不能開放的決定因素，評估方法的選擇就等於產品路線圖：一份用弱攻擊策略做出來的漂亮報告，會讓平臺在錯誤的安全感下把許可權往外放。\n\n這也解釋了為什麼信任正在被拆成可重跑的工程量，而不是一次性的口頭保證。對平臺而言，能不能拿出在不同攻擊強度下都站得住的評估，會直接決定它能向監管者與企業客戶申請多深的系統許可權；對企業客戶而言，採購判準會從代理人能做多少事，轉為出事之後能否說清楚發生了什麼。\n\n### 結尾\n\n把這三件事放在一起，代理人商業化的瓶頸已經換了位置。模型能力仍在推進，但決定產品能走多遠的是授權的深度，決定授權能開多深的是驗證的可靠性。授權與驗證都不是模型公司擅長的層，這正是雲端平臺、系統廠商與金融基礎設施重新取得議價位置的原因，也是這一波 PA 競賽真正的分岔口。",
+  "date": "2026-11-28",
+  "generated_at": "2026-11-28T12:51:07+08:00",
+  "overview": "# AI 的錢先流向獨佔資料與自有算力，人頭排在後面\n\n訓練資料的獨佔權開始有溢價，同一批資料若別家實驗室也買得到，價格就得打折[¹](https://latent.space/p/ainews-inside-the-exploding-coding-data-market/)[²](https://latent.space/p/inside_the_ai_training_data_market_gabe_greenberg_g2i/)。微軟執行長納德拉在播客上承認應屆生招聘放慢，並說 AI 原生公司從一筆 AI 預算和一個人起步，預算用滿才加人[³](http://www.geekpark.net/news/374601)。阿里旗下平頭哥在衝刺港股 IPO 之際被專業投資機構喊出 200 至 300 億美元估值，AI 晶片累計出貨突破 56 萬片[⁴](https://www.woshipm.com/ai/6502037.html)。三件事落在資料、人力與晶片，指向同一個變化：AI 預算正在重新排序，能壟斷供給的投入要素被當成資產計價，單純出售模型能力的位置被壓在中央。\n\n### 獨佔權被寫進資料合約裡\n\n資料市場的計價方式，在 G2i 創辦人 Gabe Greenberg 的說明裡變得很直接。他在 AI Engineer CODE 的訪談中指出，前沿實驗室可以為自己獨佔保留的訓練資料付更高的價格，也可以對另一家實驗室同樣買得到的資料要求折扣，採購決策就是在這兩者之間取捨，而小額的試單會逐步變成更大的訂單[²](https://latent.space/p/inside_the_ai_training_data_market_gabe_greenberg_g2i/)。Latent Space 在 11 月 27 日的 AINews 以程式碼資料市場為題，寫的正是前沿實驗室如何買訓練資料[¹](https://latent.space/p/ainews-inside-the-exploding-coding-data-market/)。\n\n這條計價規則把資料的價格從「有多少」改成「有沒有人跟你一樣有」。如果模型在公開評測上的差距縮小到客戶難以分辨，實驗室能買到的差異就只剩別人拿不到的語料，這意味著排他性本身成為一種可交易的權利，而不是合約裡的附帶條款。試單之所以能長成大單，也因為資料的價值要進入訓練流程之後才看得出來，買方得先用小量驗證，再為獨佔權一次付清。\n\n如果這個溢價結構穩定下來，資料供應商的位置會從一次性外包，變成需要長期配合交付品質的夥伴，議價權往能壟斷供給的一方移動。對模型公司而言，訓練資料從當期成本變成必須提前鎖定的資產；手上只有公開可得語料的中間層，則可能最先被擠出這張採購清單。\n\n### 一筆 AI 預算排在人頭前面\n\n微軟的說法把同一套排序寫進了人力計畫。納德拉在 The Pragmatic Engineer 播客上承認微軟應屆生招聘確實放慢，還說很多公司都這樣，他的解釋是眼下首要任務是把內部所有人都調整到合適位置，先把人與 AI 分工寫軟體的軟體工廠模式建立起來，第二步才是把 AI 預算花滿[³](http://www.geekpark.net/news/374601)。十個月前的 1 月達沃斯，他受訪時說的還是他非常相信校園招聘，因為 AI 是幫新人更快上手的導師[³](http://www.geekpark.net/news/374601)。\n\n財報數字支援這個轉向。微軟目前全職員工約 22.3 萬人，一年少了約 5000 人，同期營收成長 18%，這是 2016 年收尾諾基亞手機業務以來首次年度員工下降；減得最多的是產品研發，從 8 萬人降到 7.7 萬人，連續第二年下降，淨減少的人裡每五個就有三個出自研發[³](http://www.geekpark.net/news/374601)。\n\n**企業的產出擴張不再按舊比例加工程師，而是先加算力與資料支出。** 生意在漲、人數在降，中間被替換掉的是那個原本用來換算產能的單價。這意味著如果軟體工廠模式成立，人力在產品成本結構裡的比重會往下走，算力與資料的比重往上走，這與資料獨佔權的溢價其實是同一件事的兩端。承壓的是以人頭計價的初階職缺，受益的是把算力與資料賣給這些公司的一方。\n\n### 自有晶片與十幾年的內容庫被重新算價\n\n平頭哥 2018 年由阿里收購的中天微與達摩院晶片研發業務合併成立，八年後的年化營收突破 100 億元，AI 晶片累計出貨突破 56 萬片，透過阿里雲服務超過 650 家企業客戶，千問已在使用平頭哥晶片訓練下一代大模型，新一代 AI 晶片真武 V900 計畫明年第一季量產[⁴](https://www.woshipm.com/ai/6502037.html)。IDC 的資料顯示，2026 年上半年中國資料中心 AI 加速晶片市場，輝達佔 34%、華為 28%、平頭哥 7%、寒武紀 5%、百度崑崙芯 4%、海光 3%，按出貨量計算平頭哥在中國市場排第三、國產廠商第二[⁴](https://www.woshipm.com/ai/6502037.html)。\n\n平頭哥的價值不只在晶片本身，而在阿里同時握有自己的雲平臺、自己的大模型、龐大的電商業務與大量企業客戶，晶片研發出來就有使用場景，還能透過阿里雲規模化落地[⁴](https://www.woshipm.com/ai/6502037.html)。這意味著在算力緊張的環境裡，自製晶片的回報不必先靠外部市佔證明，而是靠自家場景把出貨量跑起來，再回頭支撐自家模型與雲的毛利。\n\n下游的資產也在被重新算價。B 站 2026 年第三季總營收 83.2 億元、同比增 8%，調整後淨利 8.3 億元，日均活躍使用者 1.24 億、月均 3.94 億，日均使用時長首度突破兩小時、達 121 分鐘，其中 AI 知識內容消費時長同比成長 108%[⁵](http://www.geekpark.net/news/374593)。9 月 16 日上線的 AI 無限競技場由 UP 主自主出題實測，第三季大模型真實場景實測投稿超過 1.3 萬條，涉及 100 多個模型版本[⁵](http://www.geekpark.net/news/374593)。**當模型能力可以從外部採購，差異化就回到自有場景與自有供給。** 一家在上游自給算力，一家在下游握住受眾與評測場景，被重估的是這兩端，被壓薄的是中間單純以能力計價的那一層。\n\n把資料、人力與晶片三條線放在一起，AI 產業的價值分配正在往兩端移動：一端是能壟斷供給的投入要素，一端是握有場景與受眾的平臺。中間那層以模型能力計價的位置，會隨能力差距縮小而持續被壓薄。這不是模型公司失去價值，而是獲利點被迫從出售能力，轉向控制投入要素與自有場景。",
   "citation_sources": [
     {
       "citation_number": 1,
-      "source_id": "S01",
-      "article_key": "c0fa917c1f800a1bffe66b6e3614bb2dcb711296b9ea9c2a95989f5d25c1f1b0",
-      "title": "好訊息，AI 可以替你打客服電話了；壞訊息，電話那頭也是 AI",
-      "original_url": "http://www.geekpark.net/news/374536",
-      "source_name": "極客公園",
+      "source_id": "S04",
+      "article_key": "14f57ff759ec1ad1b4f47c33cb817a01781a049975602af972f3c0d87c57db26",
+      "title": "[AINews] Inside the exploding Coding Data Market",
+      "original_url": "https://latent.space/p/ainews-inside-the-exploding-coding-data-market/",
+      "source_name": "Latent Space (AI產品落地)",
       "is_serendipity": false
     },
     {
       "citation_number": 2,
+      "source_id": "S09",
+      "article_key": "63dc8adfd39e08f20f7b8d01b29e892c580f8a5a98bb6cda52a3e75830a1ddf5",
+      "title": "Inside the AI Training Data Market — Gabe Greenberg, G2i",
+      "original_url": "https://latent.space/p/inside_the_ai_training_data_market_gabe_greenberg_g2i/",
+      "source_name": "Latent Space (AI產品落地)",
+      "is_serendipity": false
+    },
+    {
+      "citation_number": 3,
+      "source_id": "S06",
+      "article_key": "df51c3c22de99e67783975fc86f7ed80257354ed65eea975c00adcab86822d90",
+      "title": "大廠的應屆生名額，正在先讓給 AI 預算",
+      "original_url": "http://www.geekpark.net/news/374601",
+      "source_name": "極客公園",
+      "is_serendipity": false
+    },
+    {
+      "citation_number": 4,
       "source_id": "S12",
-      "article_key": "0b516594837cd2c9c1a8672695008f1526354faf2c371d57702c5ee0fdf841fe",
-      "title": "關於國內 Personal Agent 的五大暴論",
-      "original_url": "https://www.woshipm.com/ai/6501354.html",
+      "article_key": "8354f52c5d16587bd07bf2979d1c9e5a331f03966601493e455cd3179deb8e83",
+      "title": "馬雲又孵化出一家1500億估值的公司？",
+      "original_url": "https://www.woshipm.com/ai/6502037.html",
       "source_name": "人人都是產品經理",
       "is_serendipity": true
     },
     {
-      "citation_number": 3,
-      "source_id": "S13",
-      "article_key": "5ca6888df95382a6ea706896c962505bcd64f5bed1e3222b5b501085044b4b9f",
-      "title": "帳戶遭遠端盜轉竟是「短劇 App」惹禍？22 家銀行、電支機構使用者遭盜轉 1742 萬",
-      "original_url": "https://www.managertoday.com.tw/articles/view/73448",
-      "source_name": "經理人月刊",
-      "is_serendipity": true
-    },
-    {
-      "citation_number": 4,
-      "source_id": "S14",
-      "article_key": "555f2de1ef086b1cef921ddc7eeeb231e1e8f40411b9398feb5839dd1c3af4cb",
-      "title": "偽冒「紅果、黃果」追劇App如何偷走存款？刑事局揭盜轉手法，自保攻略一次看",
-      "original_url": "https://www.bnext.com.tw/article/93244/fake-short-drama-app-banking-fraud",
-      "source_name": "數位時代",
-      "is_serendipity": true
-    },
-    {
       "citation_number": 5,
-      "source_id": "S15",
-      "article_key": "0c272f1d0957d70a05430abb040283cea82dfe5ab62c0a5ed3003720fc0d085d",
-      "title": "Attack Policy Selection can Mislead Monitor Evaluators",
-      "original_url": "https://arxiv.org/abs/2611.34934v1",
-      "source_name": "arXiv (跨界前沿論文)",
-      "is_serendipity": true
+      "source_id": "S11",
+      "article_key": "05dc127f0e69d4223d89ce2d90d81e0608696e3bb84779aad7a4e78d6619ca1e",
+      "title": "B 站十幾年的家底，在 AI 時代「升值」",
+      "original_url": "http://www.geekpark.net/news/374593",
+      "source_name": "極客公園",
+      "is_serendipity": false
     }
   ],
   "items": [
     {
       "citation_number": 1,
-      "source_id": "S01",
-      "article_key": "c0fa917c1f800a1bffe66b6e3614bb2dcb711296b9ea9c2a95989f5d25c1f1b0",
-      "title": "好訊息，AI 可以替你打客服電話了；壞訊息，電話那頭也是 AI",
-      "original_url": "http://www.geekpark.net/news/374536",
-      "source_name": "極客公園",
+      "source_id": "S04",
+      "article_key": "14f57ff759ec1ad1b4f47c33cb817a01781a049975602af972f3c0d87c57db26",
+      "title": "[AINews] Inside the exploding Coding Data Market",
+      "original_url": "https://latent.space/p/ainews-inside-the-exploding-coding-data-market/",
+      "source_name": "Latent Space (AI產品落地)",
       "is_serendipity": false
     },
     {
       "citation_number": 2,
+      "source_id": "S09",
+      "article_key": "63dc8adfd39e08f20f7b8d01b29e892c580f8a5a98bb6cda52a3e75830a1ddf5",
+      "title": "Inside the AI Training Data Market — Gabe Greenberg, G2i",
+      "original_url": "https://latent.space/p/inside_the_ai_training_data_market_gabe_greenberg_g2i/",
+      "source_name": "Latent Space (AI產品落地)",
+      "is_serendipity": false
+    },
+    {
+      "citation_number": 3,
+      "source_id": "S06",
+      "article_key": "df51c3c22de99e67783975fc86f7ed80257354ed65eea975c00adcab86822d90",
+      "title": "大廠的應屆生名額，正在先讓給 AI 預算",
+      "original_url": "http://www.geekpark.net/news/374601",
+      "source_name": "極客公園",
+      "is_serendipity": false
+    },
+    {
+      "citation_number": 4,
       "source_id": "S12",
-      "article_key": "0b516594837cd2c9c1a8672695008f1526354faf2c371d57702c5ee0fdf841fe",
-      "title": "關於國內 Personal Agent 的五大暴論",
-      "original_url": "https://www.woshipm.com/ai/6501354.html",
+      "article_key": "8354f52c5d16587bd07bf2979d1c9e5a331f03966601493e455cd3179deb8e83",
+      "title": "馬雲又孵化出一家1500億估值的公司？",
+      "original_url": "https://www.woshipm.com/ai/6502037.html",
       "source_name": "人人都是產品經理",
       "is_serendipity": true
     },
     {
-      "citation_number": 3,
-      "source_id": "S13",
-      "article_key": "5ca6888df95382a6ea706896c962505bcd64f5bed1e3222b5b501085044b4b9f",
-      "title": "帳戶遭遠端盜轉竟是「短劇 App」惹禍？22 家銀行、電支機構使用者遭盜轉 1742 萬",
-      "original_url": "https://www.managertoday.com.tw/articles/view/73448",
-      "source_name": "經理人月刊",
-      "is_serendipity": true
-    },
-    {
-      "citation_number": 4,
-      "source_id": "S14",
-      "article_key": "555f2de1ef086b1cef921ddc7eeeb231e1e8f40411b9398feb5839dd1c3af4cb",
-      "title": "偽冒「紅果、黃果」追劇App如何偷走存款？刑事局揭盜轉手法，自保攻略一次看",
-      "original_url": "https://www.bnext.com.tw/article/93244/fake-short-drama-app-banking-fraud",
-      "source_name": "數位時代",
-      "is_serendipity": true
-    },
-    {
       "citation_number": 5,
-      "source_id": "S15",
-      "article_key": "0c272f1d0957d70a05430abb040283cea82dfe5ab62c0a5ed3003720fc0d085d",
-      "title": "Attack Policy Selection can Mislead Monitor Evaluators",
-      "original_url": "https://arxiv.org/abs/2611.34934v1",
-      "source_name": "arXiv (跨界前沿論文)",
-      "is_serendipity": true
+      "source_id": "S11",
+      "article_key": "05dc127f0e69d4223d89ce2d90d81e0608696e3bb84779aad7a4e78d6619ca1e",
+      "title": "B 站十幾年的家底，在 AI 時代「升值」",
+      "original_url": "http://www.geekpark.net/news/374593",
+      "source_name": "極客公園",
+      "is_serendipity": false
     }
   ],
   "signal_count": 3,
   "signals": [
     {
-      "signal_id": "SIG-20261127-001",
-      "date": "2026-11-27",
-      "title": "Personal Agent 的競爭點從模型能力移到系統授權與 harness",
-      "summary": "企業客服 AI 公司 Decagon 十月推出 Personal Agent Gateway，讓消費者助理直接接入企業客服系統；Pine AI 先發布為 AI 設計的雲端環境，再推出可撥打真實電話的 Pine Phone。國內則在兩個月內出現靈光 2.0 全量、小豆內測與微信小微官宣。",
-      "why_it_matters": "代理人要完成事情必須取得系統級操作權，價值因此從模型層外移到授權層與 harness 層，掌握介面與案件資料的一方取得接入點。",
-      "interpretation": "模型不再是稀缺項後，差異化只剩外層 harness 與可用許可權；不疲倦的代理人讓企業以流程長度消耗消費者耐心的做法失效，開放受控介面反而成本更低。",
-      "unknowns": "平臺是否願意下放系統級許可權、跨企業介面標準由誰定、以及一般使用者對代操作授權的接受度都尚未明朗。",
-      "novelty": "EVOLVING",
-      "novelty_basis": "既有訊號已指出手機 AI 助手入口被壓在淺層、系統級許可權與 App 代操作清單成為實際邊界；本期新增的是國內 PA 領域全面開臺與企業客服端反向開放介面，屬策略推進。",
+      "signal_id": "SIG-20261128-001",
+      "date": "2026-11-28",
+      "title": "訓練資料的獨佔權成為前沿實驗室的採購維度",
+      "summary": "G2i 創辦人 Gabe Greenberg 在 AI Engineer CODE 說明，前沿實驗室可為獨佔保留的訓練資料付更高價，或對他廠也買得到的資料要求折扣，小額試單會轉為更大訂單；Latent Space 11 月 27 日 AINews 以前沿實驗室如何買訓練資料為題，報導程式碼資料市場。",
+      "why_it_matters": "資料價格由排他性而非數量決定，議價權移向能壟斷供給的一方，模型公司的資料支出從當期成本變成必須提前鎖定的資產。",
+      "interpretation": "能力差距縮小後，實驗室能買到的差異只剩獨佔語料，排他性因此被標價並寫進長期合約，試單成為驗證資料價值的前置程式。",
+      "unknowns": "獨佔溢價能否維持、試單轉大單的週期、以及資料品質在訓練後才驗證所帶來的採購風險，都尚未明朗。",
+      "novelty": "NEW",
+      "novelty_basis": "近 30 天訊號涵蓋算力折價、開放權重、驗證外移與入口授權，未出現訓練資料採購與排他性定價的紀錄。",
       "source_ids": [
-        "S01",
-        "S12"
+        "S04",
+        "S09"
       ],
       "evidence_keys": [
-        "c0fa917c1f800a1bffe66b6e3614bb2dcb711296b9ea9c2a95989f5d25c1f1b0",
-        "0b516594837cd2c9c1a8672695008f1526354faf2c371d57702c5ee0fdf841fe"
+        "14f57ff759ec1ad1b4f47c33cb817a01781a049975602af972f3c0d87c57db26",
+        "63dc8adfd39e08f20f7b8d01b29e892c580f8a5a98bb6cda52a3e75830a1ddf5"
       ],
       "sources": [
         {
-          "source_id": "S01",
-          "article_key": "c0fa917c1f800a1bffe66b6e3614bb2dcb711296b9ea9c2a95989f5d25c1f1b0",
-          "title": "好訊息，AI 可以替你打客服電話了；壞訊息，電話那頭也是 AI",
-          "canonical_url": "http://www.geekpark.net/news/374536",
-          "source_name": "極客公園",
+          "source_id": "S04",
+          "article_key": "14f57ff759ec1ad1b4f47c33cb817a01781a049975602af972f3c0d87c57db26",
+          "title": "[AINews] Inside the exploding Coding Data Market",
+          "canonical_url": "https://latent.space/p/ainews-inside-the-exploding-coding-data-market/",
+          "source_name": "Latent Space (AI產品落地)",
           "is_serendipity": false
         },
         {
-          "source_id": "S12",
-          "article_key": "0b516594837cd2c9c1a8672695008f1526354faf2c371d57702c5ee0fdf841fe",
-          "title": "關於國內 Personal Agent 的五大暴論",
-          "canonical_url": "https://www.woshipm.com/ai/6501354.html",
-          "source_name": "人人都是產品經理",
-          "is_serendipity": true
+          "source_id": "S09",
+          "article_key": "63dc8adfd39e08f20f7b8d01b29e892c580f8a5a98bb6cda52a3e75830a1ddf5",
+          "title": "Inside the AI Training Data Market — Gabe Greenberg, G2i",
+          "canonical_url": "https://latent.space/p/inside_the_ai_training_data_market_gabe_greenberg_g2i/",
+          "source_name": "Latent Space (AI產品落地)",
+          "is_serendipity": false
         }
       ],
-      "created_at": "2026-11-27T13:14:42+08:00",
-      "asset_potential": "價值落在授權與稽核基礎設施，以及結構化的企業規則與案件資料，而非模型本身。"
+      "created_at": "2026-11-28T12:51:07+08:00",
+      "asset_potential": "排他性資料的供給與交付能力，而非一次性標註人力。"
     },
     {
-      "signal_id": "SIG-20261127-002",
-      "date": "2026-11-27",
-      "title": "代操作許可權同時成為金融盜轉的攻擊面",
-      "summary": "刑事局統計，假冒紅果、黃果的追劇 App 誘騙使用者開啟無障礙許可權後遠端操控手機、攔下 OTP 盜轉網銀，案件已逾百件。金管會披露 22 家銀行與電支機構使用者遭盜轉 1,742 萬元，並訂出重大偶發通報與賠償認定原則。",
-      "why_it_matters": "代理人落地所依賴的系統級許可權，與木馬濫用的無障礙許可權是同一技術前提，讓 PA 平臺的信任機製成為能否開放產品的前置條件。",
-      "interpretation": "許可權一旦交給程式，程式即可代替人執行任何操作，能力與風險共用同一條通道，因此授權治理而非模型能力成為普及速率的限制項。",
-      "unknowns": "賠償責任如何在平臺、App 與銀行之間分配，以及監理是否會要求代理人操作留下可稽核紀錄，目前仍未確定。",
+      "signal_id": "SIG-20261128-002",
+      "date": "2026-11-28",
+      "title": "大廠的 AI 預算排在人頭之前，研發人數連續兩年下降",
+      "summary": "納德拉在 The Pragmatic Engineer 播客承認微軟應屆生招聘放慢，主張先建立人與 AI 分工的軟體工廠模式，再把 AI 預算花滿；微軟全職員工約 22.3 萬人、一年少約 5000 人，同期營收成長 18%，產品研發從 8 萬人降到 7.7 萬人，連續第二年下降。",
+      "why_it_matters": "產出擴張不再按比例增加工程師，成本結構由人力轉向算力與資料，以人頭計價的初階技術職缺先承壓。",
+      "interpretation": "當 AI 承擔更多產出，企業先重寫人與 AI 的分工，再把預算投入算力，人頭成為成本結構中可被替換的項。",
+      "unknowns": "減員是否延續、軟體工廠模式的實際產出與品質尚無公開資料，十個月內說法反轉也讓外部難以判斷節奏。",
       "novelty": "NEW",
-      "novelty_basis": "近 30 天訊號集中在助手入口與代操作清單的能力邊界，未出現把同一許可權前提連結到實際金融盜轉案件與監理回應的紀錄。",
+      "novelty_basis": "歷史訊號集中於模型能力拐點、算力從成本項翻面與入口授權，未涵蓋大廠人力結構與 AI 預算排序的變化。",
       "source_ids": [
-        "S13",
-        "S14"
+        "S06"
       ],
       "evidence_keys": [
-        "5ca6888df95382a6ea706896c962505bcd64f5bed1e3222b5b501085044b4b9f",
-        "555f2de1ef086b1cef921ddc7eeeb231e1e8f40411b9398feb5839dd1c3af4cb"
+        "df51c3c22de99e67783975fc86f7ed80257354ed65eea975c00adcab86822d90"
       ],
       "sources": [
         {
-          "source_id": "S13",
-          "article_key": "5ca6888df95382a6ea706896c962505bcd64f5bed1e3222b5b501085044b4b9f",
-          "title": "帳戶遭遠端盜轉竟是「短劇 App」惹禍？22 家銀行、電支機構使用者遭盜轉 1742 萬",
-          "canonical_url": "https://www.managertoday.com.tw/articles/view/73448",
-          "source_name": "經理人月刊",
+          "source_id": "S06",
+          "article_key": "df51c3c22de99e67783975fc86f7ed80257354ed65eea975c00adcab86822d90",
+          "title": "大廠的應屆生名額，正在先讓給 AI 預算",
+          "canonical_url": "http://www.geekpark.net/news/374601",
+          "source_name": "極客公園",
+          "is_serendipity": false
+        }
+      ],
+      "created_at": "2026-11-28T12:51:07+08:00",
+      "asset_potential": "算力與資料的採購量，以及人與 AI 分工的軟體工廠流程。"
+    },
+    {
+      "signal_id": "SIG-20261128-003",
+      "date": "2026-11-28",
+      "title": "自製晶片與既有內容資產被重新定價",
+      "summary": "平頭哥年化營收突破 100 億元、AI 晶片累計出貨 56 萬片，IDC 2026 年上半年中國資料中心 AI 加速晶片市場輝達 34%、華為 28%、平頭哥 7%；B 站第三季營收 83.2 億元、同比增 8%，AI 知識內容消費時長同比增 108%，日均使用時長達 121 分鐘。",
+      "why_it_matters": "上游自給算力與下游自有受眾同時被重估，中間單純出售模型能力的一層被壓薄。",
+      "interpretation": "阿里以自有雲、模型與企業客戶為晶片提供使用場景，B 站以社群承接模型實測與學習需求，兩者都把外部可得的能力變成自家資產的放大器。",
+      "unknowns": "平頭哥港股 IPO 的最終估值、真武 V900 明年第一季量產能否兌現，以及 AI 內容消費時長能否轉為收入，仍待觀察。",
+      "novelty": "EVOLVING",
+      "novelty_basis": "既有訊號已記錄平臺把當期現金換成算力、算力從成本項翻面成收入項，本期延伸到自製晶片出貨份額與內容資產的重估。",
+      "source_ids": [
+        "S12",
+        "S11"
+      ],
+      "evidence_keys": [
+        "8354f52c5d16587bd07bf2979d1c9e5a331f03966601493e455cd3179deb8e83",
+        "05dc127f0e69d4223d89ce2d90d81e0608696e3bb84779aad7a4e78d6619ca1e"
+      ],
+      "sources": [
+        {
+          "source_id": "S12",
+          "article_key": "8354f52c5d16587bd07bf2979d1c9e5a331f03966601493e455cd3179deb8e83",
+          "title": "馬雲又孵化出一家1500億估值的公司？",
+          "canonical_url": "https://www.woshipm.com/ai/6502037.html",
+          "source_name": "人人都是產品經理",
           "is_serendipity": true
         },
         {
-          "source_id": "S14",
-          "article_key": "555f2de1ef086b1cef921ddc7eeeb231e1e8f40411b9398feb5839dd1c3af4cb",
-          "title": "偽冒「紅果、黃果」追劇App如何偷走存款？刑事局揭盜轉手法，自保攻略一次看",
-          "canonical_url": "https://www.bnext.com.tw/article/93244/fake-short-drama-app-banking-fraud",
-          "source_name": "數位時代",
-          "is_serendipity": true
+          "source_id": "S11",
+          "article_key": "05dc127f0e69d4223d89ce2d90d81e0608696e3bb84779aad7a4e78d6619ca1e",
+          "title": "B 站十幾年的家底，在 AI 時代「升值」",
+          "canonical_url": "http://www.geekpark.net/news/374593",
+          "source_name": "極客公園",
+          "is_serendipity": false
         }
       ],
-      "created_at": "2026-11-27T13:14:42+08:00",
-      "asset_potential": "價值落在許可權可見、可撤、可追的-device 層信任基礎設施與金融機構的異常交易攔截能力。"
-    },
-    {
-      "signal_id": "SIG-20261127-003",
-      "date": "2026-11-27",
-      "title": "監控器的偽陰性率隨攻擊策略設計大幅擺動",
-      "summary": "一篇 arXiv 論文以 OpenAI 生產環境監控器為案例，發現偽陰性率在單一強化學習方法的不同最佳化程度下從 0.5% 到 20.8%，跨方法在最佳最佳化程度下從 6.4% 到 23.0%，且攻擊策略僅針對代理監控器開發仍成功轉移到 GPT-5.4 目標監控器。",
-      "why_it_matters": "代理人安全評估的可信度取決於評估設計而非模型內建屬性，平臺能申請多深系統許可權，實質上由評估方法的嚴格程度決定。",
-      "interpretation": "以弱攻擊策略生成的對話稿充當部署代理，會系統性低估規避風險，使平臺在錯誤安全感下擴大授權範圍。",
-      "unknowns": "如何在企業間統一攻擊策略強度與最佳化程度、監控器更新後結果是否可延續，以及監理是否接受這類評估作為合規依據。",
-      "novelty": "NEW",
-      "novelty_basis": "既有訊號處理的是以困惑度設開發門檻與驗證外移，未涵蓋監控器評估本身因攻擊策略選擇而失真的量化結果。",
-      "source_ids": [
-        "S15"
-      ],
-      "evidence_keys": [
-        "0c272f1d0957d70a05430abb040283cea82dfe5ab62c0a5ed3003720fc0d085d"
-      ],
-      "sources": [
-        {
-          "source_id": "S15",
-          "article_key": "0c272f1d0957d70a05430abb040283cea82dfe5ab62c0a5ed3003720fc0d085d",
-          "title": "Attack Policy Selection can Mislead Monitor Evaluators",
-          "canonical_url": "https://arxiv.org/abs/2611.34934v1",
-          "source_name": "arXiv (跨界前沿論文)",
-          "is_serendipity": true
-        }
-      ],
-      "created_at": "2026-11-27T13:14:42+08:00",
-      "asset_potential": "價值落在可重跑、可跨企業比對的評估方法與監控器本身。"
+      "created_at": "2026-11-28T12:51:07+08:00",
+      "asset_potential": "自有晶片與雲的工作流，以及社群內容庫與真實場景評測入口。"
     }
   ],
   "further_reading": [
     {
-      "source_id": "S07",
-      "title": "智譜闢謠 GLM-5.5 延期；特斯拉和 SpaceX 衝刺年底合併；18 家平臺完成演演演算法協商，覆蓋 2500 萬新就業形態勞動者｜極客早知道",
+      "source_id": "S01",
+      "title": "AI 硬體競爭白熱化，OpenAI 反訴蘋果竊密；iPhone 18 量產再度推遲；王興回應美團與小微試點合作",
       "source_name": "極客公園",
-      "original_url": "http://www.geekpark.net/news/374546",
-      "note": "騰訊 12 月起把非技術崗外部模型額度降至 10%，2027 年起全員預設混元 HY4，內部算力分配已成治理工具。"
+      "original_url": "http://www.geekpark.net/news/374621",
+      "note": "OpenAI 在聖何塞聯邦法院反訴蘋果竊取商業機密、阻撓其與硬體供應商合作，iPhone 18 量產時程再延至 2027 年元旦前後。"
     },
     {
-      "source_id": "S08",
-      "title": "SpaceX獲美國監管首肯 太空資料中心星座Starmind獲批部署",
-      "source_name": "品玩",
-      "original_url": "https://www.pingwest.com/w/319934",
-      "note": "FCC 附條件批准 SpaceX 部署至多 100 萬顆衛星興建 Starmind 太空資料中心，算力擴張開始往太空延伸。"
+      "source_id": "S13",
+      "title": "萊雅40個品牌僅3個自創。解密全球美妝龍頭併購術：買下品牌，卻不讓它變成另一個萊雅",
+      "source_name": "數位時代",
+      "original_url": "https://www.bnext.com.tw/article/93245/loreal-takami-acquisition-strategy",
+      "note": "萊雅旗下 40 個品牌只有 3 個自創，收購日本 TAKAMI 後營收成長至 4 倍，並反向學走對方的訂閱制理念。"
     },
     {
-      "source_id": "S06",
-      "title": "How Clay Builds GTM Agents — Jeff Barg, Head of AI",
-      "source_name": "Latent Space (AI產品落地)",
-      "original_url": "https://latent.space/p/how-clay-builds-gtm-agents-jeff-barg-head-of-ai/",
-      "note": "Clay 的 AI 主管說明如何用 1,500 美元條件化全球企業，並指出客戶討厭模型選擇器，指向 agent 基礎設施的分工。"
+      "source_id": "S14",
+      "title": "Diverse Alternative Reasoning Traces for Hard Math Problems",
+      "source_name": "arXiv (跨界前沿論文)",
+      "original_url": "https://arxiv.org/abs/2611.34928v1",
+      "note": "DART 從被拒絕的推理軌跡中拆解步驟再生成替代候選，在 DeepMath-103K 上比蒙特卡羅取樣多救回 37% 題目。"
     }
   ],
-  "time": "2026-11-27 13:14"
+  "time": "2026-11-28 12:51"
 }
